@@ -1,4 +1,5 @@
 package com.ajaxjs.devtools.sysmonitor.model;
+
 import lombok.Data;
 
 /**

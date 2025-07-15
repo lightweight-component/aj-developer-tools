@@ -3,8 +3,6 @@ package com.ajaxjs.devtools.springmonitor;
 import com.ajaxjs.devtools.springmonitor.event.InstanceEventLog;
 import com.ajaxjs.devtools.springmonitor.model.Application;
 import com.ajaxjs.devtools.springmonitor.model.UserInfo;
-import com.ajaxjs.devtools.springmonitor.ApplicationController;
-import com.ajaxjs.devtools.springmonitor.UiController;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.endpoint.ExposableEndpoint;
 import org.springframework.boot.actuate.endpoint.web.ExposableWebEndpoint;

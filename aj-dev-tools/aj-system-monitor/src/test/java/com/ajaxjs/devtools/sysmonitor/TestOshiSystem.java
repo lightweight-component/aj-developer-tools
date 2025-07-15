@@ -3,7 +3,6 @@ package com.ajaxjs.devtools.sysmonitor;
 import com.ajaxjs.util.JsonUtil;
 import org.junit.jupiter.api.Test;
 
-
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;

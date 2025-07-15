@@ -1,8 +1,8 @@
 package com.ajaxjs.mysqlmonitor;
 
-import com.ajaxjs.developertools.mpb.innodb.ResultParser;
-import com.ajaxjs.util.TestHelper;
-import org.junit.Test;
+
+import com.ajaxjs.mysqlmonitor.innodb.ResultParser;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -180,7 +180,7 @@ public class TestInnoDB {
         Map<String, String> map = new HashMap<>();
 //        System.out.println(segments.get("BUFFER POOL AND MEMORY"));
         resultParser.parseBufferPool(map, segments.get("BUFFER POOL AND MEMORY"));
-        TestHelper.printJson(map);
+        System.out.println(map);
 //        for (String key : map.keySet())
 //            System.out.println(key);
     }

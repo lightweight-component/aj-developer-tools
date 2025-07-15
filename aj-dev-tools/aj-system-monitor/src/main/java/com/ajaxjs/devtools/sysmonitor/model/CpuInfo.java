@@ -11,7 +11,7 @@ import lombok.Data;
  * CPU 信息
  */
 @Data
-public class CpuInfo  {
+public class CpuInfo {
     /**
      * 物理处理器数量
      */
