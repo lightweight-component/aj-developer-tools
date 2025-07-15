@@ -10,9 +10,6 @@
     <modules>
         <module>aj-system-monitor</module>
         <module>aj-jmx-monitor</module>
-        <module>aj-jmx-monitor</module>
         <module>aj-spring-monitor</module>
-  <!--      <module>aj-database-doc</module>-->
-        <module>aj-mysql-tools</module>
     </modules>
 </project>
