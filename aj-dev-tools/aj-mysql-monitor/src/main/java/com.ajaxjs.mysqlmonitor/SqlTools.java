@@ -1,7 +1,5 @@
 package com.ajaxjs.mysqlmonitor;
 
-import com.ajaxjs.data.CRUD;
-
 import java.util.List;
 import java.util.Map;
 
