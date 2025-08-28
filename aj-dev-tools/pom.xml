@@ -12,5 +12,6 @@
         <module>aj-jmx-monitor</module>
         <module>aj-spring-monitor</module>
         <module>aj-mysql-monitor</module>
+        <module>hot-cpu</module>
     </modules>
 </project>
