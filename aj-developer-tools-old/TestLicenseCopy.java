@@ -11,7 +11,7 @@ public class TestLicenseCopy {
     @Test
     public void test() {
         try {
-            new LicenseCopyUtils().processLicenseHeader(new File("src/main/java"), new FileInputStream("license.txt"), "UTF-8");
+            new LicenseCopyUtils().processLicenseHeader(new File("src/main/java"), new FileInputStream("license.txt"), CommonConstant.UTF8);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
