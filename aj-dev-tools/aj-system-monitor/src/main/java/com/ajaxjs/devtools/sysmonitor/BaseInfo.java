@@ -73,11 +73,17 @@ public class BaseInfo {
      */
     public static String formatByte(long byteNumber) {
         double FORMAT = 1024.0, kbNumber = byteNumber / FORMAT;
-        if (kbNumber < FORMAT) return decimalFormat("#.##KB", kbNumber);
+
+        if (kbNumber < FORMAT)
+            return decimalFormat("#.##KB", kbNumber);
+
         double mbNumber = kbNumber / FORMAT;
-        if (mbNumber < FORMAT) return decimalFormat("#.##MB", mbNumber);
+        if (mbNumber < FORMAT)
+            return decimalFormat("#.##MB", mbNumber);
+
         double gbNumber = mbNumber / FORMAT;
-        if (gbNumber < FORMAT) return decimalFormat("#.##GB", gbNumber);
+        if (gbNumber < FORMAT)
+            return decimalFormat("#.##GB", gbNumber);
 
         return decimalFormat("#.##TB", gbNumber / FORMAT);
     }

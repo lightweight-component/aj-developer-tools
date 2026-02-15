@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 /**
- * 利用runtime.exec()获取CPU利用率、内存使用情况及CPU温度
+ * 利用 runtime.exec() 获取CPU利用率、内存使用情况及CPU温度
  *
  * @author <a href="https://blog.csdn.net/hj7jay/article/details/51979939">...</a>
  */
@@ -92,6 +92,5 @@ public class LinuxSystemTool {
             log.warn("Errors when getting CPU info.", e);
             return 0;
         }
-
     }
 }

@@ -116,7 +116,8 @@ public class OshiSystemMonitor {
             double usedSize = (total - usable);
             double usePercent = 0;
 
-            if (total > 0) usePercent = BaseInfo.formatDouble(usedSize / total * 100);
+            if (total > 0)
+                usePercent = BaseInfo.formatDouble(usedSize / total * 100);
 
             diskInfo.setUsePercent(usePercent);
             diskInfoList.add(diskInfo);
@@ -142,8 +143,7 @@ public class OshiSystemMonitor {
             txPacketsBegin += net.getPacketsSent();
         }
 
-        // 暂停3秒
-        Utils.sleep(3);
+        Utils.sleep(3);  // 暂停3秒
 
         List<NetworkIF> listEnd = hal.getNetworkIFs();
         for (NetworkIF net : listEnd) {
@@ -168,7 +168,7 @@ public class OshiSystemMonitor {
     }
 
     /**
-     * 获取操作系统信息 <code>
+     * 获取操作系统信息 <pre>{@code
      * System.out.println("manufacturer: " + computerSystem.getManufacturer());
      * System.out.println("model: " + computerSystem.getModel());
      * System.out.println("serialnumber: " + computerSystem.getSerialNumber());
@@ -184,13 +184,13 @@ public class OshiSystemMonitor {
      * System.out.println("  model: " + baseboard.getModel());
      * System.out.println("  version: " + baseboard.getVersion());
      * System.out.println("  serialnumber: " + baseboard.getSerialNumber());
-     * </code>
+     * }
+     * </pre>
      */
     public Map<String, Object> getComputerSystem() {
         ComputerSystem computerSystem = getHardwareAbstractionLayer().getComputerSystem();// 获取硬件抽象层信息
-
-        final Firmware firmware = computerSystem.getFirmware();
-        final Baseboard baseboard = computerSystem.getBaseboard();
+        Firmware firmware = computerSystem.getFirmware();
+        Baseboard baseboard = computerSystem.getBaseboard();
 
         return new HashMap<String, Object>() {
             private static final long serialVersionUID = 1L;
@@ -273,10 +273,9 @@ public class OshiSystemMonitor {
         List<OSProcess> processList = systemInfo.getOperatingSystem().getProcesses(null, OperatingSystem.ProcessSorting.CPU_DESC, 10);
         List<String> strList = new ArrayList<>();
 
-        for (OSProcess process : processList) {
+        for (OSProcess process : processList)
             // 进程名，进程ID，进程CPU使用率
             strList.add(String.format("name:%s PID: %d CPU:%.3f", process.getName(), process.getProcessID(), process.getProcessCpuLoadCumulative()));
-        }
 
         return strList;
     }

@@ -143,7 +143,8 @@ public class JmxHelper {
             node.setFullName(entry.getValue().getCanonicalName());
             List<Node> subNodes = getObjectNamesByType(msc, domain, entry.getKey());
 
-            if (subNodes.size() > 1) node.setChildren(subNodes);
+            if (subNodes.size() > 1)
+                node.setChildren(subNodes);
 
             nodes.add(node);
         }
