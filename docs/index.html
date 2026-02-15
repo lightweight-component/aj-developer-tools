@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+        <title>AJ Security/Introduction</title>
+        <meta name="description" content="A Practical Java Web Security Library. Introduction"/>
+        <meta name="keywords" content="security, xss, csrf, captcha, Introduction"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <link rel="stylesheet" href="https://framework.ajaxjs.com/static/new-ui/css/common.css" />
+        <link rel="stylesheet" href="https://iam.ajaxjs.com/asset/main.css"/>
+        <link rel="icon" type="image/png" href="/asset/favicon.ico"/>
+        <script src="https://framework.ajaxjs.com/static/aj-docs/common.js"></script>
+        <script>
+            // 获取用户的默认语言
+            var userLang = navigator.language || navigator.userLanguage;
+
+            // 检查是否为中文环境（包括简体和繁体）
+            if (userLang.startsWith('zh') && location.pathname.indexOf('cn') == -1) {
+                 confirm('欢迎！您可以改为访问中文内容。是否继续？') && location.assign('/cn');  // 如果是中文，则弹出提示
+            }
+
+            var _hmt = _hmt || [];
+            (function() {
+              var hm = document.createElement("script");
+              hm.src = "https://hm.baidu.com/hm.js?734ea877e4a740968e40994221d9c877";
+              var s = document.getElementsByTagName("script")[0];
+              s.parentNode.insertBefore(hm, s);
+            })();
+        </script>
+    </head>
+    <body>
+        <nav>
+            <div>
+                <div class="links">
+                    <a href="/">🏠 Home</a>
+                    | ⚙️ Source:
+                    <a target="_blank" href="https://github.com/lightweight-component/aj-security">Github</a>/<a target="_blank" href="https://gitcode.com/lightweight-component/aj-security">Gitcode</a>
+                    |
+                    <a href="/cn">Chinese Version</a>
+                </div>
+                <h1><img src="/asset/imgs/icon.png" style="vertical-align: middle;height: 35px;margin-bottom: 6px;" /> AJ DataService</h1>
+                <h3>User Manual</h3>
+            </div>
+        </nav>
+        <div>
+            <menu>
+                <ul>
+                    <li class="selected">
+                        <a href="/">Home</a>
+                    </li>
+                </ul>
+            </menu>
+            <article class="aj-text">
+                <h1>AJ DataService Introduction</h1>
+<p><a name="intro"></a></p>
+<h4>Quickly build CRUD interface services by writing SQL business logic (or even no code at
+all!)</h4> <p style="text-align: right; font-style: italic;">— The easiest way: zero code. Configure parameters on the
+page, SQL is automatically generated and converted into HTTP
+API.</p> <img class="content" style="border: 1px solid #ccc;" src="asset/imgs/ds.jpg" title="Main Management Interface" /> <p style="text-align: center;"><a href="../../../demo/data-service" target="_blank">
+Try the Demo</a>, Account: admin, Password: 123123</p> <p> In Java enterprise development, writing Model, DAO, Service,
+and Controller code is often a tedious and repetitive task. AJ DataService was created to solve this problem. Depending
+on the complexity of the business logic, DataService can be used in the following three modes: </p> <ul> <li><strong>
+Basic data</strong>: These tables typically have little or only simple business logic. You can use DataService to create
+generic CRUD services.</li> <li><strong>Custom business logic</strong>: Not limited to simple CRUD, but can still be
+implemented using SQL. No need to write additional Java business code. Particularly suitable for backend interface
+development for BI reports or data visualization dashboards.</li> <li><strong>Complex business logic</strong>: Requires
+both Java and SQL working together. In this case, DataService can still act as an ORM mechanism, functioning as a Data
+Access Object (DAO) that returns Java Bean entities.</li> </ul> <p> DataService is not a code generator. More
+accurately, it abstracts common CRUD tasks and makes them configurable, serving as a rapid business development
+tool. </p> 
+            </article>
+        </div>
+        <footer>
+            AJ DataService, a part of
+            <a href="https://framework.ajaxjs.com" target="_blank">AJ-Framework</a>
+            open source. Mail:frank@ajaxjs.com, visit
+            <a href="https://blog.csdn.net/zhangxin09" target="_blank">my blog(In Chinese)</a>. <br/> <br/> Copyright © 2025 Frank Cheung. All rights reserved.
+        </footer>
+    </body>
+</html>

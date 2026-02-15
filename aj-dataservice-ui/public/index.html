@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Data Serivce</title>
+  <link rel="icon" type="image/x-icon" href="/assets/icon.png" />
+  <script>
+    (function() {
+      var currentHostname = window.location.hostname;
+
+        // 判断主机名是否是内网地址
+        if (currentHostname.startsWith('192.168.') || currentHostname.startsWith('10.') || currentHostname === 'localhost')
+        window.config = {
+          dsApiRoot: '/api',
+          IAM_ApiRoot: 'http://127.0.0.1:8888/iam',
+          loginUrl: 'http://127.0.0.1:8088/base/user/login', // 登录页面地址
+          thisPageUrl: 'http://localhost:8080' // 当前 页面、前端的地址
+        };
+      else
+        window.config = {
+          dsApiRoot: 'https://base.ajaxjs.com/cjg',
+          IAM_ApiRoot: 'http://127.0.0.1:8888/iam',
+          loginUrl: 'https://base.ajaxjs.com/cjg/user/login',
+          thisPageUrl: 'https://dev.ajaxjs.com/demo/data-service'
+        };
+      })();
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+</body>
+</html>

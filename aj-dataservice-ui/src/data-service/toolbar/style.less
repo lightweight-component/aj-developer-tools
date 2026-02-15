@@ -1,0 +1,51 @@
+.toolbar {
+    border-bottom: 1px solid white;
+    padding: 2px 15px;
+    padding-top: 12px;
+    background-color: #eaeaea;
+    background-image: linear-gradient(#fefefe, #e6e6e6);
+    text-shadow: 1px 1px 1px white;
+
+    li {
+        width: 50px;
+        text-align: center;
+        list-style: none;
+        color: gray;
+
+        display: inline-block;
+        margin-right: 20px;
+
+        &:hover {
+            .text {
+                color: black;
+            }
+
+            .icon {
+                border-color: gray;
+            }
+
+            cursor: pointer;
+        }
+
+        .icon {
+            width: 32px;
+            border-radius: 3px;
+            box-shadow: 1px 1px 1px white;
+            border: 1px solid lightgray;
+            margin: 0 auto;
+            margin-bottom: 5px;
+        }
+
+        .text {
+            font-size: .73rem;
+        }
+
+        &.disabled {
+
+            i,
+            .text {
+                color: lightgray !important;
+            }
+        }
+    }
+}

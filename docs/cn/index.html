@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+        <title>数据服务 AJ DataService-首页</title>
+        <meta name="description" content="数据服务 简介"/>
+        <meta name="keywords" content="dataservice, aj-dataservice, crud, 数据服务, 简介"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap&family=Noto+Sans+SC:wght@100..900&display=swap" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" />
+        <link rel="stylesheet" href="https://framework.ajaxjs.com/static/new-ui/css/common.css" />
+        <link rel="stylesheet" href="https://iam.ajaxjs.com/asset/main.css"/>
+        <script src="https://framework.ajaxjs.com/static/aj-docs/common.js"></script>
+        <link rel="icon" type="image/png" href="/asset/favicon.ico"/>
+
+        <script>
+            var _hmt = _hmt || [];
+            (function() {
+              var hm = document.createElement("script");
+              hm.src = "https://hm.baidu.com/hm.js?734ea877e4a740968e40994221d9c877";
+              var s = document.getElementsByTagName("script")[0];
+              s.parentNode.insertBefore(hm, s);
+            })();
+        </script>
+    </head>
+    <body>
+        <nav>
+            <div>
+                <div class="links">
+                    <a href="/">🏠 首页</a>
+                    | ⚙️ 源码:
+                    <a target="_blank" href="https://github.com/lightweight-component/aj-smart-code-platform">Github</a>/<a target="_blank" href="https://gitcode.com/lightweight-component/aj-smart-code-platform">Gitcode</a>
+                    |
+                    <a href="/">英文版本</a>
+                </div>
+                <h1><img src="/asset/imgs/icon.png" style="vertical-align: middle;height: 35px;margin-bottom: 6px;" /> 数据服务 AJ DataService</h1>
+                <h3>一站式快速 CRUD 服务</h3>
+            </div>
+        </nav>
+        <div>
+            <menu>
+                <ul>
+                    <li class="selected">
+                        <a href="/cn">首页</a>
+                    </li>
+                    <li>
+                        <a href="/spec-cn">特点</a>
+                    </li>
+                </ul>
+                <h3>安装</h3>
+                <ul>
+                    <li>
+                        <a href="/install/install-cn">安装</a>
+                    </li>
+                    <li>
+                       <a href="/install/spring-cn">与 Spring 集成</a>
+                    </li>
+                    <li>
+                       <a href="/install/ui-cn">前端程序</a>
+                    </li>
+                </ul>
+                <h3>使用操作入门</h3>
+                <ul>
+                      <li>
+                           <a href="/tour/basic-cn">基本概念</a>
+                      </li>
+                </ul>
+
+                <h3>其他</h3>
+                <ul>
+                    <li><a href="/misc/contact-cn">联系</a></li>
+                </ul>
+
+            </menu>
+            <article class="aj-text chinese">
+                <h1>数据服务 AJ DataService 简介</h1>
+<p><a name="intro"></a></p>
+<h4>只需写 SQL 业务逻辑（甚至零代码不写！），即可快速搭建 CRUD 接口服务</h4>
+<p style="text-align: right;font-style: italic;">——最简单的方式：零代码，在页面上配置好参数，自动生成 SQL 并且直接转化成 HTTP API。</p>
+<img class="content" style="border: 1px solid #ccc;" src="../asset/imgs/ds.jpg" title="管理主界面" />
+<p style="text-align: center;"><a href="../../../demo/data-service" target="_blank">进入演示</a>，账号：admin，密码：123123</p>
+<p>
+Java 企业级开发中，要写 Model、DAO、Service 和 Controller 代码是一件非常繁琐的事情，里面存在着大量的重复工作，DataService
+就是为了解决这个问题而生的。按照业务复杂程度的递进，可分为以下三种 DataService 的应用模式：
+</p>
+<ul>
+  <li>大量的基础数据。这类数据表的特点是没什么或少量常见的业务逻辑，采用 DataService 创建通用的 CRUD 服务即可完成。</li>
+  <li>自定义的业务逻辑，并非简单的 CRUD，但通过 SQL 仍能实现，不用额外写 Java 的业务代码，尤其适用于 BI 报表、数据可视化大屏的后端接口开发。</li>
+  <li>复杂的业务逻辑，需 Java+SQL 协力完成。这时 DataService 仍能作为一种 ORM 机制出现，相当于一个 Data Access Object，返回 Java Bean 实体。
+  </li>
+</ul>
+<p>DataService 不是代码生成器，更直观地说它是把一切常见 CRUD 工作抽象化，然后使之可配置化的快速业务开发工具。</p>
+<h2>源代码</h2>
+<p>本项目采用 Apache License 协议开源。</p>
+<ul>
+<li>GitHub
+地址：<a href="https://github.com/lightweight-component/aj-smart-code-platform">https://github.com/lightweight-component/aj-smart-code-platform</a></li>
+<li>GitCode
+地址（适合中国用户快速访问）：<a href="https://gitcode.com/lightweight-component/aj-security">https://gitcode.com/lightweight-component/aj-security</a></li>
+</ul>
+<h2>相关链接</h2>
+<p><a href="https://dataservice.ajaxjs.com">官网</a> | <a href="https://javadoc.io/doc/com.ajaxjs/aj-security">JavaDoc</a> | <a href="https://deepwiki.com/lightweight-component/aj-security">DeepWiki 页面</a></p>
+
+            </article>
+        </div>
+        <footer>
+             AJ DataService，开源框架 <a href="https://framework.ajaxjs.com" target="_blank">AJ-Framework</a> 的一部分。联系方式：
+             frank@ajaxjs.com，<a href="https://blog.csdn.net/zhangxin09" target="_blank">作者博客</a>
+             <br />
+             <br />
+             Copyright © 2025 Frank Cheung. All rights reserved.
+         </footer>
+    </body>
+</html>

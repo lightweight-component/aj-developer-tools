@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+        <title>AJ Security/Installation and Configuration</title>
+        <meta name="description" content="A Practical Java Web Security Library. Installation and Configuration"/>
+        <meta name="keywords" content="security, xss, csrf, captcha, Installation,Configuration"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <link rel="stylesheet" href="https://framework.ajaxjs.com/static/new-ui/css/common.css" />
+        <link rel="stylesheet" href="https://iam.ajaxjs.com/asset/main.css"/>
+        <link rel="icon" type="image/png" href="/asset/favicon.ico"/>
+        <script src="https://framework.ajaxjs.com/static/aj-docs/common.js"></script>
+        <script>
+            // 获取用户的默认语言
+            var userLang = navigator.language || navigator.userLanguage;
+
+            // 检查是否为中文环境（包括简体和繁体）
+            if (userLang.startsWith('zh') && location.pathname.indexOf('cn') == -1) {
+                 confirm('欢迎！您可以改为访问中文内容。是否继续？') && location.assign('/cn');  // 如果是中文，则弹出提示
+            }
+
+            var _hmt = _hmt || [];
+            (function() {
+              var hm = document.createElement("script");
+              hm.src = "https://hm.baidu.com/hm.js?734ea877e4a740968e40994221d9c877";
+              var s = document.getElementsByTagName("script")[0];
+              s.parentNode.insertBefore(hm, s);
+            })();
+        </script>
+    </head>
+    <body>
+        <nav>
+            <div>
+                <div class="links">
+                    <a href="/">🏠 Home</a>
+                    | ⚙️ Source:
+                    <a target="_blank" href="https://github.com/lightweight-component/aj-security">Github</a>/<a target="_blank" href="https://gitcode.com/lightweight-component/aj-security">Gitcode</a>
+                    |
+                    <a href="/cn">Chinese Version</a>
+                </div>
+                <h1><img src="/asset/imgs/icon.png" style="vertical-align: middle;height: 35px;margin-bottom: 6px;" /> AJ DataService</h1>
+                <h3>User Manual</h3>
+            </div>
+        </nav>
+        <div>
+            <menu>
+                <ul>
+                    <li class="selected">
+                        <a href="/">Home</a>
+                    </li>
+                </ul>
+            </menu>
+            <article class="aj-text">
+                <h1>Installation</h1>
+<p>This component integrates seamlessly with Spring Boot applications. After adding the dependency, you can use it in your Spring Boot project. Maven coordinates:</p>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;com.ajaxjs&lt;/groupId&gt;
+    &lt;artifactId&gt;aj-security&lt;/artifactId&gt;
+    &lt;version&gt;1.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>It has been tested on Java 8 + SpringBoot 2.7.</p>
+<p>Currently, non-Spring applications are not supported. If you want to use it in a traditional Spring MVC application, you may need to modify related configuration mechanisms accordingly.</p>
+<h2>Demo Application</h2>
+<p>We provide a <a href="https://gitcode.com/lightweight-component/aj-security/tree/main/aj-security-samples">Sample Demo</a> in the source code for installation and configuration reference. It also serves as part of the test cases and includes demonstrations of all security components. Browse the source code in the <code>aj-security-samples</code> directory; this is a standard SpringBoot v2.7 project.<br>
+To start the demo, simply run the <code>main()</code> function of the <code>FooApp</code> class.</p>
+<h1>Configuration</h1>
+<p>Developers mainly interact with AJ Security through configuration files. Add the following content to the Spring configuration YAML file <code>application.yml</code>:</p>
+<pre><code>security:
+  HttpReferer: # Referer interception
+    globalCheck: false # Global check
+    enabled: true
+    allowedReferrers:
+      - https://example.com
+      - https://another-example.com
+      - https://my-site.com
+
+  TimeSignature: # Timestamp control
+    enabled: true
+    secretKey: der3@x7Az#2 # Secret key, required
+
+  IpList: # IP whitelist/blacklist
+    globalCheck: false # Global check
+    enabled: true
+    whiteList:
+      - 192.168.1.1
+      - 192.168.1.2
+
+  HttpBasicAuth: # HTTP Basic Authentication
+    globalCheck: true # Global check
+    enabled: false
+    username: admin
+    password: admin
+
+  HttpDigestAuth: # HTTP Digest Authentication
+    globalCheck: true # Global check
+    enabled: false
+    username: admin
+    password: admin2
+  EncryptedBody:
+    publicKey: MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCmkKluNutOWGmAK2U80hM9JtzsgLAlgvHqncakqwhruE9TIXUQFDRKsIBQwN+3rLC76kyOl4U+eBefLaGQGJBZVq0qwIHBe4kfH0eJXaHyG/i9H2Iph1cyY6cn6ocPta6ZmSuOIcx4yLlpCgq5eDRigHs0AR418ZTlRItlhrY9+wIDAQAB
+    privateKey: MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAKaQqW42605YaYArZTzSEz0m3OyAsCWC8eqdxqSrCGu4T1MhdRAUNEqwgFDA37essLvqTI6XhT54F58toZAYkFlWrSrAgcF7iR8fR4ldofIb+L0fYimHVzJjpyfqhw+1rpmZK44hzHjIuWkKCrl4NGKAezQBHjXxlOVEi2WGtj37AgMBAAECgYBj9sX4o3UtG9qVVXX4votVVBGaztDocmIF0JL7GLqBC6hv19CNydJoUO1xiY+6iCW5YbB4k28gQqrKmXQxKszWFdd1NTHOKS3nti8I2QNc4T9FF34YvYh/WQlRw7dHmYUl/MCm6U6yVE7XK8GoYYOyAyclXuFR+SRw8/gHsoAYoQJBAPQ3L+K47QSujMSzu8ZcdRingN25VS8r790A18WNxtK9l/7b3l8aTUXmeGcjLpQDnx158jQ32fTUki5aa2eGDp0CQQCumkCpTgcvx0Ys66aXKnpaexWGWDK/ui9hY7lRdd2XijK30Uo2TlQ1ujXYjodbJJUAELE3UAC+0yj8W8Edf093AkAzrHWyaGSmZ/SbLlieCTQxqkenIq72kzpmreX6BBy8vKcrowQzZVJSZwi08gnKAdYqG4J3MBYrKstfiXxOZFw1AkA6+3radrRwzHWFWTnWmQ/qHug/kO3b3M6CrMh+nz1zIslNVVMnk0BZQgVMmaFaBbqb4gerssf9rqGK1ogfKdGzAkBQzGcbSAtTlCAMNMnOXphIvFQ/GnxlPwwr23ysyt0k14SOwGNfND4rXM2rTzjz+2yF20tGdGgmXfwnvKOaCc1N
+    enabled: true
+  ParamsSign:
+    enabled: true
+    secretKey: der3@x7Az42
+</code></pre>
+<p>You can see that there are configuration options for each security component under <code>security</code>.<br>
+Abstractly, there are two common configuration options for each component: <code>enabled</code> and <code>globalCheck</code>.</p>
+<ul>
+<li><code>enabled</code>: Whether to activate this component. If set to <code>false</code>, the component will not run. We have agreed that as long as a component's <code>enabled</code> property is set to true, the component will be activated; otherwise, it will not run (and related objects will not even be created, in order to save resources).</li>
+<li><code>globalCheck</code>: Whether to perform a global check. If set to <code>true</code>, all requests will be checked by this component; if <code>false</code>, only requests matching specific URLs will be checked. The matching method is declared via annotations on Spring controllers, for example:</li>
+</ul>
+<pre><code class="language-java">@GetMapping(&quot;/HttpRefererCheck&quot;)
+@HttpRefererCheck
+int HttpRefererCheck();
+</code></pre>
+<p>For detailed configuration of each component, please refer to the respective chapters.</p>
+<h2>Basic Detail</h2>
+<p>We provide more than ten different security components, all of which are deeply integrated with the Spring framework. We make full use of Spring's extensible architecture and flexible configuration mechanisms.</p>
+<p>Most components are implemented using <code>HandlerInterceptor</code>, while some special components utilize <code>HandlerMethodArgumentResolver</code>, traditional Servlet <code>Filter</code>, or <code>HttpMessageConverter</code>.</p>
+
+            </article>
+        </div>
+        <footer>
+            AJ DataService, a part of
+            <a href="https://framework.ajaxjs.com" target="_blank">AJ-Framework</a>
+            open source. Mail:frank@ajaxjs.com, visit
+            <a href="https://blog.csdn.net/zhangxin09" target="_blank">my blog(In Chinese)</a>. <br/> <br/> Copyright © 2025 Frank Cheung. All rights reserved.
+        </footer>
+    </body>
+</html>

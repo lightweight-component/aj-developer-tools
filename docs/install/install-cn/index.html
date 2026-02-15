@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+        <title>数据服务 AJ DataService-安装与配置</title>
+        <meta name="description" content="数据服务 安装与配置"/>
+        <meta name="keywords" content="dataservice, aj-dataservice, crud, 数据服务, 安装,配置"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap&family=Noto+Sans+SC:wght@100..900&display=swap" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" />
+        <link rel="stylesheet" href="https://framework.ajaxjs.com/static/new-ui/css/common.css" />
+        <link rel="stylesheet" href="https://iam.ajaxjs.com/asset/main.css"/>
+        <script src="https://framework.ajaxjs.com/static/aj-docs/common.js"></script>
+        <link rel="icon" type="image/png" href="/asset/favicon.ico"/>
+
+        <script>
+            var _hmt = _hmt || [];
+            (function() {
+              var hm = document.createElement("script");
+              hm.src = "https://hm.baidu.com/hm.js?734ea877e4a740968e40994221d9c877";
+              var s = document.getElementsByTagName("script")[0];
+              s.parentNode.insertBefore(hm, s);
+            })();
+        </script>
+    </head>
+    <body>
+        <nav>
+            <div>
+                <div class="links">
+                    <a href="/">🏠 首页</a>
+                    | ⚙️ 源码:
+                    <a target="_blank" href="https://github.com/lightweight-component/aj-smart-code-platform">Github</a>/<a target="_blank" href="https://gitcode.com/lightweight-component/aj-smart-code-platform">Gitcode</a>
+                    |
+                    <a href="/">英文版本</a>
+                </div>
+                <h1><img src="/asset/imgs/icon.png" style="vertical-align: middle;height: 35px;margin-bottom: 6px;" /> 数据服务 AJ DataService</h1>
+                <h3>一站式快速 CRUD 服务</h3>
+            </div>
+        </nav>
+        <div>
+            <menu>
+                <ul>
+                    <li class="selected">
+                        <a href="/cn">首页</a>
+                    </li>
+                    <li>
+                        <a href="/spec-cn">特点</a>
+                    </li>
+                </ul>
+                <h3>安装</h3>
+                <ul>
+                    <li>
+                        <a href="/install/install-cn">安装</a>
+                    </li>
+                    <li>
+                       <a href="/install/spring-cn">与 Spring 集成</a>
+                    </li>
+                    <li>
+                       <a href="/install/ui-cn">前端程序</a>
+                    </li>
+                </ul>
+                <h3>使用操作入门</h3>
+                <ul>
+                      <li>
+                           <a href="/tour/basic-cn">基本概念</a>
+                      </li>
+                </ul>
+
+                <h3>其他</h3>
+                <ul>
+                    <li><a href="/misc/contact-cn">联系</a></li>
+                </ul>
+
+            </menu>
+            <article class="aj-text chinese">
+                <h1>安装与配置</h1>
+<h2>系统要求</h2>
+<ul>
+<li>Java 8 及以上，Spring 5.0 及以上</li>
+<li>MySQL 8 及以上，当前配置只支持 MySQL 数据库，但 SQL 执行的数据不限 MySQL</li>
+<li>轻量级设计，对系统要求低，单核/512MB RAM 即可运行服务</li>
+</ul>
+<h2>下载与源码</h2>
+<p>AJ DataService 足够轻量级，包括依赖包在内的 JAR 包约 200 多kb。</p>
+<pre><code class="language-xml">&lt;!-- AJ-DataService --&gt;
+&lt;dependency&gt;
+  &lt;groupid&gt;com.ajaxjs&lt;/groupid&gt;
+  &lt;artifactid&gt;ajaxjs-data&lt;/artifactid&gt;
+  &lt;version&gt;1.2.1&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>数据服务依赖于 SqlMan 库，亦是本作者开源作品之一。访问 <a href="https://sqlman.ajaxjs.com">SqlMan</a> 官网获取更多信息。</p>
+<h2>初始化 SQL</h2>
+<p>数据服务依赖两张表<code>ds_common_api</code> 和<code>ds_project</code>作为配置数据表。在你的数据库中执行创建表的 DDL，或者执行<a href="">init-dataservice.sql</a> DDL。</p>
+<pre><code class="language-sql">CREATE TABLE `ds_common_api` (
+    `id` INT(10) NOT NULL AUTO_INCREMENT COMMENT '主键 id，自增',
+    `pid` INT(10) NULL DEFAULT '-1' COMMENT '父节点 id，如果是顶级节点为 -1 或者空',
+    `name` VARCHAR(90) NULL DEFAULT NULL COMMENT '说明',
+    `namespace` VARCHAR(50) NOT NULL COMMENT '命名空间，标识',
+    `table_name` VARCHAR(45) NULL DEFAULT NULL COMMENT '表名',
+    `type` VARCHAR(10) NULL DEFAULT NULL COMMENT '类型 SINGLE | CRUD',
+    `clz_name` VARCHAR(10) NULL DEFAULT NULL COMMENT '实体类引用名称',
+    `id_field` VARCHAR(10) NULL DEFAULT 'id' COMMENT '主键字段名称',
+    `sql` TEXT NULL DEFAULT NULL COMMENT '单条 SQL 命令',
+    `info_sql` TEXT NULL DEFAULT NULL COMMENT '查询详情的 SQL（可选的）',
+    `list_sql` TEXT NULL DEFAULT NULL COMMENT '查询列表的 SQL（可选的）',
+    `create_sql` TEXT NULL DEFAULT NULL COMMENT '创建的 SQL（可选的）',
+    `update_sql` TEXT NULL DEFAULT NULL COMMENT '修改的 SQL（可选的）',
+    `delete_sql` TEXT NULL DEFAULT NULL COMMENT '删除的 SQL（可选的）',
+    `del_field` VARCHAR(100) NULL DEFAULT 'stat' COMMENT '删除字段名称',
+    `has_is_deleted` TINYINT(1) NULL DEFAULT '1' COMMENT '是否有逻辑删除标记',
+    `tenant_isolation` TINYINT(3) UNSIGNED NULL DEFAULT NULL COMMENT '是否加入租户数据隔离',
+    `id_type` TINYINT(3) UNSIGNED NULL DEFAULT NULL COMMENT '1=自增；2=雪花；3=UUID',
+    `stat` TINYINT(3) UNSIGNED NULL DEFAULT '0' COMMENT '数据字典：状态',
+    `creator` VARCHAR(50) NULL DEFAULT NULL COMMENT '创建人名称（可冗余的）' ,
+    `creator_id` INT(10) NULL DEFAULT NULL COMMENT '创建人 id',
+    `create_date` DATETIME NOT NULL DEFAULT (now()) COMMENT '创建日期',
+    `updater` VARCHAR(50) NULL DEFAULT NULL COMMENT '修改人名称（可冗余的）',
+    `updater_id` INT(10) NULL DEFAULT NULL COMMENT '修改人 id',
+    `update_date` DATETIME NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP COMMENT '修改日期',
+    PRIMARY KEY (`id`) USING BTREE,
+    UNIQUE INDEX `id_UNIQUE` (`id`) USING BTREE
+)
+COMMENT='通用万能型 API 接口的配置'
+COLLATE='utf8mb4_unicode_ci'
+</code></pre>
+<pre><code class="language-sql">CREATE TABLE `ds_common_api` (
+    `id` INT(10) NOT NULL AUTO_INCREMENT COMMENT '主键 id，自增',
+    `pid` INT(10) NULL DEFAULT '-1' COMMENT '父节点 id，如果是顶级节点为 -1 或者空',
+    `name` VARCHAR(90) NULL DEFAULT NULL COMMENT '说明',
+    `namespace` VARCHAR(50) NOT NULL COMMENT '命名空间，标识',
+    `table_name` VARCHAR(45) NULL DEFAULT NULL COMMENT '表名',
+    `type` VARCHAR(10) NULL DEFAULT NULL COMMENT '类型 SINGLE | CRUD',
+    `clz_name` VARCHAR(10) NULL DEFAULT NULL COMMENT '实体类引用名称',
+    `id_field` VARCHAR(10) NULL DEFAULT 'id' COMMENT '主键字段名称',
+    `sql` TEXT NULL DEFAULT NULL COMMENT '单条 SQL 命令',
+    `info_sql` TEXT NULL DEFAULT NULL COMMENT '查询详情的 SQL（可选的）',
+    `list_sql` TEXT NULL DEFAULT NULL COMMENT '查询列表的 SQL（可选的）',
+    `create_sql` TEXT NULL DEFAULT NULL COMMENT '创建的 SQL（可选的）',
+    `update_sql` TEXT NULL DEFAULT NULL COMMENT '修改的 SQL（可选的）',
+    `delete_sql` TEXT NULL DEFAULT NULL COMMENT '删除的 SQL（可选的）',
+    `del_field` VARCHAR(100) NULL DEFAULT 'stat' COMMENT '删除字段名称',
+    `has_is_deleted` TINYINT(1) NULL DEFAULT '1' COMMENT '是否有逻辑删除标记',
+    `tenant_isolation` TINYINT(3) UNSIGNED NULL DEFAULT NULL COMMENT '是否加入租户数据隔离',
+    `id_type` TINYINT(3) UNSIGNED NULL DEFAULT NULL COMMENT '1=自增；2=雪花；3=UUID',
+    `stat` TINYINT(3) UNSIGNED NULL DEFAULT '0' COMMENT '数据字典：状态',
+    `creator` VARCHAR(50) NULL DEFAULT NULL COMMENT '创建人名称（可冗余的）' ,
+    `creator_id` INT(10) NULL DEFAULT NULL COMMENT '创建人 id',
+    `create_date` DATETIME NOT NULL DEFAULT (now()) COMMENT '创建日期',
+    `updater` VARCHAR(50) NULL DEFAULT NULL COMMENT '修改人名称（可冗余的）',
+    `updater_id` INT(10) NULL DEFAULT NULL COMMENT '修改人 id',
+    `update_date` DATETIME NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP COMMENT '修改日期',
+    PRIMARY KEY (`id`) USING BTREE,
+    UNIQUE INDEX `id_UNIQUE` (`id`) USING BTREE
+)
+COMMENT='通用万能型 API 接口的配置'
+COLLATE='utf8mb4_unicode_ci'
+</code></pre>
+<p>插入两笔新的数据，读取配置。</p>
+<pre><code class="language-sql">CREATE TABLE `ds_common_api` (
+    `id` INT(10) NOT NULL AUTO_INCREMENT COMMENT '主键 id，自增',
+    `pid` INT(10) NULL DEFAULT '-1' COMMENT '父节点 id，如果是顶级节点为 -1 或者空',
+    `name` VARCHAR(90) NULL DEFAULT NULL COMMENT '说明',
+    `namespace` VARCHAR(50) NOT NULL COMMENT '命名空间，标识',
+    `table_name` VARCHAR(45) NULL DEFAULT NULL COMMENT '表名',
+    `type` VARCHAR(10) NULL DEFAULT NULL COMMENT '类型 SINGLE | CRUD',
+    `clz_name` VARCHAR(10) NULL DEFAULT NULL COMMENT '实体类引用名称',
+    `id_field` VARCHAR(10) NULL DEFAULT 'id' COMMENT '主键字段名称',
+    `sql` TEXT NULL DEFAULT NULL COMMENT '单条 SQL 命令',
+    `info_sql` TEXT NULL DEFAULT NULL COMMENT '查询详情的 SQL（可选的）',
+    `list_sql` TEXT NULL DEFAULT NULL COMMENT '查询列表的 SQL（可选的）',
+    `create_sql` TEXT NULL DEFAULT NULL COMMENT '创建的 SQL（可选的）',
+    `update_sql` TEXT NULL DEFAULT NULL COMMENT '修改的 SQL（可选的）',
+    `delete_sql` TEXT NULL DEFAULT NULL COMMENT '删除的 SQL（可选的）',
+    `del_field` VARCHAR(100) NULL DEFAULT 'stat' COMMENT '删除字段名称',
+    `has_is_deleted` TINYINT(1) NULL DEFAULT '1' COMMENT '是否有逻辑删除标记',
+    `tenant_isolation` TINYINT(3) UNSIGNED NULL DEFAULT NULL COMMENT '是否加入租户数据隔离',
+    `id_type` TINYINT(3) UNSIGNED NULL DEFAULT NULL COMMENT '1=自增；2=雪花；3=UUID',
+    `stat` TINYINT(3) UNSIGNED NULL DEFAULT '0' COMMENT '数据字典：状态',
+    `creator` VARCHAR(50) NULL DEFAULT NULL COMMENT '创建人名称（可冗余的）' ,
+    `creator_id` INT(10) NULL DEFAULT NULL COMMENT '创建人 id',
+    `create_date` DATETIME NOT NULL DEFAULT (now()) COMMENT '创建日期',
+    `updater` VARCHAR(50) NULL DEFAULT NULL COMMENT '修改人名称（可冗余的）',
+    `updater_id` INT(10) NULL DEFAULT NULL COMMENT '修改人 id',
+    `update_date` DATETIME NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP COMMENT '修改日期',
+    PRIMARY KEY (`id`) USING BTREE,
+    UNIQUE INDEX `id_UNIQUE` (`id`) USING BTREE
+)
+COMMENT='通用万能型 API 接口的配置'
+COLLATE='utf8mb4_unicode_ci'
+</code></pre>
+
+            </article>
+        </div>
+        <footer>
+             AJ DataService，开源框架 <a href="https://framework.ajaxjs.com" target="_blank">AJ-Framework</a> 的一部分。联系方式：
+             frank@ajaxjs.com，<a href="https://blog.csdn.net/zhangxin09" target="_blank">作者博客</a>
+             <br />
+             <br />
+             Copyright © 2025 Frank Cheung. All rights reserved.
+         </footer>
+    </body>
+</html>

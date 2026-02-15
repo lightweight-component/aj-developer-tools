@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+        <title>数据服务 AJ DataService-安装与配置</title>
+        <meta name="description" content="数据服务 安装与配置"/>
+        <meta name="keywords" content="dataservice, aj-dataservice, crud, 数据服务, 安装,配置"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap&family=Noto+Sans+SC:wght@100..900&display=swap" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap" />
+        <link rel="stylesheet" href="https://framework.ajaxjs.com/static/new-ui/css/common.css" />
+        <link rel="stylesheet" href="https://iam.ajaxjs.com/asset/main.css"/>
+        <script src="https://framework.ajaxjs.com/static/aj-docs/common.js"></script>
+        <link rel="icon" type="image/png" href="/asset/favicon.ico"/>
+
+        <script>
+            var _hmt = _hmt || [];
+            (function() {
+              var hm = document.createElement("script");
+              hm.src = "https://hm.baidu.com/hm.js?734ea877e4a740968e40994221d9c877";
+              var s = document.getElementsByTagName("script")[0];
+              s.parentNode.insertBefore(hm, s);
+            })();
+        </script>
+    </head>
+    <body>
+        <nav>
+            <div>
+                <div class="links">
+                    <a href="/">🏠 首页</a>
+                    | ⚙️ 源码:
+                    <a target="_blank" href="https://github.com/lightweight-component/aj-smart-code-platform">Github</a>/<a target="_blank" href="https://gitcode.com/lightweight-component/aj-smart-code-platform">Gitcode</a>
+                    |
+                    <a href="/">英文版本</a>
+                </div>
+                <h1><img src="/asset/imgs/icon.png" style="vertical-align: middle;height: 35px;margin-bottom: 6px;" /> 数据服务 AJ DataService</h1>
+                <h3>一站式快速 CRUD 服务</h3>
+            </div>
+        </nav>
+        <div>
+            <menu>
+                <ul>
+                    <li class="selected">
+                        <a href="/cn">首页</a>
+                    </li>
+                    <li>
+                        <a href="/spec-cn">特点</a>
+                    </li>
+                </ul>
+                <h3>安装</h3>
+                <ul>
+                    <li>
+                        <a href="/install/install-cn">安装</a>
+                    </li>
+                    <li>
+                       <a href="/install/spring-cn">与 Spring 集成</a>
+                    </li>
+                    <li>
+                       <a href="/install/ui-cn">前端程序</a>
+                    </li>
+                </ul>
+                <h3>使用操作入门</h3>
+                <ul>
+                      <li>
+                           <a href="/tour/basic-cn">基本概念</a>
+                      </li>
+                </ul>
+
+                <h3>其他</h3>
+                <ul>
+                    <li><a href="/misc/contact-cn">联系</a></li>
+                </ul>
+
+            </menu>
+            <article class="aj-text chinese">
+                <h1>安装</h1>
+<p>本组件与 Spring Boot 程序无缝衔接。添加依赖后，即可在 Spring Boot 项目中使用。Maven 坐标：</p>
+<pre><code class="language-xml">
+&lt;dependency&gt;
+    &lt;groupId&gt;com.ajaxjs&lt;/groupId&gt;
+    &lt;artifactId&gt;aj-security&lt;/artifactId&gt;
+    &lt;version&gt;1.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>在 Java 8 + SpringBoot2.7 通过测试。</p>
+<p>当前不支持非 Spring 程序。如果要在传统 Spring MVC 程序中使用，可能要针对配置的相关机制进行修改。</p>
+<h2>演示程序</h2>
+<p>我们于源码中附带有<a href="https://gitcode.com/lightweight-component/aj-security/tree/main/aj-security-samples">演示程序 Sample</a>
+可供安装配置参考，同时也作为测试用例的一部分，包含了各个安全组件的演示。浏览源码<code>aj-security-samples</code>目录，这是一个标准的
+SpringBoot v2.7 工程。
+执行<code>FooApp</code>类的<code>main()</code>函数即可启动该演示程序。</p>
+<h1>配置</h1>
+<p>开发者与 AJ Security 打交道更多是通过配置文件进行配置的。在 Spring 配置 YAML 文件<code>application.yml</code>中添加如下内容：</p>
+<pre><code>security:
+  HttpReferer: # Referer 拦截
+    globalCheck: false # 全局检查
+    enabled: true
+    allowedReferrers:
+      - https://example.com
+      - https://another-example.com
+      - https://my-site.com
+
+  TimeSignature: # 时间戳控制
+    enabled: true
+    secretKey: der3@x7Az#2 # 密钥，必填的
+
+  IpList: # ip 白名单/黑名单
+    globalCheck: false # 全局检查
+    enabled: true
+    whiteList:
+      - 192.168.1.1
+      - 192.168.1.2
+
+  HttpBasicAuth: # HTTP Basic 认证
+    globalCheck: true # 全局检查
+    enabled: false
+    username: admin
+    password: admin
+
+  HttpDigestAuth: # HTTP Digest 认证
+    globalCheck: true # 全局检查
+    enabled: false
+    username: admin
+    password: admin2
+  EncryptedBody:
+    publicKey: MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCmkKluNutOWGmAK2U80hM9JtzsgLAlgvHqncakqwhruE9TIXUQFDRKsIBQwN+3rLC76kyOl4U+eBefLaGQGJBZVq0qwIHBe4kfH0eJXaHyG/i9H2Iph1cyY6cn6ocPta6ZmSuOIcx4yLlpCgq5eDRigHs0AR418ZTlRItlhrY9+wIDAQAB
+    privateKey: MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAKaQqW42605YaYArZTzSEz0m3OyAsCWC8eqdxqSrCGu4T1MhdRAUNEqwgFDA37essLvqTI6XhT54F58toZAYkFlWrSrAgcF7iR8fR4ldofIb+L0fYimHVzJjpyfqhw+1rpmZK44hzHjIuWkKCrl4NGKAezQBHjXxlOVEi2WGtj37AgMBAAECgYBj9sX4o3UtG9qVVXX4votVVBGaztDocmIF0JL7GLqBC6hv19CNydJoUO1xiY+6iCW5YbB4k28gQqrKmXQxKszWFdd1NTHOKS3nti8I2QNc4T9FF34YvYh/WQlRw7dHmYUl/MCm6U6yVE7XK8GoYYOyAyclXuFR+SRw8/gHsoAYoQJBAPQ3L+K47QSujMSzu8ZcdRingN25VS8r790A18WNxtK9l/7b3l8aTUXmeGcjLpQDnx158jQ32fTUki5aa2eGDp0CQQCumkCpTgcvx0Ys66aXKnpaexWGWDK/ui9hY7lRdd2XijK30Uo2TlQ1ujXYjodbJJUAELE3UAC+0yj8W8Edf093AkAzrHWyaGSmZ/SbLlieCTQxqkenIq72kzpmreX6BBy8vKcrowQzZVJSZwi08gnKAdYqG4J3MBYrKstfiXxOZFw1AkA6+3radrRwzHWFWTnWmQ/qHug/kO3b3M6CrMh+nz1zIslNVVMnk0BZQgVMmaFaBbqb4gerssf9rqGK1ogfKdGzAkBQzGcbSAtTlCAMNMnOXphIvFQ/GnxlPwwr23ysyt0k14SOwGNfND4rXM2rTzjz+2yF20tGdGgmXfwnvKOaCc1N
+    enabled: true
+  ParamsSign:
+    enabled: true
+    secretKey: der3@x7Az42
+</code></pre>
+<p>可见在<code>security</code>中有各个安全组件的配置。抽象来看，主要有个配置是各个组件共用的，分别是<code>enabled</code>与<code>globalCheck</code>。</p>
+<ul>
+<li><code>enabled</code>是否激活该组件。若为<code>false</code>则不运行该组件。我们约定，只要某组件的<code>enabled</code>为<code>true</code>，则该组件会运行，否则不运行（而且不创建相关对象，以节省资源）</li>
+<li><code>globalCheck</code>是否全局检查。若为<code>true</code>则所有请求都会检查该组件，若为<code>false</code>则只有匹配 URL 的请求才会检查该组件。匹配的方式通过在
+Spring 控制器上的注解声明。例如：</li>
+</ul>
+<pre><code class="language-java">@GetMapping(&quot;/HttpRefererCheck&quot;)
+@HttpRefererCheck
+int HttpRefererCheck();
+</code></pre>
+<p>各个组件的详细配置方式请参考其各个章节。</p>
+<h2>基本原理</h2>
+<p>我们提供了近十多种安全组件，几乎都是与 Spring 框架深度绑定，充分利用了 Spring 的可扩展机制与灵活的配置机制。
+多数组件通过<code>HandlerInterceptor</code>拦截器实现，其他特殊组件采用<code>HandlerMethodArgumentResolver</code>、传统的<code>Servlet Filter</code>、<code>HttpMessageConverter</code>均有。</p>
+
+            </article>
+        </div>
+        <footer>
+             AJ DataService，开源框架 <a href="https://framework.ajaxjs.com" target="_blank">AJ-Framework</a> 的一部分。联系方式：
+             frank@ajaxjs.com，<a href="https://blog.csdn.net/zhangxin09" target="_blank">作者博客</a>
+             <br />
+             <br />
+             Copyright © 2025 Frank Cheung. All rights reserved.
+         </footer>
+    </body>
+</html>

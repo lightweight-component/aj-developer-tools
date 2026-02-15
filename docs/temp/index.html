@@ -1,0 +1,14 @@
+<h2>返回的数据结构</h2>
+<p>一般接口 API 都有固定格式的结构，如下例子所示。</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;code&quot;: null,
+  &quot;msg&quot;: &quot;操作成功!&quot;,
+  &quot;data&quot;: &quot;具体的数据&quot;
+}
+</code></pre>
+<p>DataService 默认返回<code>Map&lt;String, Object&gt;</code>或者<code>List&lt;Map&lt;String, Object&gt;&gt;</code>结构，这是在控制器直接返回的，没有经过任何包装。在整合到你的系统中的话会面临这两种情况：</p>
+<ul>
+<li>不作任何处理，交由 SpringMVC 直接返回，这时候仍会输出 JSON 但没有任何统一的结构。</li>
+<li>你在 Spring 中配置统一数据类型返回，一般是<code>@RestControllerAdvice+ResponseBodyAdvice&lt;Object&gt;</code>所控制，这时 DataService 返回的数据结构会统一成你配置的格式。</li>
+</ul>
