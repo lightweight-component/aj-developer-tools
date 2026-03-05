@@ -9,8 +9,8 @@
 
     <modules>
         <module>aj-system-monitor</module>
-        <module>aj-jmx-monitor</module>
+<!--        <module>aj-jmx-monitor</module>-->
         <module>aj-spring-monitor</module>
-        <module>aj-mysql-monitor</module>
+<!--        <module>aj-mysql-monitor</module>-->
     </modules>
 </project>
