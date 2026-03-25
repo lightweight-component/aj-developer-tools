@@ -1,7 +1,5 @@
 package com.ajaxjs.devtools.logview;
 
-import com.ajaxjs.devtools.logview.LogParser;
-import com.ajaxjs.devtools.logview.LogViewAutoConfiguration;
 import com.ajaxjs.devtools.logview.model.FileInfo;
 import com.ajaxjs.devtools.logview.model.LogQueryRequest;
 import com.ajaxjs.devtools.logview.model.LogQueryResponse;
@@ -31,7 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class LogController {
     @Autowired
-    private LogViewAutoConfiguration logConfig;
+    private LogViewConfiguration logConfig;
 
     /**
      * 获取日志文件列表

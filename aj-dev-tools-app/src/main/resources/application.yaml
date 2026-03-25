@@ -1,0 +1,7 @@
+devtools:
+  sysmonitor:
+    enable: true
+
+
+db:
+  disableAutoConnect: true

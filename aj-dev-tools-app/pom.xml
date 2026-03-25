@@ -1,0 +1,71 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ajaxjs</groupId>
+        <artifactId>aj-project-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
+    <artifactId>aj-dev-tools-app</artifactId>
+    <version>1.0</version>
+    <description></description>
+    <packaging>jar</packaging>
+
+    <properties>
+        <!-- 这里是项目主类运行入口 -->
+        <project.mainClass>com.ajaxjs.devtools_app.DevToolsApp</project.mainClass>
+    </properties>
+
+    <build>
+        <plugins>
+            <!--一键部署到服务器 SSH-->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>wagon-maven-plugin</artifactId>
+                <version>2.0.2</version>
+
+                <executions>
+                    <execution>
+                        <id>upload-deploy</id>
+                        <!-- 运行 install 打包的同时运行 upload-single 和 sshexec -->
+                        <phase>install</phase>
+                        <goals>
+                            <goal>upload-single</goal>
+                            <goal>sshexec</goal>
+                        </goals>
+                        <configuration>
+                            <!-- 指定 SSH 账号 -->
+                            <serverId>test.ajaxjs.com</serverId>
+                            <!-- 要更新的 jar 包 -->
+                            <fromFile>target/aj-iam-server.jar</fromFile>
+                            <!-- 服务器部署位置 -->
+                            <url>${ssh.url.iam}</url>
+                            <!-- 重启脚本 先切换目录，才能正确执行脚本 -->
+                            <commands>
+                                <command>cd /home/service/aj-iam; ./startup-without-console.sh</command>
+                            </commands>
+                            <!-- 显示运行命令的输出结果 -->
+                            <displayCommandOutputs>true</displayCommandOutputs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.ajaxjs</groupId>
+            <artifactId>aj-developer-tools</artifactId>
+            <version>1.2</version>
+        </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>com.ajaxjs</groupId>-->
+        <!--            <artifactId>aj-iam-client</artifactId>-->
+        <!--            <version>1.2</version>-->
+        <!--        </dependency>-->
+    </dependencies>
+</project>

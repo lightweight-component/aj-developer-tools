@@ -1,7 +1,5 @@
 package com.ajaxjs.devtools.logview;
 
-import com.ajaxjs.devtools.logview.LogParser;
-import com.ajaxjs.devtools.logview.LogViewAutoConfiguration;
 import com.ajaxjs.devtools.logview.model.LogLineInfo;
 import com.ajaxjs.util.ObjectHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class LogMonitorService implements InitializingBean, DisposableBean {
     @Autowired
-    private LogViewAutoConfiguration logConfig;
+    private LogViewConfiguration logConfig;
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;

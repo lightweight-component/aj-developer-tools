@@ -10,9 +10,9 @@
     </parent>
 
     <artifactId>aj-developer-tools</artifactId>
+    <version>1.2</version>
     <name>aj-dev-tools</name>
     <description>开发者工具</description>
-    <version>1.2</version>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -54,6 +54,23 @@
             <groupId>com.ajaxjs</groupId>
             <artifactId>ajaxjs-base</artifactId>
             <version>1.2.9</version>
+        </dependency>
+
+        <!-- 系统监控 -->
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>6.10.0</version>
+        </dependency>
+
+        <!-- JVM 监控 -->
+        <!-- 有版权，所以 Maven 仓库基本都下架了 jmxtool -->
+        <dependency>
+            <groupId>com.sun.jdmk</groupId>
+            <artifactId>jmxtools</artifactId>
+            <version>1.2.1</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/jar/jmxtools-1.2.1.jar</systemPath>
         </dependency>
 
         <!-- 轻量 HPROF 解析器（GridKit jvmtool） for memviz -->

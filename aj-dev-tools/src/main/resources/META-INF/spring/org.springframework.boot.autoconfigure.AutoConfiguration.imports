@@ -1,3 +1,4 @@
-com.ajaxjs.devtools.memviz.MemvizAutoConfiguration
-com.ajaxjs.devtools.logview.LogViewAutoConfiguration
+com.ajaxjs.devtools.memviz.MemvizConfiguration
+com.ajaxjs.devtools.logview.LogViewConfiguration
 com.ajaxjs.devtools.hotcpu.HotCpuConfiguration
+com.ajaxjs.devtools.sysmonitor.SystemMonitorConfiguration
