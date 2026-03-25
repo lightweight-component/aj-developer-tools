@@ -1,0 +1,5 @@
+/**
+ * # 日志在线查询、分析、下载系统
+ * https://juejin.cn/post/7538646907213987890
+ */
+package com.ajaxjs.devtools.logview;
