@@ -1,4 +1,4 @@
-package com.ajaxjs.devtools.logview.controller;
+package com.ajaxjs.devtools.logview;
 
 import com.ajaxjs.util.ObjectHelper;
 import lombok.extern.slf4j.Slf4j;

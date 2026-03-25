@@ -1,7 +1,8 @@
-package com.ajaxjs.devtools.logview.controller;
+package com.ajaxjs.devtools.logview;
 
 import com.ajaxjs.devtools.logview.LogParser;
 import com.ajaxjs.devtools.logview.LogViewAutoConfiguration;
+import com.ajaxjs.devtools.logview.model.FileInfo;
 import com.ajaxjs.devtools.logview.model.LogQueryRequest;
 import com.ajaxjs.devtools.logview.model.LogQueryResponse;
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,7 +37,7 @@ public class LogController {
      * 获取日志文件列表
      */
     @GetMapping("/files")
-    public List<Map<String, Object>> getLogFiles() {
+    public List<FileInfo> getLogFiles() {
         File logDir = new File(logConfig.getLogPath());
         if (!logDir.exists() || !logDir.isDirectory())
             return Collections.emptyList();
@@ -44,18 +45,12 @@ public class LogController {
         return Arrays.stream(Objects.requireNonNull(logDir.listFiles()))
                 .filter(this::isValidLogFile)
                 .map(this::fileToMap)
-                .sorted((a, b) -> ((Long) b.get("lastModified")).compareTo((Long) a.get("lastModified")))
+                .sorted((a, b) -> b.getLastModified().compareTo(a.getLastModified()))
                 .collect(Collectors.toList());
     }
 
-    private Map<String, Object> fileToMap(File file) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("name", file.getName());
-        map.put("size", file.length());
-        map.put("lastModified", file.lastModified());
-        map.put("readable", file.canRead());
-
-        return map;
+    private FileInfo fileToMap(File file) {
+        return new FileInfo(file.getName(), file.length(), file.lastModified(), file.canRead());
     }
 
     /**
@@ -93,10 +88,9 @@ public class LogController {
 
     private File getLogFile(String fileName) {
         // 安全检查：防止路径遍历攻击
-        if (logConfig.isEnableSecurity()) {
+        if (logConfig.isEnableSecurity())
             if (fileName.contains("..") || fileName.contains("/") || fileName.contains("\\"))
                 throw new IllegalArgumentException("非法的文件名");
-        }
 
         return new File(logConfig.getLogPath(), fileName);
     }
@@ -165,8 +159,7 @@ public class LogController {
         response.setContentType("application/octet-stream");
         response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
 
-        if (hasFilter(request)) {
-            // 下载过滤后的内容
+        if (hasFilter(request)) {// 下载过滤后的内容
             List<String> allLines = LogParser.readLines(logFile, StandardCharsets.UTF_8);
             List<String> filteredLines = filterLines(allLines, request);
 

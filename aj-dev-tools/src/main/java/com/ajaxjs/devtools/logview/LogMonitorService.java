@@ -1,4 +1,4 @@
-package com.ajaxjs.devtools.logview.controller;
+package com.ajaxjs.devtools.logview;
 
 import com.ajaxjs.devtools.logview.LogParser;
 import com.ajaxjs.devtools.logview.LogViewAutoConfiguration;
