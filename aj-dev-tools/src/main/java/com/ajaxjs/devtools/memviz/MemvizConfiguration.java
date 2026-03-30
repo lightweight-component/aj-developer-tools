@@ -6,6 +6,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ComponentScan(basePackages = "com.ajaxjs.devtools.memviz")
-@ConditionalOnProperty(name = "devtools.memviz.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "devtools.memviz.enable", havingValue = "true")
 public class MemvizConfiguration {
 }

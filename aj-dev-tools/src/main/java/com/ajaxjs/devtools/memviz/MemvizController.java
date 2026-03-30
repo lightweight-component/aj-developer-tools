@@ -3,7 +3,6 @@ package com.ajaxjs.devtools.memviz;
 import com.ajaxjs.devtools.memviz.model.GraphModel;
 import com.ajaxjs.devtools.memviz.model.vo.SnapshotResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +26,9 @@ public class MemvizController {
     private final HprofParseService parseService;
 
     private static final String HOTSPOT_BEAN = "com.sun.management:type=HotSpotDiagnostic";
+
     private static final String DUMP_METHOD = "dumpHeap";
+
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
     /**
@@ -81,8 +82,8 @@ public class MemvizController {
                         fqcn.startsWith("java.lang.String[") || fqcn.startsWith("java.util.ArrayList"))
                     return true;
 
-                // 检查用户指定的前缀
-                for (String p : prefixes)
+
+                for (String p : prefixes) // 检查用户指定的前缀
                     if (fqcn.startsWith(p.trim()))
                         return true;
 

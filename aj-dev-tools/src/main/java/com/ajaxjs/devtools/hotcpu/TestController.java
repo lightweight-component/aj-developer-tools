@@ -15,8 +15,6 @@ import java.util.UUID;
 @CrossOrigin(origins = "*")
 @Slf4j
 public class TestController {
-    private final Random random = new Random();
-
     @GetMapping("/cpu-intensive")
     public Map<String, Object> cpuIntensiveTask(@RequestParam(name = "iterations", defaultValue = "1000") int iterations) {
         log.info("开始执行CPU密集型任务，迭代次数: {}", iterations);
@@ -24,7 +22,6 @@ public class TestController {
 
         // 模拟CPU密集型任务
         double result = performComplexCalculation(iterations);
-
         long endTime = System.currentTimeMillis();
 
         Map<String, Object> response = new HashMap<>();

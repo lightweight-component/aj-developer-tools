@@ -84,19 +84,15 @@ public class CpuSampler {
                 StringBuilder sb = new StringBuilder();
                 StackTraceElement[] stackTrace = info.getStackTrace();
 
-                // 反转栈帧顺序，让调用链从根到叶子，包含所有栈帧
-                for (int i = stackTrace.length - 1; i >= 0; i--) {
+                for (int i = stackTrace.length - 1; i >= 0; i--) { // 反转栈帧顺序，让调用链从根到叶子，包含所有栈帧
                     StackTraceElement frame = stackTrace[i];
 
                     // 现在重新启用栈帧包含检查，但shouldIncludeFrame已经改为返回true
                     if (shouldIncludeFrame(frame)) {
                         // 使用完整的类名.方法名格式
-                        sb.append(frame.getClassName())
-                                .append(".")
-                                .append(frame.getMethodName());
+                        sb.append(frame.getClassName()).append(".").append(frame.getMethodName());
 
-                        // 如果有行号信息，也包含进来
-                        if (frame.getLineNumber() > 0)
+                        if (frame.getLineNumber() > 0) // 如果有行号信息，也包含进来
                             sb.append(":").append(frame.getLineNumber());
 
                         sb.append(";");

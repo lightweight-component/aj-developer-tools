@@ -1,9 +1,9 @@
 package com.ajaxjs.devtools.sysmonitor;
 
 public class Utils {
-    public static void sleep(int seconds) {
+    public static void sleep(float seconds) {
         try {
-            Thread.sleep(seconds * 1000L);
+            Thread.sleep((long) seconds * 1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

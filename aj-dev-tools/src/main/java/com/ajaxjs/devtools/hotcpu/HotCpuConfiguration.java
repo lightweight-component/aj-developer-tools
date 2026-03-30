@@ -6,6 +6,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ComponentScan(basePackages = "com.ajaxjs.devtools.hotcpu")
-@ConditionalOnProperty(name = "devtools.hotcpu.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "devtools.hotcpu.enable", havingValue = "true")
 public class HotCpuConfiguration {
 }

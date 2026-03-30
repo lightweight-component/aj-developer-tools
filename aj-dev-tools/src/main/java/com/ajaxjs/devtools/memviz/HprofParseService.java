@@ -1,11 +1,13 @@
 package com.ajaxjs.devtools.memviz;
 
 import com.ajaxjs.devtools.memviz.model.*;
+import com.ajaxjs.devtools.sysmonitor.Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.netbeans.lib.profiler.heap.*;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -17,20 +19,32 @@ public class HprofParseService {
      * 图上显示Top100类，保持完整但可读
      */
     private static final int MAX_GRAPH_NODES = 100;  // 图上显示的类数
-    private static final int MAX_COLLECTION_NODES = 2000; // 收集的节点数，用于统计
-    private static final int MAX_LINKS = 200;  // 增加连线数以适应更多类
 
     /**
-     * 性能优化参数
+     * 收集的节点数，用于统计
      */
-    private static final int BATCH_SIZE = 1000;  // 批量处理大小
-    private static final int LARGE_CLASS_THRESHOLD = 10000;  // 大类阈值
+    private static final int MAX_COLLECTION_NODES = 2000;
 
-    public GraphModel parseToGraph(File hprofFile, Predicate<String> classNameFilter, boolean collapseCollections) throws Exception {
+    /**
+     * 增加连线数以适应更多类
+     */
+    private static final int MAX_LINKS = 200;
+
+    /**
+     * 批量处理大小 性能优化参数
+     */
+    private static final int BATCH_SIZE = 1000;
+
+    /**
+     * 大类阈值
+     */
+    private static final int LARGE_CLASS_THRESHOLD = 10000;
+
+    public GraphModel parseToGraph(File hprofFile, Predicate<String> classNameFilter, boolean collapseCollections) {
         log.info("开始解析HPROF文件: {}", hprofFile.getName());
 
-        long fileSize = hprofFile.length();// 检查文件大小和可用内存
         Runtime runtime = Runtime.getRuntime();
+        long fileSize = hprofFile.length();// 检查文件大小和可用内存
         long maxMemory = runtime.maxMemory();
         long totalMemory = runtime.totalMemory();
         long freeMemory = runtime.freeMemory();
@@ -42,7 +56,7 @@ public class HprofParseService {
         if (fileSize > availableMemory * 0.3) {// 如果文件太大，警告用户并尝试优化加载
             log.warn("检测到大型HPROF文件，启用内存优化加载模式");
             System.gc();  // 强制垃圾回收，释放更多内存
-            Thread.sleep(100);
+            Utils.sleep(0.1f);
             System.gc();
         }
 
@@ -51,9 +65,9 @@ public class HprofParseService {
         try {
             heap = HeapFactory.createHeap(hprofFile);
             log.info("HPROF文件加载完成");
-        } catch (OutOfMemoryError e) {
+        } catch (OutOfMemoryError | IOException e) {
             log.error("内存不足：HPROF文件过大");
-            throw new Exception("HPROF文件过大，内存不足。请增加JVM内存参数(-Xmx)或使用较小的堆转储文件", e);
+            throw new RuntimeException("HPROF文件过大，内存不足。请增加JVM内存参数(-Xmx)或使用较小的堆转储文件", e);
         }
 
         try {
@@ -151,10 +165,8 @@ public class HprofParseService {
                     }
                     log.debug("大类采样: {}, 采样数: {}", className, Math.min(sampleSize, instanceCount));
                 } else {
-                    // 小类：全部加入优先队列
-                    for (Instance inst : instances) {
+                    for (Instance inst : instances)  // 小类：全部加入优先队列
                         addToTopInstances(topInstances, inst, MAX_COLLECTION_NODES * 2);
-                    }
                 }
 
                 // 处理完大量数据后，帮助GC回收临时对象
@@ -215,8 +227,7 @@ public class HprofParseService {
         long totalMemoryBeforeFilter = 0;// 计算总内存占用 - 使用原始数据而不是过滤后的数据
         int totalObjectsBeforeFilter = 0;
 
-        // 统计所有对象（用于准确的总内存计算）
-        for (JavaClass javaClass : heap.getAllClasses()) {
+        for (JavaClass javaClass : heap.getAllClasses()) {// 统计所有对象（用于准确的总内存计算）
             String className = javaClass.getName();
             boolean passesFilter = (classNameFilter == null || classNameFilter.test(className)); // 应用类名过滤器进行统计
 
@@ -611,8 +622,8 @@ public class HprofParseService {
 
         // 使用优先队列（小顶堆）来维护Top-N
         PriorityQueue<Instance> topN = new PriorityQueue<>(Comparator.comparingLong(Instance::getSize));
-
         int processed = 0;
+
         for (Instance instance : instances) {
             if (topN.size() < n)
                 topN.offer(instance);
@@ -621,8 +632,7 @@ public class HprofParseService {
                 topN.offer(instance);
             }
 
-            // 每处理10000个对象记录一次进度
-            if (++processed % 10000 == 0)
+            if (++processed % 10000 == 0) // 每处理10000个对象记录一次进度
                 log.debug("快速选择进度: {}/{}", processed, instances.size());
         }
 
@@ -768,30 +778,25 @@ public class HprofParseService {
                 boolean isReference = !isPrimitive;
 
                 // 获取字段值和大小
-                String valueStr = "";
+                String valueStr;
                 long fieldSize = getFieldSize(fieldValue); // 使用统一的字段大小计算方法
 
                 if (fieldValue instanceof ObjectFieldValue) {
                     ObjectFieldValue objField = (ObjectFieldValue) fieldValue;
                     Instance fieldInstance = objField.getInstance();
 
-                    if (fieldInstance != null) {
+                    if (fieldInstance != null)
                         valueStr = fieldInstance.getJavaClass().getName() + "@" + fieldInstance.getInstanceId();
-                    } else {
+                    else {
                         valueStr = "null";
                         fieldSize = 0; // null引用的大小为0
                     }
-                } else {
-                    // 处理非对象字段（基本类型）
-                    valueStr = String.valueOf(fieldValue.getValue());
-                }
+                } else
+                    valueStr = String.valueOf(fieldValue.getValue());  // 处理非对象字段（基本类型）
 
                 // 计算字段在对象中的占比
                 double sizePercent = totalObjectSize > 0 ? (double) fieldSize / totalObjectSize * 100.0 : 0.0;
-
-                // 对于Node的字段分析，深度大小等于浅表大小（简化处理）
-                long fieldRetainedSize = fieldSize;
-                double retainedSizePercent = sizePercent;
+                long fieldRetainedSize = fieldSize;// 对于Node的字段分析，深度大小等于浅表大小（简化处理）
 
                 // 创建字段信息对象
                 FieldInfo fieldInfo = new FieldInfo(
@@ -803,7 +808,7 @@ public class HprofParseService {
                         fieldRetainedSize,
                         formatSize(fieldRetainedSize),
                         sizePercent,
-                        retainedSizePercent,
+                        sizePercent,
                         isPrimitive,
                         isReference
                 );
@@ -1037,9 +1042,9 @@ public class HprofParseService {
                 boolean isReference = !isPrimitive;
 
                 // 获取字段值和大小
-                String valueStr = "";
+                String valueStr;
                 long fieldSize = getFieldSize(fieldValue); // 使用统一的字段大小计算方法
-                long fieldRetainedSize = 0;
+                long fieldRetainedSize;
 
                 if (fieldValue instanceof ObjectFieldValue) {
                     ObjectFieldValue objField = (ObjectFieldValue) fieldValue;

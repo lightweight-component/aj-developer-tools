@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import sun.management.ConnectorAddressLink;
 
 import javax.management.*;
 import javax.management.openmbean.CompositeData;
@@ -50,7 +49,8 @@ public class JvmMonitorController {
                     break;
                 }
             }
-        } catch (InstanceNotFoundException | IntrospectionException | ReflectionException | MBeanException | AttributeNotFoundException e) {
+        } catch (InstanceNotFoundException | IntrospectionException | ReflectionException | MBeanException |
+                 AttributeNotFoundException e) {
             throw new RuntimeException(e);
         }
 
@@ -89,7 +89,8 @@ public class JvmMonitorController {
     @GetMapping("/attachLocalJvm")
     public Boolean attachLocalJvm(Integer pid) {
         try {
-            String address = ConnectorAddressLink.importFrom(pid);
+//            String address = ConnectorAddressLink.importFrom(pid);
+            String address = null;
 
             if (address == null) {
                 VirtualMachine vm = VirtualMachine.attach(Integer.toString(pid));

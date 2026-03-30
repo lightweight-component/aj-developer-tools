@@ -1,7 +1,10 @@
 devtools:
   sysmonitor:
     enable: true
-
+  memviz:
+    enable: true
+  hotcpu:
+    enable: true
 
 db:
   disableAutoConnect: true

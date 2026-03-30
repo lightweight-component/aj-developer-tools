@@ -38,7 +38,6 @@
         .node circle { stroke:#111827; stroke-width:1; cursor:grab; }
         .node text { fill:#d1d5db; font-size:12px; pointer-events:none; }
         .highlight { stroke:#f59e0b !important; stroke-width:2.5 !important; }
-
     </style>
 </head>
 <body>
@@ -151,8 +150,8 @@
     btnSnap.onclick = async () => {
       const resp = await fetch('/memviz/snapshot', { method:'POST' });
       const data = await resp.json();
-      qs('#file').value = data.file;
-      alert('快照完成：' + data.file);
+      qs('#file').value = data.data.file;
+      alert('快照完成：' + data.data.file);
     };
 
     btnLoad.onclick = async () => {
@@ -164,7 +163,8 @@
         const include = encodeURIComponent(qs('#include').value.trim());
         const collapse = qs('#collapse').value;
         const url = `/memviz/graph?file=${encodeURIComponent(file)}&include=${include}&collapseCollections=${collapse}`;
-        const data = await fetch(url).then(r => r.json());
+        let data = await fetch(url).then(r => r.json());
+        data = data.data;
         currentData = data;
         window.currentData = data; // 保存数据供其他函数使用
         renderGraph(data);
@@ -186,9 +186,8 @@
       instancesTab.style.display = 'none';
       
       // 切换回详情标签页
-      if (document.getElementById('tab-instances').classList.contains('active')) {
+      if (document.getElementById('tab-instances').classList.contains('active'))
         switchTab('detail');
-      }
     }
 
     function updateStats(data) {

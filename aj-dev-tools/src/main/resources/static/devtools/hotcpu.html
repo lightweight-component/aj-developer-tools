@@ -298,8 +298,8 @@
         async function updateStatus() {
             try {
                 const response = await fetch('/api/sampling/status');
-                const data = await response.json();
-                
+                let data = await response.json();
+                data = data.data;
                 samplingEnabled = data.enabled;
                 const statusElement = document.getElementById('status');
                 const dataCountElement = document.getElementById('dataCount');
@@ -558,7 +558,7 @@
             try {
                 const response = await fetch('/api/sampling/enable', { method: 'POST' });
                 const data = await response.json();
-                showSuccess(data.message);
+                showSuccess(data.data.message);
                 await updateStatus();
             } catch (error) {
                 showError('启用采样失败: ' + error.message);
@@ -569,7 +569,7 @@
             try {
                 const response = await fetch('/api/sampling/disable', { method: 'POST' });
                 const data = await response.json();
-                showSuccess(data.message);
+                showSuccess(data.data.message);
                 await updateStatus();
             } catch (error) {
                 showError('停止采样失败: ' + error.message);
@@ -584,7 +584,7 @@
             try {
                 const response = await fetch('/api/sampling/clear', { method: 'POST' });
                 const data = await response.json();
-                showSuccess(data.message);
+                showSuccess(data.data.message);
                 await updateStatus();
                 document.getElementById('chart').innerHTML = '';
                 document.getElementById('noData').style.display = 'block';
@@ -596,7 +596,8 @@
         async function showDebugInfo() {
             try {
                 const response = await fetch('/api/sampling/debug');
-                const data = await response.json();
+                let data = await response.json();
+                data = data.data;
                 
                 let debugHtml = `
                     <div class="info">
@@ -677,7 +678,9 @@
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                const data = await response.json();
+
+                let data = await response.json();
+                data = data.data;
                 console.log('CPU intensive test response:', data);
                 showTestResult('CPU密集型任务完成', data);
                 
@@ -704,7 +707,8 @@
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                const data = await response.json();
+                let data = await response.json();
+                data = data.data;
                 console.log('Nested calls test response:', data);
                 showTestResult('嵌套调用测试完成', data);
                 
@@ -727,10 +731,11 @@
             
             try {
                 const response = await fetch('/test/mixed-workload');
-                if (!response.ok) {
+                if (!response.ok)
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                const data = await response.json();
+
+                let data = await response.json();
+                data = data.data;
                 console.log('Mixed workload test response:', data);
                 showTestResult('混合工作负载完成', data);
                 
