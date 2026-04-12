@@ -2,7 +2,6 @@
  * Web SSH 简化版客户端
  * 支持SSH连接和文件管理功能
  */
-
 class SimpleWebSSHClient {
     constructor() {
         this.terminal = null;
