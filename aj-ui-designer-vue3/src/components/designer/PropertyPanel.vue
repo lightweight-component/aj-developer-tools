@@ -29,6 +29,10 @@ const supportsText = computed<boolean>((): boolean => props.node?.type === "Butt
 
 watch(() => props.node, (node?: DesignerNode): void => { propsText.value = JSON.stringify(node?.props ?? {}, null, 2); error.value = ""; }, { immediate: true });
 
+/**
+ * 将属性编辑框中的 JSON 原子写回节点。
+ * 解析失败时保留原 props，避免用户输入一半时破坏画布。
+ */
 function applyProps(): void {
   if (!props.node)
     return;

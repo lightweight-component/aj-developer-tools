@@ -18,6 +18,10 @@ import StageNode from "./StageNode.vue";
 
 const props = defineProps<{ nodes: DesignerNode[]; selectedId?: string; root?: boolean; readonly?: boolean }>();
 const emit = defineEmits<{ select: [id: string]; changed: []; beforeChange: [] }>();
+/**
+ * vue-draggable-plus 会通过 v-model 回传整个列表。
+ * 保持原数组引用可使父级节点、属性面板和历史记录观察到同一棵响应式树。
+ */
 const canvasNodes = computed<DesignerNode[]>({
   get: (): DesignerNode[] => props.nodes,
   set: (value: DesignerNode[]): void => {

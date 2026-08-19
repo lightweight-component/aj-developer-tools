@@ -10,6 +10,10 @@ export function createNode(definition: WidgetDefinition): DesignerNode {
   };
 }
 
+/**
+ * 将外部传入的设计数据转为运行时统一结构。
+ * 这里是兼容旧版 JSON 的唯一入口，避免兼容判断散落在渲染组件中。
+ */
 export function normalizeNodes(value: unknown): DesignerNode[] {
   if (!Array.isArray(value))
     throw new Error("设计数据根节点必须是数组");
@@ -17,6 +21,9 @@ export function normalizeNodes(value: unknown): DesignerNode[] {
   return value.map((item: unknown): DesignerNode => normalizeNode(item));
 }
 
+/**
+ * 递归清洗单个节点：补齐 id、隔离 props 引用，并转换 Vue 2 时期的类型别名。
+ */
 function normalizeNode(value: unknown): DesignerNode {
   if (!value || typeof value !== "object")
     throw new Error("组件节点必须是对象");
@@ -41,6 +48,9 @@ function normalizeNode(value: unknown): DesignerNode {
   };
 }
 
+/**
+ * 保持旧版序列化数据可导入，同时让新画布只处理统一的 View UI Plus 类型。
+ */
 function normalizeType(type: string): DesignerNode["type"] {
   const aliases: Record<string, DesignerNode["type"]> = {
     input_text: "Input",
@@ -58,6 +68,9 @@ function normalizeType(type: string): DesignerNode["type"] {
   return normalized;
 }
 
+/**
+ * 深度优先查找节点；属性面板和选中状态都以稳定 id 而非对象引用定位。
+ */
 export function findNode(nodes: DesignerNode[], id: string): DesignerNode | undefined {
   for (const node of nodes) {
     if (node.id === id)
@@ -69,6 +82,9 @@ export function findNode(nodes: DesignerNode[], id: string): DesignerNode | unde
   }
 }
 
+/**
+ * 从任意层级删除指定节点，并返回被删除的节点以便调用方扩展恢复或剪贴板功能。
+ */
 export function removeNode(nodes: DesignerNode[], id: string): DesignerNode | undefined {
   const index: number = nodes.findIndex((node: DesignerNode): boolean => node.id === id);
   if (index >= 0)

@@ -61,10 +61,16 @@ watch(showCode, (visible: boolean): void => {
     jsonText.value = JSON.stringify(metadata.value, null, 2);
 });
 
+/**
+ * 拖拽或属性修改后清理已不存在的选中节点，避免属性面板保留失效引用。
+ */
 function onChanged(): void {
   selectedId.value = selectedId.value && findNode(metadata.value, selectedId.value) ? selectedId.value : undefined;
 }
 
+/**
+ * 深拷贝当前选中节点及其子树；所有 id 必须重建，避免 draggable 的 key 冲突。
+ */
 function copySelected(): void {
   if (!selected.value)
     return;
@@ -76,6 +82,7 @@ function copySelected(): void {
   selectedId.value = clone.id;
 }
 
+/** 从元数据树删除当前节点，并同步取消选中状态。 */
 function deleteSelected(): void {
   if (!selectedId.value)
     return;
@@ -85,6 +92,9 @@ function deleteSelected(): void {
   selectedId.value = undefined;
 }
 
+/**
+ * 校验用户编辑的 JSON，只有完整通过规范化后才会替换画布数据。
+ */
 function applyJson(): void {
   try {
     history.replace(normalizeNodes(JSON.parse(jsonText.value)));
@@ -96,6 +106,7 @@ function applyJson(): void {
   }
 }
 
+/** 以独立 JSON 文件下载当前设计数据，不依赖后端接口。 */
 function download(): void {
   const file: Blob = new Blob([JSON.stringify(metadata.value, null, 2)], { type: "application/json" });
   const url: string = URL.createObjectURL(file);
@@ -106,6 +117,7 @@ function download(): void {
   URL.revokeObjectURL(url);
 }
 
+/** 递归重新分配复制子树的 id，保证整棵设计树的节点标识唯一。 */
 function assignIds(node: DesignerNode): void {
   node.id = crypto.randomUUID();
   for (const child of node.children)
