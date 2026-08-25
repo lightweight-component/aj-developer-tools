@@ -8,7 +8,7 @@
     <packaging>pom</packaging>
 
     <modules>
-<!--        <module>aj-system-monitor</module>-->
+        <module>aj-sysmonitor</module>
 <!--        <module>aj-jmx-monitor</module>-->
 <!--        <module>aj-spring-monitor</module>-->
 <!--        <module>aj-mysql-monitor</module>-->
