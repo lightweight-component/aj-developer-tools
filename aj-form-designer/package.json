@@ -1,8 +1,8 @@
 {
-  "name": "@ajaxjs/aj-ui-designer-vue3",
+  "name": "@ajaxjs/aj-form-designer",
   "version": "0.1.0-snapshot",
   "private": true,
-  "description": "Vue 3 visual designer for View UI Plus pages",
+  "description": "Vue 3 visual form designer for View UI Plus",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -31,6 +31,7 @@
     "@codemirror/lang-json": "^6.0.2",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.4",
+    "pinia": "^4.0.3",
     "view-ui-plus": "^1.3.24",
     "vue-codemirror": "^6.1.1",
     "vue-draggable-plus": "^0.6.1"

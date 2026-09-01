@@ -5,8 +5,8 @@
       <Panel v-for="group in visibleGroups" :key="group.name" :name="group.name">
         {{ group.name }}
         <template #content>
-          <VueDraggable :model-value="group.widgets" :group="paletteGroup" :sort="false" :clone="createNode">
-            <button v-for="widget in group.widgets" :key="widget.type" class="palette-item" type="button">
+          <VueDraggable :model-value="group.widgets" :group="paletteGroup" :sort="false" :clone="createFormItem">
+            <button v-for="widget in group.widgets" :key="`${widget.kind}_${widget.name}`" class="palette-item" type="button">
               <Icon :type="widget.icon" />{{ widget.name }}
             </button>
           </VueDraggable>
@@ -19,13 +19,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
-import { createNode } from "../../core/tree";
-import { widgetGroups } from "../../registry/widgets";
+import { createFormItem } from "../../core/form-schema";
+import { formWidgetGroups } from "../../registry/form-widgets";
 
 const keyword = ref<string>("");
 const opened = ref<string>("基础");
-const paletteGroup = { name: "ui-designer", pull: "clone", put: false } as const;
-const visibleGroups = computed(() => widgetGroups.map((group) => ({ ...group, widgets: group.widgets.filter((widget) => widget.name.includes(keyword.value)) })).filter((group) => group.widgets.length > 0));
+const paletteGroup = { name: "form-palette", pull: "clone", put: false } as const;
+const visibleGroups = computed(() => formWidgetGroups.map((group) => ({ ...group, widgets: group.widgets.filter((widget) => widget.name.includes(keyword.value)) })).filter((group) => group.widgets.length > 0));
 </script>
 
 <style scoped lang="less">

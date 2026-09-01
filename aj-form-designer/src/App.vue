@@ -1,8 +1,8 @@
 <template>
-  <UiDesigner :initial-metadata="demoMetadata" />
+  <UiDesigner :initial-schema="demoFormSchema" />
 </template>
 
 <script setup lang="ts">
 import UiDesigner from "./components/designer/UiDesigner.vue";
-import { demoMetadata } from "./demo/metadata";
+import { demoFormSchema } from "./demo/form-schema";
 </script>
