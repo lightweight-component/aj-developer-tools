@@ -18,6 +18,12 @@ export interface FormOption {
   value: string | number | boolean;
 }
 
+export interface ButtonAction {
+  type: "none" | "emit" | "code";
+  event?: string;
+  code?: string;
+}
+
 export interface FormField {
   id: string;
   kind: "field";
@@ -28,6 +34,7 @@ export interface FormField {
     type: FieldType;
     props: Record<string, unknown>;
     options?: FormOption[];
+    action?: ButtonAction;
   };
 }
 
@@ -87,7 +94,8 @@ export function createFormItem(definition: PaletteDefinition): FormItem {
     widget: {
       type: definition.type,
       props: structuredClone(definition.defaultProps ?? {}),
-      options: definition.options ? structuredClone(definition.options) : undefined
+      options: definition.options ? structuredClone(definition.options) : undefined,
+      action: definition.type === "Button" ? { type: "none" } : undefined
     }
   };
 }
@@ -204,6 +212,7 @@ function normalizeField(raw: Record<string, unknown>, usedIds: Set<string>): For
     throw new Error(`不支持的表单字段：${String(widget.type)}`);
 
   const widgetProps: Record<string, unknown> = widget.props && typeof widget.props === "object" ? structuredClone(widget.props as Record<string, unknown>) : {};
+  const action: ButtonAction | undefined = normalizeButtonAction(widget.action, widget.type);
   return {
     id: normalizeId(raw.id, usedIds),
     kind: "field",
@@ -213,7 +222,8 @@ function normalizeField(raw: Record<string, unknown>, usedIds: Set<string>): For
     widget: {
       type: widget.type,
       props: widgetProps,
-      options: Array.isArray(widget.options) ? structuredClone(widget.options as FormOption[]) : undefined
+      options: Array.isArray(widget.options) ? structuredClone(widget.options as FormOption[]) : undefined,
+      action
     }
   };
 }
@@ -243,6 +253,31 @@ function readObject(value: unknown, errorMessage: string): Record<string, unknow
 
 function isFieldType(value: unknown): value is FieldType {
   return typeof value === "string" && ["Input", "InputNumber", "Select", "RadioGroup", "CheckboxGroup", "DatePicker", "TimePicker", "Switch", "Slider", "Rate", "ColorPicker", "Button"].includes(value);
+}
+
+function normalizeButtonAction(value: unknown, fieldType: FieldType): ButtonAction | undefined {
+  if (value === undefined)
+    return fieldType === "Button" ? { type: "none" } : undefined;
+
+  if (fieldType !== "Button")
+    throw new Error("只有 Button 字段可以配置动作");
+
+  const raw: Record<string, unknown> = readObject(value, "Button 动作必须是对象");
+  if (raw.type !== "none" && raw.type !== "emit" && raw.type !== "code")
+    throw new Error("Button 动作类型无效");
+
+  const event: string | undefined = typeof raw.event === "string" && raw.event.trim() ? raw.event.trim() : undefined;
+  if (raw.type === "emit" && !event)
+    throw new Error("事件动作必须填写事件名");
+
+  if (event && !/^[a-zA-Z][a-zA-Z0-9:_-]*$/.test(event))
+    throw new Error("事件名只能包含字母、数字、冒号、下划线和连字符");
+
+  const code: string | undefined = typeof raw.code === "string" ? raw.code : undefined;
+  if (code?.toLowerCase().includes("</script"))
+    throw new Error("自定义代码不能包含 </script");
+
+  return { type: raw.type, event, code };
 }
 
 /** 表单提交时字段名是对象键，导入数据不能包含重复名称。 */

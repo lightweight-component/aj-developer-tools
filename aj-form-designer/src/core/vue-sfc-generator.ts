@@ -5,53 +5,29 @@ export function generateVueSfc(schema: FormSchema): string {
   const fields: FormField[] = getFields(schema);
   const fieldSymbols = new Map<string, string>(fields.map((field: FormField, index: number): [string, string] => [field.id, `field${index}`]));
   const template: string = schema.items.map((item: FormItem): string => generateItem(item, fieldSymbols)).join("\n");
+  const buttonFields: FormField[] = fields.filter((field: FormField): boolean => field.widget.type === "Button" && field.widget.action?.type !== "none");
   const fieldKeys: Record<string, string> = Object.fromEntries(fields.map((field: FormField): [string, string] => [fieldSymbols.get(field.id) as string, field.field]));
   const fieldLabels: Record<string, string> = Object.fromEntries(fields.map((field: FormField): [string, string] => [field.field, field.label]));
   const widgetProps: Record<string, Record<string, unknown>> = Object.fromEntries(fields.map((field: FormField): [string, Record<string, unknown>] => [field.field, field.widget.props]));
   const optionSets: Record<string, FormOption[]> = Object.fromEntries(fields.filter((field: FormField): boolean => Boolean(field.widget.options)).map((field: FormField): [string, FormOption[]] => [field.field, field.widget.options ?? []]));
-  const rules: Record<string, { required: true; message: string; trigger: "change" }[]> = Object.fromEntries(fields.filter((field: FormField): boolean => field.required && field.widget.type !== "Button").map((field: FormField): [string, { required: true; message: string; trigger: "change" }[]] => [field.field, [{ required: true, message: `请填写${field.label}`, trigger: "change" }]]));
 
   return `<template>
-  <Form ref="formRef" :model="formData" :rules="rules" v-bind="formProps">
+  <Form :model="formData" v-bind="formProps">
 ${indent(template, 4)}
-    <FormItem>
-      <Button @click="reset">重置</Button>
-      <Button type="primary" @click="submit">提交</Button>
-    </FormItem>
   </Form>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { reactive } from "vue";
 
-interface ViewUiForm {
-  resetFields: () => void;
-  validate: (callback: (valid: boolean) => void) => void;
-}
-
-const emit = defineEmits<{ submit: [data: Record<string, unknown>] }>();
-const formRef = ref<ViewUiForm>();
+${buttonFields.length > 0 ? 'const emit = defineEmits<{ (event: string, payload: Record<string, unknown>): void }>();\n' : ""}
 const formData = reactive<Record<string, unknown>>({});
 const formProps = ${safeJson(schema.props)};
 const fieldKeys = ${safeJson(fieldKeys)};
 const fieldLabels = ${safeJson(fieldLabels)};
 const widgetProps = ${safeJson(widgetProps)};
 const optionSets = ${safeJson(optionSets)};
-const rules = ${safeJson(rules)};
-
-/** 校验成功后把填写结果交给父组件处理。 */
-function submit(): void {
-  formRef.value?.validate((valid: boolean): void => {
-    if (!valid)
-      return;
-
-    emit("submit", JSON.parse(JSON.stringify(formData)) as Record<string, unknown>);
-  });
-}
-
-function reset(): void {
-  formRef.value?.resetFields();
-}
+${buttonFields.map((field: FormField): string => generateButtonHandler(field, fieldSymbols.get(field.id) as string)).join("\n\n")}
 </script>
 `;
 }
@@ -76,8 +52,11 @@ function generateField(field: FormField, fieldSymbols: Map<string, string>): str
   const model: string = `formData[${fieldKey}]`;
   const props: string = `widgetProps[${fieldKey}]`;
 
-  if (field.widget.type === "Button")
-    return `<FormItem><Button v-bind="${props}">{{ ${label} }}</Button></FormItem>`;
+  if (field.widget.type === "Button") {
+    const handler: string | undefined = getButtonHandler(fieldSymbols.get(field.id) as string, field);
+
+    return `<FormItem><Button v-bind="${props}"${handler ? ` @click="${handler}"` : ""}>{{ ${label} }}</Button></FormItem>`;
+  }
 
   const control: string = generateControl(field, model, props, fieldKey);
   return `<FormItem :label="${label}" :prop="${fieldKey}" :required="${field.required}">
@@ -104,6 +83,29 @@ function generateControl(field: FormField, model: string, props: string, fieldKe
   return `<${field.widget.type} v-model="${model}" v-bind="${props}" />`;
 }
 
+function getButtonHandler(fieldSymbol: string, field: FormField): string | undefined {
+  return field.widget.action?.type === "none" || !field.widget.action ? undefined : `onButton${capitalize(fieldSymbol)}`;
+}
+
+function generateButtonHandler(field: FormField, fieldSymbol: string): string {
+  const handler: string = getButtonHandler(fieldSymbol, field) as string;
+  const action = field.widget.action;
+  if (!action || action.type === "none")
+    return "";
+
+  if (action.type === "emit")
+    return `/** 由设计器配置的 ${action.event} 事件。 */
+function ${handler}(event: MouseEvent): void {
+  event.preventDefault();
+  emit(${safeJson(action.event)}, JSON.parse(JSON.stringify(formData)) as Record<string, unknown>);
+}`;
+
+  return `/** 由设计器配置的自定义 Button 代码。 */
+function ${handler}(event: MouseEvent): void {
+${indent(action.code ?? "", 2)}
+}`;
+}
+
 function getFields(schema: FormSchema): FormField[] {
   return schema.items.flatMap((item: FormItem): FormField[] => item.kind === "field" ? [item] : item.columns.flatMap((column): FormField[] => column.fields));
 }
@@ -116,4 +118,8 @@ function indent(value: string, size: number): string {
   const padding: string = " ".repeat(size);
 
   return value.split("\n").map((line: string): string => line ? `${padding}${line}` : line).join("\n");
+}
+
+function capitalize(value: string): string {
+  return value.slice(0, 1).toUpperCase() + value.slice(1);
 }

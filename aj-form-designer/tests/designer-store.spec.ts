@@ -58,4 +58,13 @@ describe("表单设计器状态仓库", (): void => {
     expect(store.schema.items[1].id).not.toBe("name");
     expect(store.schema.items[1]).toMatchObject({ field: "name_copy" });
   });
+
+  it("只允许 Button 写入安全的动作", (): void => {
+    const store = useDesignerStore();
+    store.initialize({ ...schema, items: [{ id: "save", kind: "field", field: "save", label: "保存", required: false, widget: { type: "Button", props: {} } }] });
+
+    expect(store.updateButtonAction("save", { type: "emit", event: "save" })).toBe(true);
+    expect(store.updateButtonAction("save", { type: "emit", event: "bad event" })).toBe(false);
+    expect(store.updateButtonAction("save", { type: "code", code: "</script" })).toBe(false);
+  });
 });

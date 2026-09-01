@@ -1,7 +1,7 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { findItemContainer, findSelectableNode, normalizeFormSchema } from "../core/form-schema";
-import type { FormField, FormSchema, SelectableFormNode } from "../core/form-schema";
+import type { ButtonAction, FormField, FormSchema, SelectableFormNode } from "../core/form-schema";
 
 const HISTORY_LIMIT: number = 50;
 
@@ -148,6 +148,20 @@ export const useDesignerStore = defineStore("formDesigner", () => {
     node.widget.options = options;
   }
 
+  /** Button 动作与组件 props 分离，生成器不会把内部动作透传给 View UI Plus。 */
+  function updateButtonAction(id: string, action: ButtonAction): boolean {
+    const node: SelectableFormNode | undefined = findSelectableNode(schema.value, id);
+    if (node?.kind !== "field" || node.widget.type !== "Button")
+      return false;
+
+    if (!isSafeButtonAction(action))
+      return false;
+
+    node.widget.action = action;
+
+    return true;
+  }
+
   /** 写入 Form 的标签布局配置。 */
   function updateFormProps(props: FormSchema["props"]): void {
     schema.value.props = props;
@@ -178,7 +192,7 @@ export const useDesignerStore = defineStore("formDesigner", () => {
   return {
     schema, selectedId, selected, canUndo, canRedo, isCodeOpen, isPreviewOpen,
     initialize, beginChange, commitChange, finishChange, replaceSchema, copySelected, deleteSelected,
-    updateField, updateWidgetProps, updateWidgetOptions, updateFormProps, undo, redo
+    updateField, updateWidgetProps, updateWidgetOptions, updateButtonAction, updateFormProps, undo, redo
   };
 });
 
@@ -230,4 +244,14 @@ function createCopyFieldName(originalName: string, usedFieldNames: Set<string>):
   usedFieldNames.add(copyName);
 
   return copyName;
+}
+
+function isSafeButtonAction(action: ButtonAction): boolean {
+  if (action.type === "none")
+    return true;
+
+  if (action.type === "emit" && (!action.event || !/^[a-zA-Z][a-zA-Z0-9:_-]*$/.test(action.event)))
+    return false;
+
+  return !action.code?.toLowerCase().includes("</script");
 }

@@ -36,6 +36,25 @@
             <Input v-model="dateFormat" @on-focus="emit('beforeChange')" @on-blur="emit('changed')" />
           </FormItem>
         </template>
+        <template v-if="isButtonField">
+          <FormItem label="点击行为">
+            <Select v-model="buttonActionType" @on-change="emit('changed')">
+              <Option value="none">普通按钮</Option>
+              <Option value="emit">触发事件</Option>
+              <Option value="code">自定义 JS</Option>
+            </Select>
+          </FormItem>
+          <FormItem v-if="buttonActionType === 'emit'" label="事件名">
+            <Input v-model="buttonEvent" placeholder="例如：save" @on-focus="emit('beforeChange')" @on-blur="emit('changed')" />
+          </FormItem>
+          <template v-if="buttonActionType === 'code'">
+            <FormItem label="JS 代码">
+              <Input v-model="buttonCode" type="textarea" :rows="8" placeholder="例如：emit('save', formData);"
+                @on-focus="emit('beforeChange')" @on-blur="emit('changed')" />
+            </FormItem>
+            <p class="hint">生成组件中可使用 formData、emit 和 event；预览不会执行该代码。</p>
+          </template>
+        </template>
         <template v-if="supportsOptions">
           <FormItem label="选项">
             <span @focusout="applyOptions"><Input v-model="optionsText" type="textarea" :rows="7" placeholder="每行：标签=值"
@@ -74,7 +93,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { formatFormOptions, parseFormOptions } from "../../core/form-options";
-import type { FormField, FormSchema, SelectableFormNode } from "../../core/form-schema";
+import type { ButtonAction, FormField, FormSchema, SelectableFormNode } from "../../core/form-schema";
 import { useDesignerStore } from "../../stores/designer";
 
 const props = defineProps<{ schema: FormSchema; selected?: SelectableFormNode }>();
@@ -86,6 +105,7 @@ const error = ref<string>("");
 const selectedField = computed<FormField | undefined>((): FormField | undefined => props.selected?.kind === "field" ? props.selected : undefined);
 const isInputField = computed<boolean>((): boolean => selectedField.value?.widget.type === "Input");
 const isDateField = computed<boolean>((): boolean => selectedField.value?.widget.type === "DatePicker");
+const isButtonField = computed<boolean>((): boolean => selectedField.value?.widget.type === "Button");
 const supportsOptions = computed<boolean>((): boolean => ["Select", "RadioGroup", "CheckboxGroup"].includes(selectedField.value?.widget.type ?? ""));
 const fieldName = computed<string>({ get: (): string => selectedField.value?.field ?? "", set: (value: string): void => updateField({ field: value }) });
 const fieldLabel = computed<string>({ get: (): string => selectedField.value?.label ?? "", set: (value: string): void => updateField({ label: value }) });
@@ -94,6 +114,9 @@ const inputType = computed<string>({ get: (): string => getWidgetProp("type", "t
 const placeholder = computed<string>({ get: (): string => getWidgetProp("placeholder", ""), set: (value: string): void => setWidgetProp("placeholder", value) });
 const pickerType = computed<string>({ get: (): string => getWidgetProp("type", "date"), set: (value: string): void => setWidgetProp("type", value) });
 const dateFormat = computed<string>({ get: (): string => getWidgetProp("format", "yyyy-MM-dd"), set: (value: string): void => setWidgetProp("format", value) });
+const buttonActionType = computed<ButtonAction["type"]>({ get: (): ButtonAction["type"] => getButtonAction().type, set: (value: ButtonAction["type"]): void => setButtonAction({ ...getButtonAction(), type: value, event: value === "emit" ? getButtonAction().event ?? "click" : getButtonAction().event }) });
+const buttonEvent = computed<string>({ get: (): string => getButtonAction().event ?? "", set: (value: string): void => setButtonAction({ ...getButtonAction(), event: value }) });
+const buttonCode = computed<string>({ get: (): string => getButtonAction().code ?? "", set: (value: string): void => setButtonAction({ ...getButtonAction(), code: value }) });
 const labelPosition = computed<FormSchema["props"]["labelPosition"]>({
   get: (): FormSchema["props"]["labelPosition"] => props.schema.props.labelPosition,
   set: (value: FormSchema["props"]["labelPosition"]): void => updateFormProps({ labelPosition: value })
@@ -134,6 +157,19 @@ function setWidgetProp(name: string, value: string): void {
 
   designer.beginChange();
   designer.updateWidgetProps(selectedField.value.id, { ...selectedField.value.widget.props, [name]: value });
+}
+
+function getButtonAction(): ButtonAction {
+  return selectedField.value?.widget.action ?? { type: "none" };
+}
+
+function setButtonAction(action: ButtonAction): void {
+  if (selectedField.value?.widget.type !== "Button")
+    return;
+
+  designer.beginChange();
+  const wasUpdated: boolean = designer.updateButtonAction(selectedField.value.id, action);
+  error.value = wasUpdated ? "" : "事件名无效，或代码中不能包含 </script";
 }
 
 function updateFormProps(patch: Partial<FormSchema["props"]>): void {

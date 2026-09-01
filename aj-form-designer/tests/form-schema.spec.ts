@@ -29,4 +29,10 @@ describe("表单 schema", (): void => {
     expect(() => normalizeFormSchema({ version: 1, items: [{ id: "row", kind: "row", columns: [{ id: "column", span: 24, fields: [] }] }] })).toThrow("必须包含两个列");
     expect(() => normalizeFormSchema({ version: 1, items: [{ id: "row", kind: "row", columns: [{ id: "left", span: 10, fields: [] }, { id: "right", span: 10, fields: [] }] }] })).toThrow("列宽总和必须为 24");
   });
+
+  it("只允许 Button 配置安全的动作", (): void => {
+    expect(normalizeFormSchema({ version: 1, items: [{ id: "save", kind: "field", field: "save", widget: { type: "Button", action: { type: "emit", event: "save" } } }] }).items[0]).toMatchObject({ widget: { action: { type: "emit", event: "save" } } });
+    expect(() => normalizeFormSchema({ version: 1, items: [{ id: "name", kind: "field", field: "name", widget: { type: "Input", action: { type: "none" } } }] })).toThrow("只有 Button");
+    expect(() => normalizeFormSchema({ version: 1, items: [{ id: "save", kind: "field", field: "save", widget: { type: "Button", action: { type: "emit", event: "bad event" } } }] })).toThrow("事件名");
+  });
 });

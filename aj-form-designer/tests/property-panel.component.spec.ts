@@ -27,16 +27,20 @@ const schema: FormSchema = {
 };
 
 describe("属性面板组件", (): void => {
-  beforeEach((): void => setActivePinia(createPinia()));
+  beforeEach((): void => {
+    setActivePinia(createPinia());
+  });
 
   it("失焦后将带类型标记的选项写回 Pinia schema", async (): Promise<void> => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
     const store = useDesignerStore();
     store.initialize(schema);
     store.selectedId = "status";
     const wrapper = mount(PropertyPanel, {
       props: { schema: store.schema, selected: store.selected },
       global: {
-        plugins: [createPinia()],
+        plugins: [pinia],
         stubs: {
           Input: InputStub,
           Form: LayoutStub,
