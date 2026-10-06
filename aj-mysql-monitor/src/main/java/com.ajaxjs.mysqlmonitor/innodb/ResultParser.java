@@ -1,6 +1,5 @@
 package com.ajaxjs.mysqlmonitor.innodb;
 
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
@@ -13,7 +12,6 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public class ResultParser {
-
     public String getStatus() {
         return infoMap("SHOW ENGINE INNODB STATUS").get("Status").toString();
     }
