@@ -49,7 +49,8 @@ public class MetricsSubscribers {
         }
 
         public void deleteSubscription(Subscription sub) {
-            if (sub == null) return;
+            if (sub == null)
+                return;
             for (int i = this.subscriptions.size() - 1; i >= 0; i--) {
                 Subscription sub2 = this.subscriptions.get(i);
                 if (sub2.mGroup.equals(sub.mGroup)
@@ -92,7 +93,8 @@ public class MetricsSubscribers {
         }
 
         public void addSubscription(Subscription sub) {
-            if (sub == null) return;
+            if (sub == null)
+                return;
             if (sub.host == null || sub.host.isEmpty()) {
                 this.subscriptions.add(sub);
                 String key = sub.mSubGroup != null ? sub.mGroup + "." + sub.mSubGroup : sub.mGroup;
@@ -105,7 +107,8 @@ public class MetricsSubscribers {
         }
 
         public void deleteSubscription(Subscription sub) {
-            if (sub == null) return;
+            if (sub == null)
+                return;
             if (sub.host == null || sub.host.isEmpty()) {
                 for (int i = this.subscriptions.size() - 1; i >= 0; i--) {
                     Subscription sub2 = this.subscriptions.get(i);
@@ -192,11 +195,13 @@ public class MetricsSubscribers {
     }
 
     public boolean addSubscription(Subscription sub) {
-        if (sub == null || sub.group == null || sub.group.isEmpty()) return false;
+        if (sub == null || sub.group == null || sub.group.isEmpty())
+            return false;
 
         boolean status = this.context.getMetricDb() != null ?
                 this.context.getMetricDb().addMetricsSubscription(sub) : false;
-        if (!status) return false;
+        if (!status)
+            return false;
         synchronized (this.groupSubscriptions) {
             String group = sub.group;
             if (!this.groupSubscriptions.containsKey(group))
@@ -209,7 +214,8 @@ public class MetricsSubscribers {
     public boolean deleteSubscription(Subscription sub) {
         boolean status = this.context.getMetricDb() != null ?
                 this.context.getMetricDb().deleteMetricsSubscription(sub) : false;
-        if (!status) return false;
+        if (!status)
+            return false;
         synchronized (this.groupSubscriptions) {
             String group = sub.group;
             if (this.groupSubscriptions.containsKey(group))
@@ -221,7 +227,8 @@ public class MetricsSubscribers {
 
     public Subscription getSubscription(String group, String host, String mGroup, String mSubGroup) {
         synchronized (this.groupSubscriptions) {
-            if (!this.groupSubscriptions.containsKey(group)) return null;
+            if (!this.groupSubscriptions.containsKey(group))
+                return null;
             return this.groupSubscriptions.get(group).getSubscription(host, mGroup, mSubGroup);
         }
     }

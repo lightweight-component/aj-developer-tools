@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Handle all supported performance related sql statements.
+ * Handle all supported performance-related sql statements.
  *
  * @author xrao
  */
@@ -39,9 +39,6 @@ public class SqlManager implements Serializable {
     @Getter
     @Setter
     private String sqlPath = "sql.xml";
-
-    public SqlManager() {
-    }
 
     public Sql getSql(String handle) {
         if (this.sqlMap.containsKey(handle))
@@ -63,9 +60,11 @@ public class SqlManager implements Serializable {
             while (reader.hasNext()) {
                 //loop till one sql tag is found
                 int evtType = reader.next();
-                if (evtType != XMLStreamConstants.START_ELEMENT) continue;
+                if (evtType != XMLStreamConstants.START_ELEMENT)
+                    continue;
                 String tagName = reader.getLocalName();
-                if (!"sql".equals(tagName)) continue;
+                if (!"sql".equals(tagName))
+                    continue;
                 int attrCount = reader.getAttributeCount();
                 String name = null;
                 String paramCount = null;
@@ -107,13 +106,16 @@ public class SqlManager implements Serializable {
                     sql.setExpandRow(expandRow);
                     sql.setErrorInline(errorInline);
                     try {
+                        assert paramCount != null;
                         sql.setParamCount(Integer.parseInt(paramCount));
-                    } catch (Exception ex) {
+                    } catch (Exception ignored) {
                     }
                     while (reader.hasNext()) {
                         int evtType2 = reader.next();
-                        if (evtType2 == XMLStreamConstants.END_ELEMENT && "sql".equals(reader.getLocalName())) break;
-                        if (evtType2 != XMLStreamConstants.START_ELEMENT) continue;
+                        if (evtType2 == XMLStreamConstants.END_ELEMENT && "sql".equals(reader.getLocalName()))
+                            break;
+                        if (evtType2 != XMLStreamConstants.START_ELEMENT)
+                            continue;
                         String tagName2 = reader.getLocalName();
                         if ("text".equals(tagName2))
                             sql.setSqlText(reader.getElementText());
@@ -171,20 +173,12 @@ public class SqlManager implements Serializable {
     }
 
     public boolean init() {
-        InputStream in = null;
-
-        try {
-            in = this.getClass().getClassLoader().getResourceAsStream(sqlPath);
+        try (InputStream in = this.getClass().getClassLoader().getResourceAsStream(sqlPath)) {
             this.load(in);
             log.info("Load predefined sql: " + this.sqlMap.size() + "in " + (in == null) + ", sqlPath=" + this.sqlPath);
             return true;
         } catch (Exception ex) {
             log.error("Exception", ex);
-        } finally {
-            if (in != null) try {
-                in.close();
-            } catch (Exception ex) {
-            }
         }
         return false;
     }

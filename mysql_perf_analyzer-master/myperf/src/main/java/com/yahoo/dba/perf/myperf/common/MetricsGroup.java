@@ -8,15 +8,11 @@ package com.yahoo.dba.perf.myperf.common;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * MetricsGroup groups related metrics, for example, metrics can be gathered by a single SQL call.
- * It can contains zero or more sub groups for storage purpose. Each sub group, if exists, will
+ * It can contain zero or more subgroups for storage purpose. Each sub group, if exists, will
  * be stored inside a table with the name defined in the sub group definition.
  *
  * @author xrao
@@ -91,7 +87,7 @@ public class MetricsGroup {
     }
 
     /**
-     * Note the returned list is a unmodified list
+     * Note the returned list is an unmodified list
      *
      * @return
      */
@@ -109,27 +105,31 @@ public class MetricsGroup {
             if (grp.getGroupName().equals(name))
                 return grp;
         }
+
         return null;
     }
 
     /**
-    * If the content ever changed, need re-calculate it first
-    *
-    * @return
-    */
+     * If the content ever changed, need re-calculate it first
+     *
+     * @return
+     */
     @Getter
     private int length;
 
     public void calculateLength() {
         int l = 0;
-        for (Metric m : this.metrics) {
+
+        for (Metric m : this.metrics)
             l += m.getDataType().getLength();
-        }
+
         this.length = l;
     }
 
     public void addSubGroups(MetricsGroup subGroup) {
-        if (subGroup == null) return;
+        if (subGroup == null)
+            return;
+
         subGroup.setParentGroup(this);
         this.subGroups.add(subGroup);
     }
@@ -141,22 +141,29 @@ public class MetricsGroup {
      */
     public String getSinkTableName() {
         if (this.isStoreInCommonTable()) {
-            if (this.targetTable != null) return this.targetTable;
+            if (this.targetTable != null)
+                return this.targetTable;
             else return "METRIC_GENERIC";
         } else if (this.udmFlagged)
             return "UDM_" + this.groupName.toUpperCase();
+
         return (this.dbType + "_" + this.groupName).toUpperCase();
     }
 
     public String getMetricFullName(String metricName) {
         if (!this.metricsNameMap.containsKey(metricName))
             return null;
-        String prefix = null;
-        if (this.udmFlagged) prefix = "UDM." + this.groupName;//udm
-        else if (this.parentGroup == null) prefix = this.groupName + ".";//top level
-        else prefix = this.parentGroup.getGroupName() + "." + this.groupName;
-        return prefix + "." + metricName;
 
+        String prefix;
+
+        if (this.udmFlagged)
+            prefix = "UDM." + this.groupName;//udm
+        else if (this.parentGroup == null)
+            prefix = this.groupName + ".";//top level
+        else
+            prefix = this.parentGroup.getGroupName() + "." + this.groupName;
+
+        return prefix + "." + metricName;
     }
 
     public Metric getMetricByName(String metricName) {

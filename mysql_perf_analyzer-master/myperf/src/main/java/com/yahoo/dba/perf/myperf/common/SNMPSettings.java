@@ -165,7 +165,8 @@ public class SNMPSettings implements Serializable {
         log.info("Read customized SNMP configuration ...");
         this.frameworkContext = ctx;
         File snmproot = new File(new File(rootPath), SNMPPATH);
-        if (!snmproot.exists()) snmproot.mkdirs();
+        if (!snmproot.exists())
+            snmproot.mkdirs();
         myperfSnmpConfigPath = snmproot.getAbsolutePath() + File.separatorChar + "snmp.json";
         this.readConfig();
     }
@@ -175,20 +176,10 @@ public class SNMPSettings implements Serializable {
         if (!cfgFile.exists()) {
             log.info("There is no customized snmp configuration, create one.");
         }
-        Writer pw = null;
-        try {
-            pw = new FileWriter(cfgFile);
+        try (Writer pw = new FileWriter(cfgFile)) {
             return this.writeToJson(pw);
         } catch (Exception ex) {
             log.error("Failed to store configurations to file " + this.myperfSnmpConfigPath, ex);
-        } finally {
-            if (pw != null) {
-                try {
-                    pw.flush();
-                    pw.close();
-                } catch (Exception fex) {
-                }
-            }
         }
         return false;
     }
@@ -199,12 +190,9 @@ public class SNMPSettings implements Serializable {
             log.info("There is no customized snmp configuration file");
             return true;
         }
-        FileInputStream in = null;
-        try {
-            in = new FileInputStream(cfgFile);
-            JsonReader jr = Json.createReader(in);
+        try (FileInputStream in = new FileInputStream(cfgFile);
+             JsonReader jr = Json.createReader(in)) {
             JsonObject jsonObject = jr.readObject();
-            jr.close();
             this.setSiteSetting(readFromJson(jsonObject.getJsonObject("site")));
             JsonArray groups = jsonObject.getJsonArray("group");
             if (groups != null) {
@@ -231,14 +219,6 @@ public class SNMPSettings implements Serializable {
             return true;
         } catch (Exception ex) {
             log.error("Failed to read SNMP configuration file " + cfgFile.getAbsolutePath(), ex);
-        } finally {
-            if (in != null) {
-                try {
-                    in.close();
-                } catch (Exception fex) {
-                }
-                ;
-            }
         }
         return false;
     }
@@ -257,11 +237,13 @@ public class SNMPSettings implements Serializable {
                 if ("3".equals(version)) {
                     snmp.setUsername(jobj.getString(SNMPSetting.V3_USERNAME, null));
                     String pwd = jobj.getString(SNMPSetting.V3_PASSWORD, null);
-                    if (pwd != null) pwd = frameworkContext.getMetaDb().dec(pwd);
+                    if (pwd != null)
+                        pwd = frameworkContext.getMetaDb().dec(pwd);
                     snmp.setPassword(pwd);
                     snmp.setAuthProtocol(jobj.getString(SNMPSetting.V3_AUTHPROTOCOL, null));
                     pwd = jobj.getString(SNMPSetting.V3_PRIVACYPASSPHRASE, null);
-                    if (pwd != null) pwd = frameworkContext.getMetaDb().dec(pwd);
+                    if (pwd != null)
+                        pwd = frameworkContext.getMetaDb().dec(pwd);
                     snmp.setPrivacyPassphrase(pwd);
                     snmp.setPrivacyProtocol(jobj.getString(SNMPSetting.V3_PRIVACYPROTOCOL, null));
                     snmp.setContext(jobj.getString(SNMPSetting.V3_CONTEXT, null));
@@ -272,7 +254,6 @@ public class SNMPSettings implements Serializable {
     }
 
     private boolean writeToJson(Writer writer) {
-        JsonWriter wr = null;
         try {
             JsonObjectBuilder settingBuilder = Json.createObjectBuilder();
             settingBuilder.add("site", toJson(this.siteSetting));
@@ -293,20 +274,13 @@ public class SNMPSettings implements Serializable {
             }
             settingBuilder.add("host", hostBuilder);
 
-            wr = Json.createWriter(writer);
-
-            JsonObject jsonObj = settingBuilder.build();
-            wr.writeObject(jsonObj);
-            wr.close();
-            wr = null;
-            return true;
+            try (JsonWriter wr = Json.createWriter(writer)) {
+                JsonObject jsonObj = settingBuilder.build();
+                wr.writeObject(jsonObj);
+                return true;
+            }
         } catch (Exception ex) {
             log.info("Failed to store snmp json", ex);
-        } finally {
-            if (wr != null) try {
-                wr.close();
-            } catch (Exception ex) {
-            }
         }
         return false;
     }

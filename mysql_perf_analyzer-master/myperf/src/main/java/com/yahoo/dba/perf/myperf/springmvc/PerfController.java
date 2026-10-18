@@ -44,7 +44,8 @@ public class PerfController extends MyPerfBaseController {
                                              HttpServletResponse response) throws Exception {
         String pg = request.getParameter("pg");
         String tgtPage = pg;
-        if (tgtPage != null) tgtPage = tgtPage.trim().toLowerCase();
+        if (tgtPage != null)
+            tgtPage = tgtPage.trim().toLowerCase();
         if (tgtPage == null || tgtPage.isEmpty() || (!pageMap.containsKey(tgtPage) && !noSessionPageMap.containsKey(tgtPage)))
             tgtPage = this.defaultView;
         else if (pageMap.containsKey(tgtPage) && !WebAppUtil.hasValidSession(request)) {

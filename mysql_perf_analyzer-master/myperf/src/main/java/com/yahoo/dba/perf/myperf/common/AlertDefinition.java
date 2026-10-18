@@ -90,12 +90,9 @@ public class AlertDefinition implements Serializable {
     }
 
     public static AlertDefinition createFromJson(InputStream in) {
-        JsonReader jsonReader = null;
         AlertDefinition alert = null;
-        try {
-            jsonReader = Json.createReader(in);
+        try (JsonReader jsonReader = Json.createReader(in)) {
             JsonObject jsonObject = jsonReader.readObject();
-            jsonReader.close();
             alert = new AlertDefinition(jsonObject.getString("name"));
             alert.setSource(jsonObject.getString("source"));
             alert.setMetricName(jsonObject.getString("metricName", null));
@@ -138,13 +135,15 @@ public class AlertDefinition implements Serializable {
                 mtrStr.append("\"metricValueType\": \"").append(metricValueType).append("\",\r\n");
             mtrStr.append("\"defaultThreshold\": \"").append(defaultThreshold).append("\",\r\n");
         }
-        if (this.sqlId != null && !this.sqlId.isEmpty()) mtrStr.append("\"sqlId\": \"").append(sqlId).append("\",\r\n");
+        if (this.sqlId != null && !this.sqlId.isEmpty())
+            mtrStr.append("\"sqlId\": \"").append(sqlId).append("\",\r\n");
         if (this.sqlText != null && !this.sqlText.isEmpty()) mtrStr.append("\"sqlText\": \"")
                 .append(html ? CommonUtils.escapeJsonHTML(sqlText) : CommonUtils.escapeJson(sqlText)).append("\",\r\n");
         mtrStr.append("\"params\":[");
         int cnt = 0;
         for (Map.Entry<String, String> e : this.params.entrySet()) {
-            if (cnt > 0) mtrStr.append(",\r\n");
+            if (cnt > 0)
+                mtrStr.append(",\r\n");
             mtrStr.append("{\"name\": \"").append(e.getKey()).append("\",\"defaultValue\":\"")
                     .append(e.getValue())
                     .append("\"}");

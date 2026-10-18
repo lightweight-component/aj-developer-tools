@@ -209,7 +209,8 @@ public class UserDefinedMetrics implements Serializable {
         int cnt = this.metrics.size();
         for (int i = 0; i < cnt; i++) {
             Metric m = metrics.get(i);
-            if (i > 0) mtrStr.append(",\r\n");
+            if (i > 0)
+                mtrStr.append(",\r\n");
             mtrStr.append("{\"name\": \"").append(m.getName()).append("\",\"sourceName\":\"")
                     .append(m.getSourceName() != null && !m.getSourceName().isEmpty() ? m.getSourceName() : m.getName())
                     .append("\", \"inc\": \"").append(m.isIncremental() ? "y" : "n").append("\", \"dataType\": \"")
@@ -220,7 +221,8 @@ public class UserDefinedMetrics implements Serializable {
     }
 
     public static String escapeJsonHTML(String str) {
-        if (str == null) return "";
+        if (str == null)
+            return "";
         StringBuilder sb = new StringBuilder(str.length());
         char[] carray = str.toCharArray();
         for (int i = 0; i < carray.length; i++) {
@@ -247,7 +249,8 @@ public class UserDefinedMetrics implements Serializable {
     }
 
     public static String escapeJson(String str) {
-        if (str == null) return "";
+        if (str == null)
+            return "";
         StringBuilder sb = new StringBuilder(str.length());
         char[] carray = str.toCharArray();
         for (int i = 0; i < carray.length; i++) {
@@ -270,12 +273,9 @@ public class UserDefinedMetrics implements Serializable {
     }
 
     public static UserDefinedMetrics createFromJson(InputStream in) {
-        JsonReader jsonReader = null;
         UserDefinedMetrics udm = null;
-        try {
-            jsonReader = Json.createReader(in);
+        try (JsonReader jsonReader = Json.createReader(in)) {
             JsonObject jsonObject = jsonReader.readObject();
-            jsonReader.close();
             udm = new UserDefinedMetrics(jsonObject.getString("groupName"));
             udm.setAuto("y".equalsIgnoreCase(jsonObject.getString("auto", null)));
             udm.setStoreInCommonTable("y".equalsIgnoreCase(jsonObject.getString("storeInCommonTable", null)));

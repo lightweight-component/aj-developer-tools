@@ -104,7 +104,8 @@ public abstract class MyPerfBaseController extends AbstractController {
      */
     protected boolean isDebug(HttpServletRequest req) {
         //if system level use debug, return true
-        if (frameworkContext.isDebug()) return true;
+        if (frameworkContext.isDebug())
+            return true;
         if (req.getSession() != null) {
             try {
                 if ("1".equals(req.getSession().getAttribute(Constants.SESSION_DEBUG)))

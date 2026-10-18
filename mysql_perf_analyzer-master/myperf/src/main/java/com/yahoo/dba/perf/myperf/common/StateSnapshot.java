@@ -140,7 +140,8 @@ public class StateSnapshot implements Serializable {
      * @param snmpMap
      */
     public void recordSnmpStats(Map<String, String> snmpMap) {
-        if (snmpMap == null) return;
+        if (snmpMap == null)
+            return;
         setSyscputime(CommonUtils.getMapValueLong(snmpMap, "ssCpuRawSystem", -1L));
         setUsercputime(CommonUtils.getMapValueLong(snmpMap, "ssCpuRawUser", -1L));
         this.setSoftirqtime(CommonUtils.getMapValueLong(snmpMap, "ssCpuRawSoftIRQ", -1L));
@@ -153,7 +154,8 @@ public class StateSnapshot implements Serializable {
                 + CommonUtils.getMapValueLong(snmpMap, "ssCpuRawIdle", -1L)
                 + CommonUtils.getMapValueLong(snmpMap, "ssCpuRawNice", -1L)
                 + CommonUtils.getMapValueLong(snmpMap, "ssCpuRawSoftIRQ", -1L));
-        if (this.getTotalcputime() < 0L) this.setTotalcputime(-1L);
+        if (this.getTotalcputime() < 0L)
+            this.setTotalcputime(-1L);
         this.setSwapout(CommonUtils.getMapValueLong(snmpMap, "ssRawSwapOut", -1L));
 
     }
@@ -164,7 +166,8 @@ public class StateSnapshot implements Serializable {
      * @param kvPairs
      */
     public void recordSnapFromMySQLStatus(Map<String, String> kvPairs) {
-        if (kvPairs == null) return;
+        if (kvPairs == null)
+            return;
         setSlowQueryCount(CommonUtils.getMapValueLong(kvPairs, "SLOW_QUERIES", 0L));
         setConnections(CommonUtils.getMapValueLong(kvPairs, "CONNECTIONS", 0L));
         setQueries(CommonUtils.getMapValueLong(kvPairs, "QUERIES", 0L));

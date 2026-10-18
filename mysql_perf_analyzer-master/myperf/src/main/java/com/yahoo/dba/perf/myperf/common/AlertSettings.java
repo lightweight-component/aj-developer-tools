@@ -120,7 +120,8 @@ public class AlertSettings {
         alertType = alertType.toUpperCase();
         //do we have group?
         if (!this.groupSettings.containsKey(dbgroup)) {
-            if (DEFAULT_THRESHOLD.containsKey(alertType)) return DEFAULT_THRESHOLD.get(alertType);
+            if (DEFAULT_THRESHOLD.containsKey(alertType))
+                return DEFAULT_THRESHOLD.get(alertType);
             else return Float.MAX_VALUE;
         }
         GroupSettings grpSetting = groupSettings.get(dbgroup);
@@ -130,7 +131,8 @@ public class AlertSettings {
             threshold = hostSetting.getThreshold(alertType);
         if (threshold == null)
             threshold = grpSetting.getGroupDefaultThreshold(alertType);
-        if (threshold == null && DEFAULT_THRESHOLD.containsKey(alertType)) return DEFAULT_THRESHOLD.get(alertType);
+        if (threshold == null && DEFAULT_THRESHOLD.containsKey(alertType))
+            return DEFAULT_THRESHOLD.get(alertType);
         if (threshold == null)
             threshold = Float.MAX_VALUE;
         return threshold;
@@ -169,14 +171,17 @@ public class AlertSettings {
             log.info("Change too small, ignore: " + alertSettingString);
             return false;//ignore if change is less than 1%
         }
-        if (prevValue == 0.0f && threshold.floatValue() == 0.0f) return false;
+        if (prevValue == 0.0f && threshold.floatValue() == 0.0f)
+            return false;
 
-        if (dbgroup == null || dbgroup.isEmpty()) return false;
+        if (dbgroup == null || dbgroup.isEmpty())
+            return false;
         if (this.context.getDbInfoManager().findGroup(dbgroup) == null) {
             log.info("Unknow DB GROUP, ignore: " + alertSettingString);
             return false;//no such dbgroup
         }
-        if (dbhost == null || dbhost.isEmpty()) dbhost = "all";
+        if (dbhost == null || dbhost.isEmpty())
+            dbhost = "all";
         if (!"all".equals(dbhost) && this.context.getDbInfoManager().findDB(dbgroup, dbhost) == null) {
             log.info("Unknown DB, ignore: " + alertSettingString);
             return false;//no such db
@@ -185,10 +190,12 @@ public class AlertSettings {
             this.groupSettings.put(dbgroup, new GroupSettings());
         GroupSettings grpSetting = this.groupSettings.get(dbgroup);
         if ("all".equals(dbhost)) {
-            if (save) this.context.getMetricDb().upsertAlertSetting(dbgroup, dbhost, alertType, threshold, null);
+            if (save)
+                this.context.getMetricDb().upsertAlertSetting(dbgroup, dbhost, alertType, threshold, null);
             grpSetting.updateDefault(alertType, threshold);
         } else {
-            if (save) this.context.getMetricDb().upsertAlertSetting(dbgroup, dbhost, alertType, threshold, null);
+            if (save)
+                this.context.getMetricDb().upsertAlertSetting(dbgroup, dbhost, alertType, threshold, null);
             grpSetting.updateHostThreshold(dbhost, alertType, threshold);
         }
         return true;
@@ -202,12 +209,14 @@ public class AlertSettings {
             return false;//ignore if no changes
         }
 
-        if (dbgroup == null || dbgroup.isEmpty()) return false;
+        if (dbgroup == null || dbgroup.isEmpty())
+            return false;
         if (this.context.getDbInfoManager().findGroup(dbgroup) == null) {
             log.info("Unknow DB GROUP, ignore: " + emails);
             return false;//no such dbgroup
         }
-        if (dbhost == null || dbhost.isEmpty()) dbhost = "all";
+        if (dbhost == null || dbhost.isEmpty())
+            dbhost = "all";
         if (!"all".equals(dbhost) && this.context.getDbInfoManager().findDB(dbgroup, dbhost) == null) {
             log.info("Unknown DB, ignore: " + emails);
             return false;//no such db
@@ -216,10 +225,12 @@ public class AlertSettings {
             this.groupSettings.put(dbgroup, new GroupSettings());
         GroupSettings grpSetting = this.groupSettings.get(dbgroup);
         if ("all".equals(dbhost)) {
-            if (save) this.context.getMetricDb().upsertAlertNotification(dbgroup, dbhost, emails);
+            if (save)
+                this.context.getMetricDb().upsertAlertNotification(dbgroup, dbhost, emails);
             grpSetting.setNotificationEmails(emails);
         } else {
-            if (save) this.context.getMetricDb().upsertAlertNotification(dbgroup, dbhost, emails);
+            if (save)
+                this.context.getMetricDb().upsertAlertNotification(dbgroup, dbhost, emails);
             grpSetting.updateHostNotificationEmails(dbhost, emails);
         }
         return true;

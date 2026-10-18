@@ -75,7 +75,8 @@ public class UserReportManager {
             sb.append(this.filename).append(fieldSeparator);
             boolean first = true;
             for (Map.Entry<String, String> e : this.parameters.entrySet()) {
-                if (!first) sb.append(pairSeparator);
+                if (!first)
+                    sb.append(pairSeparator);
                 else first = false;
                 sb.append(e.getKey()).append(kvSeparator).append(e.getValue());
             }
@@ -85,7 +86,8 @@ public class UserReportManager {
         }
 
         public static UserReport decodeLine(String line) {
-            if (line == null || line.trim().length() == 0) return null;
+            if (line == null || line.trim().length() == 0)
+                return null;
 
             String[] tokens = line.trim().split("\\u0001");
 
@@ -160,23 +162,16 @@ public class UserReportManager {
 
     synchronized public void addReportEntry(UserReport urp) {
         File idxFile = new File(userroot, idxfile);
-        FileWriter fw = null;
-
-        if (maxId == 0) this.list();
+        if (maxId == 0)
+            this.list();
         this.maxId++;
         urp.setId(this.maxId);
-        try {
-            fw = new FileWriter(idxFile, true);
+        try (FileWriter fw = new FileWriter(idxFile, true)) {
             String line = urp.encodeLine() + lineSeparator;
             fw.write(line);
         } catch (Exception ex) {
 
             log.error("Exception", ex);
-        } finally {
-            try {
-                if (fw != null) fw.close();
-            } catch (Exception iex) {
-            }
         }
     }
 
@@ -184,10 +179,7 @@ public class UserReportManager {
         List<UserReport> repList = new ArrayList<>();
         File idxFile = new File(userroot, idxfile);
         if (idxFile.exists()) {
-            BufferedReader br = null;
-
-            try {
-                br = new BufferedReader(new FileReader(idxFile));
+            try (BufferedReader br = new BufferedReader(new FileReader(idxFile))) {
 
                 String line = null;
 
@@ -195,16 +187,12 @@ public class UserReportManager {
                     UserReport rep = UserReport.decodeLine(line);
                     if (rep != null) {
                         repList.add(rep);
-                        if (rep.getId() >= this.maxId) maxId = rep.getId();
+                        if (rep.getId() >= this.maxId)
+                            maxId = rep.getId();
                     }
                 }
             } catch (Exception ex) {
                 log.error("Exception", ex);
-            } finally {
-                try {
-                    if (br != null) br.close();
-                } catch (Exception iex) {
-                }
             }
         }
         return repList;
@@ -255,21 +243,13 @@ public class UserReportManager {
      */
     public void update(List<UserReport> repList) {
         File idxFile = new File(userroot, idxfile);
-        FileWriter fw = null;
-
-        try {
-            fw = new FileWriter(idxFile);
+        try (FileWriter fw = new FileWriter(idxFile)) {
             for (UserReport urp : repList) {
                 String line = urp.encodeLine() + lineSeparator;
                 fw.write(line);
             }
         } catch (Exception ex) {
             log.error("Exception", ex);
-        } finally {
-            try {
-                if (fw != null) fw.close();
-            } catch (Exception iex) {
-            }
         }
 
     }
@@ -283,7 +263,8 @@ public class UserReportManager {
     }
 
     public boolean deleteFile(String fname, String id) {
-        if (fname == null && id == null) return false;
+        if (fname == null && id == null)
+            return false;
         //first check if we have such file or not
         //update idx
         int rpid = -1;
@@ -301,7 +282,8 @@ public class UserReportManager {
                 break;
             }
         }
-        if (!findOne) return false;
+        if (!findOne)
+            return false;
         this.update(repList);
         File f = this.getFileForDownload(fname);
         if (f != null && !"rep.idx".equalsIgnoreCase(f.getName())) {

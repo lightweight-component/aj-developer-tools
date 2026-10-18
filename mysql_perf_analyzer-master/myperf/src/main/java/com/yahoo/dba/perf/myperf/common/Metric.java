@@ -48,8 +48,10 @@ public class Metric {
     public Metric(String name, String sourceName, MetricDataType dataType, String metricUnit, String description) {
         this.name = name;
         this.sourceName = sourceName;
-        if (dataType != null) this.dataType = dataType;
-        if (metricUnit != null) this.metricUnit = metricUnit;
+        if (dataType != null)
+            this.dataType = dataType;
+        if (metricUnit != null)
+            this.metricUnit = metricUnit;
         this.description = description;
         this.incremental = true;
     }
@@ -57,8 +59,10 @@ public class Metric {
     public Metric(String name, String sourceName, MetricDataType dataType, String metricUnit, String description, boolean incremental) {
         this.name = name;
         this.sourceName = sourceName;
-        if (dataType != null) this.dataType = dataType;
-        if (metricUnit != null) this.metricUnit = metricUnit;
+        if (dataType != null)
+            this.dataType = dataType;
+        if (metricUnit != null)
+            this.metricUnit = metricUnit;
         this.description = description;
         this.incremental = incremental;
     }
@@ -98,8 +102,10 @@ public class Metric {
     }
 
     public static boolean isAlphaNumericUnderscoreNotNull(String str, int len) {
-        if (str == null || str.isEmpty()) return false;
-        if (len > 0 && str.length() > len) return false;
+        if (str == null || str.isEmpty())
+            return false;
+        if (len > 0 && str.length() > len)
+            return false;
         char[] chars = str.toCharArray();
         for (int i = 0; i < chars.length; i++) {
             char c = chars[i];

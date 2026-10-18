@@ -16,7 +16,8 @@ public class QueryInputValidator {
      */
     public static void validateSql(SqlManager sqlManager, QueryParameters qps) {
         Sql sql = sqlManager.getSql(qps.getSql());
-        if (sql == null) throw new RuntimeException("Cannot find sql for handle " + qps.getSql());
+        if (sql == null)
+            throw new RuntimeException("Cannot find sql for handle " + qps.getSql());
         int paramCnt = sql.getParamCount();
         for (int i = 1; i <= paramCnt; i++) {
             //parameter name uses p_nn convention
@@ -28,7 +29,8 @@ public class QueryInputValidator {
 
     public static void validateDiffSqls(SqlManager sqlManager, QueryParameters qpsA, QueryParameters qpsB) {
         Sql sqlA = sqlManager.getSql(qpsA.getSql());
-        if (sqlA == null) throw new RuntimeException("Cannot find sql for handle " + qpsA.getSql());
+        if (sqlA == null)
+            throw new RuntimeException("Cannot find sql for handle " + qpsA.getSql());
         int paramCnt = sqlA.getParamCount();
         for (int i = 1; i <= paramCnt; i++) {
             //parameter name uses p_nn convention
@@ -37,7 +39,8 @@ public class QueryInputValidator {
             }
         }
         Sql sqlB = sqlManager.getSql(qpsB.getSql());
-        if (sqlB == null) throw new RuntimeException("Cannot find sql for handle " + qpsB.getSql());
+        if (sqlB == null)
+            throw new RuntimeException("Cannot find sql for handle " + qpsB.getSql());
         paramCnt = sqlB.getParamCount();
         for (int i = 1; i <= paramCnt; i++) {
             //parameter name uses p_nn convention

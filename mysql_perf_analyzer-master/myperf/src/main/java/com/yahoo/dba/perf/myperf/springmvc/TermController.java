@@ -25,10 +25,12 @@ public class TermController extends MyPerfBaseController {
         ModelAndView mv = new ModelAndView(jsonView);
         String res = "";
         for (String name : names) {
-            if (name == null || name.isEmpty()) continue;
+            if (name == null || name.isEmpty())
+                continue;
             if (!name.startsWith("plan.")) {
                 String desc = this.frameworkContext.getStatDefManager().getStatDescription(name);
-                if (desc == null) desc = "no description found.";
+                if (desc == null)
+                    desc = "no description found.";
                 if (name != null && name.startsWith("mysql_status"))
                     name = name.substring(13);
                 if (res.length() > 0)
@@ -47,7 +49,8 @@ public class TermController extends MyPerfBaseController {
                     else if (name2.startsWith("plan.extra.Cost"))
                         name2 = "plan.extra.Cost";
                     String desc = this.frameworkContext.getStatDefManager().getStatDescription(name2);
-                    if (desc == null) desc = "no description found.";
+                    if (desc == null)
+                        desc = "no description found.";
                     if (res.length() > 0)
                         res += "<br />";
                     res += "<b>" + name2.substring(5) + "</b>: " + desc;

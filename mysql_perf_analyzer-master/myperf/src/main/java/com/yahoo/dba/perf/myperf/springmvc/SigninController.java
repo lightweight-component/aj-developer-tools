@@ -83,7 +83,8 @@ public class SigninController extends AbstractController {
         int seed = (int) (Math.random() * Integer.MAX_VALUE);
         ModelAndView mv = new ModelAndView(getLoginFormView());
         mv.addObject("name", username);
-        if (failed) mv.addObject("message", message);
+        if (failed)
+            mv.addObject("message", message);
         mv.addObject("help_key", "start");
         mv.addObject("server_ts", server_ts);
         mv.addObject("ars", seed);//ars: authentication random seed

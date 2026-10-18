@@ -97,13 +97,15 @@ public class ProcessListEntry implements Serializable, Comparable<ProcessListEnt
         this.setInfo(rs.getString("INFO"));
         if (rowInfo) {
             this.setRows_examined(rs.getLong("ROWS_EXAMINED"));
-            if (hasRowsRead) this.setRows_read(rs.getLong("ROWS_READ"));
+            if (hasRowsRead)
+                this.setRows_read(rs.getLong("ROWS_READ"));
             this.setRows_sent(rs.getLong("ROWS_SENT"));
         }
     }
 
     public void setHost(String host) {
-        if (host == null) this.host = host;
+        if (host == null)
+            this.host = host;
         int idx = host.indexOf(":");//strip :
         if (idx < 0)
             this.host = host;
@@ -113,7 +115,8 @@ public class ProcessListEntry implements Serializable, Comparable<ProcessListEnt
 
     @Override
     public int compareTo(ProcessListEntry obj) {
-        if (obj == null) return 1;
+        if (obj == null)
+            return 1;
         String s = obj.getInfo();
         if ((s == null || s.isEmpty()) && (this.info == null || this.info.isEmpty()))
             return 0;//both are empty

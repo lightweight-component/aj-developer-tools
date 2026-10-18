@@ -32,7 +32,8 @@ public class StatusController extends MyPerfBaseController {
             }
         }
         String dbgroup = req.getParameter("group");
-        if (dbgroup == null || dbgroup.trim().length() == 0) dbgroup = "all";
+        if (dbgroup == null || dbgroup.trim().length() == 0)
+            dbgroup = "all";
         String dbhost = req.getParameter("host");
 
         Date now = new Date();
@@ -77,10 +78,13 @@ public class StatusController extends MyPerfBaseController {
 
                     String dbgroupName = dbinfo.getDbGroupName();
                     String dbHostName = dbinfo.getHostName();
-                    if (!"all".equals(dbgroup) && !dbgroup.equalsIgnoreCase(dbgroupName)) continue;
-                    if (useFilter && !filteredGroups.contains(dbgroupName)) continue;
+                    if (!"all".equals(dbgroup) && !dbgroup.equalsIgnoreCase(dbgroupName))
+                        continue;
+                    if (useFilter && !filteredGroups.contains(dbgroupName))
+                        continue;
                     InstanceStates stateSnaps = this.frameworkContext.getInstanceStatesManager().getStates(dbinfo.getDbid());
-                    if (stateSnaps == null) continue;
+                    if (stateSnaps == null)
+                        continue;
                     //java.util.Date lastConnectTime = this.frameworkContext.getDbInfoManager().getLastAccessDate(dbgroupName, dbHostName);
                     Date lastConnectTime = stateSnaps.getLastAccessTime();
                     String dbstatus = "Green";
@@ -209,7 +213,8 @@ public class StatusController extends MyPerfBaseController {
                                 || (syscpu + usercpu > this.frameworkContext.getAlertSettings().getAlertThreshold(dbinfo, "CPU"))
                                 || loadAvg > this.frameworkContext.getAlertSettings().getAlertThreshold(dbinfo, "LOADAVG")
                                 || activeThreads > this.frameworkContext.getAlertSettings().getAlertThreshold(dbinfo, "THREAD"))
-                            if (!"Red".equals(dbstatus)) dbstatus = "Yellow";
+                            if (!"Red".equals(dbstatus))
+                                dbstatus = "Yellow";
                     } else {
                         vals.add("0.00");
                         vals.add("0.00");
@@ -237,7 +242,8 @@ public class StatusController extends MyPerfBaseController {
                     Date altDt = stateSnaps.getLastAlertTime();
                     if (altDt != null) {
                         String val = stateSnaps.getLastAlertValue();
-                        if (val == null) val = "";
+                        if (val == null)
+                            val = "";
                         //else if(val.indexOf('.')>0 && val.length()>=val.indexOf('.')+4)
                         //  val = val.substring(0, val.indexOf('.')+4);
                         String end_dt = stateSnaps.getLastAlertEndTime() != null ? sdf.format(stateSnaps.getLastAlertEndTime()) : "";
@@ -314,7 +320,8 @@ public class StatusController extends MyPerfBaseController {
             diff = uptime > 0 ? v1 : 0;
             interval = uptime > 0 ? uptime * 1000 : 0;
         }
-        if (!avg || diff == 0) return diff;
+        if (!avg || diff == 0)
+            return diff;
 
         return ((double) (diff * adjustment)) / (double) interval;
     }

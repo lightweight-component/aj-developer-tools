@@ -133,7 +133,8 @@ public abstract class MetricsDbBase implements Runnable {
             String[] groupNames = metricsDef.getGroupNames();
             for (String grpName : groupNames) {
                 MetricsGroup group = metricsDef.getGroupByName(grpName);
-                if (group == null) continue; //not supposed to be so
+                if (group == null)
+                    continue; //not supposed to be so
                 List<MetricsGroup> mgs = new ArrayList<>();
                 if (group.getSubGroups().size() == 0) //no sub group, add self
                 {
@@ -160,7 +161,8 @@ public abstract class MetricsDbBase implements Runnable {
 
             for (Map.Entry<String, UserDefinedMetrics> entry : metricsDef.getUdmManager().getUdms().entrySet()) {
                 MetricsGroup group = entry.getValue().getMetricsGroup();
-                if (group == null) continue; //not supposed to be so
+                if (group == null)
+                    continue; //not supposed to be so
                 String sinkName = group.getSinkTableName();
                 this.metricsGroups.put(sinkName, group);
                 this.dataQueues.put(sinkName, new ArrayBlockingQueue<>(10000));//2014-02-14, change size to 10K
@@ -171,9 +173,11 @@ public abstract class MetricsDbBase implements Runnable {
 
 
     public boolean addNewUDM(UserDefinedMetrics udm) {
-        if (udm == null) return false;
+        if (udm == null)
+            return false;
         MetricsGroup mg = udm.getMetricsGroup();
-        if (!createMetricsTable(mg)) return false;
+        if (!createMetricsTable(mg))
+            return false;
         String tblName = mg.getSinkTableName();
         synchronized (metricsDefLock) {
             if (!this.metricsGroups.containsKey(tblName)) {
@@ -188,7 +192,8 @@ public abstract class MetricsDbBase implements Runnable {
     }
 
     public boolean removeUDM(UserDefinedMetrics udm) {
-        if (udm == null) return false;
+        if (udm == null)
+            return false;
         MetricsGroup mg = udm.getMetricsGroup();
         String tblName = mg.getSinkTableName();
         synchronized (metricsDefLock) {
@@ -453,7 +458,8 @@ public abstract class MetricsDbBase implements Runnable {
      * @param dbInfoManager
      */
     public void syncHosts(List<DBInstanceInfo> dbInfos) {
-        if (dbInfos == null || dbInfos.size() == 0) return;//nothing to sync
+        if (dbInfos == null || dbInfos.size() == 0)
+            return;//nothing to sync
         MetaHostSyncer syncer = new MetaHostSyncer();
         syncer.setDbList(dbInfos);
         new Thread(syncer).start();//let it run on itself
@@ -469,10 +475,11 @@ public abstract class MetricsDbBase implements Runnable {
     public boolean syncHosts(DBInstanceInfo dbInfo, String action) {
         if (dbInfo == null)
             return false;
+
         try (Connection conn = this.createConnection(true)) {
             if ("delete".equalsIgnoreCase(action)) {
                 if (dbInfo.getHostName() == null || "all".equalsIgnoreCase(dbInfo.getHostName()))
-                    //remove whole group
+                    //remove a whole group
                     return this.removeDbGroup(conn, dbInfo.getDbGroupName());
                 else
                     return this.removeDBInfo(conn, dbInfo.getDbGroupName(), dbInfo.getHostName());
@@ -481,6 +488,7 @@ public abstract class MetricsDbBase implements Runnable {
         } catch (Exception ex) {
             log.info("Failed to remove host from metrics db (" + dbInfo.getDbGroupName() + ", " + dbInfo.getHostName());
         }
+
         return false;
     }
 
@@ -492,7 +500,6 @@ public abstract class MetricsDbBase implements Runnable {
      */
     abstract protected Connection createConnection(boolean autocommit);
 
-
     public void flush() {
         this.flushQueue.add(new Integer(1));
     }
@@ -500,14 +507,14 @@ public abstract class MetricsDbBase implements Runnable {
     public void putData(MetricsGroup mg, String key, ByteBuffer buf) {
         String tblName = mg.getSinkTableName();
         ArrayBlockingQueue<MetricsData> q = this.dataQueues.get(tblName);
-        if (q != null) {
+
+        if (q != null)
             try {
                 q.put(new MetricsData(key, buf));
-            } catch (Exception ex) {
+            } catch (Exception ignored) {
             }
-        } else {
+         else
             log.info("Warning: cannot find sink queue " + mg.getGroupName() + ", table " + tblName);
-        }
     }
 
     public void run() {
@@ -523,6 +530,7 @@ public abstract class MetricsDbBase implements Runnable {
             }
             store();
         }
+
         //final store after shutdown
         store();
         DBUtils.close(storeConnection);
@@ -535,6 +543,7 @@ public abstract class MetricsDbBase implements Runnable {
             for (String s : this.dataQueues.keySet()) {
                 ArrayBlockingQueue<MetricsData> q = this.dataQueues.get(s);
                 List<MetricsData> q2 = new ArrayList<>(50);
+
                 while (true) {
                     MetricsData bufData = q.poll();
                     if (//if nothing there, go to next queue.
@@ -543,19 +552,24 @@ public abstract class MetricsDbBase implements Runnable {
                     //accumulate all data from the same queue
                     q2.add(bufData);
                 }
+
                 if (q2.size() > 0) {
                     log.debug("Store " + q2.size() + " " + s + " metric records.");
                     long currTime = System.currentTimeMillis();
+
                     if (currTime - this.lastConnTime > 30000) {
                         DBUtils.close(storeConnection);
                         storeConnection = null;
                     }
+
                     if (storeConnection == null) {
                         storeConnection = this.createConnection(true);
                         this.lastConnTime = currTime;
                     }
+
                     //generic metrics
                     MetricsGroup mg = this.metricsGroups.get(s);
+
                     if (mg.isStoreInCommonTable()) {
                         storeGenericMetric(s, q2, storeConnection);
                         this.lastConnTime = System.currentTimeMillis();
@@ -563,9 +577,11 @@ public abstract class MetricsDbBase implements Runnable {
                         //go to next type
                         continue;
                     }
+
                     //builtin metrics
                     try {
                         String sql = this.insertSQL.get(s);
+
                         //for(MetricsData mdata:q2)
                         try (PreparedStatement stmt = storeConnection.prepareStatement(sql)) {
                             for (MetricsData mdata : q2) {
@@ -578,12 +594,14 @@ public abstract class MetricsDbBase implements Runnable {
                                 stmt.setInt(idx++, buf.getInt(pos));
                                 //snap_id
                                 pos += 4;
+
                                 if (mg.getKeyColumn() != null && !mg.getKeyColumn().isEmpty()) {
                                     if (mdata.dataKey == null)
                                         stmt.setNull(idx++, Types.VARCHAR);
                                     else
                                         stmt.setString(idx++, mdata.dataKey);
                                 }
+
                                 stmt.setString(idx++, sdf.format(new Date(buf.getLong(pos))));
                                 //timestamp
                                 pos += 8;
@@ -592,8 +610,8 @@ public abstract class MetricsDbBase implements Runnable {
                                 pos += 4;
                                 List<Metric> ms = mg.getMetrics();
                                 int len = ms.size();
-                                for (int i = 0; i < len; i++) {
-                                    Metric m = ms.get(i);
+
+                                for (Metric m : ms) {
                                     if (m.getDataType() == MetricDataType.BYTE) {
                                         stmt.setInt(idx++, buf.get(pos));
                                         pos++;
@@ -614,6 +632,7 @@ public abstract class MetricsDbBase implements Runnable {
                                         pos += 8;
                                     }
                                 }
+
                                 //one row
                                 stmt.execute();
                                 stmt.clearBatch();
@@ -639,7 +658,7 @@ public abstract class MetricsDbBase implements Runnable {
             if (storeConnection != null) {
                 try {
                     storeConnection.rollback();
-                } catch (Exception iex) {
+                } catch (Exception ignored) {
                 }
             }
         }
@@ -653,6 +672,7 @@ public abstract class MetricsDbBase implements Runnable {
      */
     protected void storeGenericMetric(String mg, List<MetricsData> q2, Connection conn) throws SQLException {
         String sql = this.insertSQL.get(mg);
+
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             int cnt = 0;
             for (MetricsData mdata : q2) {
@@ -695,17 +715,20 @@ public abstract class MetricsDbBase implements Runnable {
     public void purgeAlerts(long endDate) {
         String sql = "delete from ALERT where ts<=?";
         log.info("To purge alerts up to " + endDate);
+
         try (Connection conn = createConnection(true)) {
+
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setLong(1, endDate);
                 stmt.execute();
             } catch (Exception transactionException) {
                 try {
                     conn.rollback();
-                } catch (Exception iex) {
+                } catch (Exception ignored) {
                 }
                 throw transactionException;
             }
+
         } catch (Exception ex) {
             log.error("Failed to purge alerts up to " + endDate, ex);
         }
@@ -859,7 +882,8 @@ public abstract class MetricsDbBase implements Runnable {
 
     public ResultList retrieveMetrics(String metricGroupName, Metric[] metrics, boolean hasKeyColumn, int dbid, long startDate, long endDate, boolean agg) {
         String[] ms = new String[metrics.length];
-        for (int i = 0; i < metrics.length; i++) ms[i] = metrics[i].getName();
+        for (int i = 0; i < metrics.length; i++)
+            ms[i] = metrics[i].getName();
         if (!agg)
             return retrieveMetrics(metricGroupName, ms, hasKeyColumn, dbid, startDate, endDate);
         int[] snaps = this.getSnapshostRange(startDate, endDate);
@@ -1440,7 +1464,8 @@ public abstract class MetricsDbBase implements Runnable {
         @Override
         public void run() {
         Map<Integer, DBInstanceInfo> metaHosts = new HashMap<>(dbList.size());
-        for (DBInstanceInfo info : dbList) metaHosts.put(info.getDbid(), info);
+        for (DBInstanceInfo info : dbList)
+            metaHosts.put(info.getDbid(), info);
         try {
             log.info("Start to sync meta DB host info with metrics DB host info");
             try (Connection conn = createConnection(true)) {
@@ -2180,15 +2205,19 @@ public abstract class MetricsDbBase implements Runnable {
         String sql3 = "insert into " + METRICS_SUBSCRIPT + " (DBGROUP,HOSTNAME,MGROUP,MSUBGROUP) values(?,?,?,?)";
         log.info("Store metricst sub " + sub.mGroup + ", " + sub.mSubGroup + " for db " + sub.group + ", " + sub.host);
         boolean findOne = false;
+
         try (Connection conn = this.createConnection(true)) {
             try {
                 try (PreparedStatement pstmt = conn.prepareStatement("select ID from " + METRICS_SUBSCRIPT + " where DBGROUP=? and HOSTNAME=? and MGROUP=? and MSUBGROUP=?")) {
                     pstmt.setString(1, sub.group);
+
                     if (sub.host != null && !sub.host.isEmpty())
                         pstmt.setString(2, sub.host);
                     else
                         pstmt.setNull(2, Types.VARCHAR);
+
                     pstmt.setString(3, sub.mGroup);
+
                     if (sub.mSubGroup != null && !sub.mSubGroup.isEmpty())
                         pstmt.setString(4, sub.mSubGroup);
                     else
@@ -2199,6 +2228,7 @@ public abstract class MetricsDbBase implements Runnable {
                         }
                     }
                 }
+
                 if (!findOne) {
                     try (PreparedStatement pstmt = conn.prepareStatement(sql3)) {
                         pstmt.setString(1, sub.group);
@@ -2211,15 +2241,17 @@ public abstract class MetricsDbBase implements Runnable {
                             pstmt.setString(4, sub.mSubGroup);
                         else
                             pstmt.setNull(4, Types.VARCHAR);
+
                         pstmt.execute();
                     }
                 }
+
                 return true;
             } catch (Exception transactionException) {
                 if (conn != null)
                     try {
                         conn.rollback();
-                    } catch (Exception iex) {
+                    } catch (Exception ignored) {
                     }
                 throw transactionException;
             }
@@ -2227,6 +2259,7 @@ public abstract class MetricsDbBase implements Runnable {
             log.info("Failed to save metrics sub " + sub.mGroup + ", " + sub.mSubGroup + " for " + sub.group + ", " + sub.host);
             log.error("Exception", ex);
         }
+
         return false;
     }
 
@@ -2251,7 +2284,7 @@ public abstract class MetricsDbBase implements Runnable {
                 if (conn != null)
                     try {
                         conn.rollback();
-                    } catch (Exception iex) {
+                    } catch (Exception ignored) {
                     }
                 throw transactionException;
             }

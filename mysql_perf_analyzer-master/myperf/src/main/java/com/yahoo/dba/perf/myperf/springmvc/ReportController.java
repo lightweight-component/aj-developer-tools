@@ -77,11 +77,13 @@ public class ReportController extends AbstractController {
     private boolean checkPermission(HttpServletRequest req, Map<String, String> pathParams) {
         String cmd = pathParams.get(Constants.URL_PATH_CMD);
         AppUser appUser = AppUser.class.cast(req.getSession().getAttribute(AppUser.SESSION_ATTRIBUTE));
-        if (appUser == null) return false;//not allow anonymous access
+        if (appUser == null)
+            return false;//not allow anonymous access
 
         if ("delete".equals(cmd)) {
             //only admin is allowed
-            if (!appUser.isAdminUser()) return false;
+            if (!appUser.isAdminUser())
+                return false;
         }
         //check db access
         String dbgrp = pathParams.get(Constants.URL_PATH_DBGROUP);
@@ -191,7 +193,8 @@ public class ReportController extends AbstractController {
      * @return
      */
     private String getOriginalTS(String ts) {
-        if (ts == null || ts.isEmpty()) return ts;
+        if (ts == null || ts.isEmpty())
+            return ts;
         return ts.replace(" ", "").replaceAll("-", "").replaceAll(":", "");
     }
 
@@ -209,25 +212,20 @@ public class ReportController extends AbstractController {
                     + "_" + pathParams.get(Constants.URL_PATH_DBGROUP)
                     + "_" + pathParams.get(Constants.URL_PATH_DBHOST)
                     + "_" + origTS + ".txt");
-            if (!f.exists()) break;
+            if (!f.exists())
+                break;
             resp.setContentType("text/plain");
             resp.setContentLength((int) f.length());
             //resp.setHeader("Content-Disposition","attachment; filename=\""+f.getName()+"\"");
             byte[] buf = new byte[8192];
             int len = 0;
             OutputStream out = resp.getOutputStream();
-            InputStream in = null;
-            try {
-                in = new FileInputStream(f);
+            try (InputStream in = new FileInputStream(f)) {
                 while ((len = in.read(buf)) > 0)
                     out.write(buf, 0, len);
             } catch (Exception ex) {
 
             } finally {
-                try {
-                    if (in != null) in.close();
-                } catch (Exception iex) {
-                }
                 out.flush();
             }
             return null;
@@ -242,7 +240,8 @@ public class ReportController extends AbstractController {
     private UserReportManager getUserReportManager(HttpServletRequest req) {
 
         String appUser = WebAppUtil.findUserFromRequest(req);
-        if (appUser == null) return null;
+        if (appUser == null)
+            return null;
         HttpSession sess = req.getSession();
         UserReportManager urm = UserReportManager.class.cast(sess.getAttribute("UserReportManager"));
         //if none, we need add one

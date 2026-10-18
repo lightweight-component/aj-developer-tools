@@ -43,7 +43,8 @@ public class MySQLStatusQueryProcessor implements CustomQueryProcessor {
             int idx = 0;
             int nameIdx = 0;
             for (ColumnInfo c : desc.getColumns()) {
-                if ("VARIABLE_NAME".equalsIgnoreCase(c.getName())) nameIdx = idx;
+                if ("VARIABLE_NAME".equalsIgnoreCase(c.getName()))
+                    nameIdx = idx;
                 if ("VALUE".equalsIgnoreCase(c.getName()))
                     newDesc.addColumn("VARIABLE_VALUE", c.isNumberType(), idx++);
                 else

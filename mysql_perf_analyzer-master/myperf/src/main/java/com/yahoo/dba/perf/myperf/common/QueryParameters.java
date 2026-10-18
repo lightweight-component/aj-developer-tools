@@ -115,10 +115,13 @@ public class QueryParameters implements Serializable {
      */
     public String validate() {
         StringBuilder sb = new StringBuilder();
-        if (group == null) sb.append("group is required. ");
-        if (host == null) sb.append("host is required. ");
+        if (group == null)
+            sb.append("group is required. ");
+        if (host == null)
+            sb.append("host is required. ");
         //if(svc==null&&sid==null)sb.append("one of svc and sid is required. ");
-        if (sql == null) sb.append("sql is required. ");
+        if (sql == null)
+            sb.append("sql is required. ");
         return sb.toString();
     }
 

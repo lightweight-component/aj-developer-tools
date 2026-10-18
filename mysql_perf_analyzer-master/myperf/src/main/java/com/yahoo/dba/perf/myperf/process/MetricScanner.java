@@ -5,20 +5,14 @@
  */
 package com.yahoo.dba.perf.myperf.process;
 
+import com.yahoo.dba.perf.myperf.common.*;
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
-import com.yahoo.dba.perf.myperf.common.*;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Slf4j
 public class MetricScanner {
@@ -47,7 +41,7 @@ public class MetricScanner {
     public void scanAuto() {
         log.info(new Date() + ": Starting auto metrics scan ...");
         Date startDate = null;
-        Date endDate = null;
+        Date endDate;
 
         int snap_id = -1;
         try {
@@ -61,6 +55,7 @@ public class MetricScanner {
         } catch (Exception ex) {
             log.error("Exception", ex);
         }
+
         this.frameworkContext.getMetricDb().updateSnapCompleteTime(snap_id, Long.parseLong(sdf.format(new Date())));
         frameworkContext.getInstanceStatesManager().saveStatus();
         endDate = new Date();
@@ -69,21 +64,27 @@ public class MetricScanner {
 
     //setup metrics buffer if need
     private void checkAndSetupMetricsBuffer(DBInstanceInfo dbinfo) {
-        //will setup UDM buffer when need
+        //will set up UDM buffer when need
         if (!buffer.containsKey(dbinfo.getDbGroupName() + ":" + dbinfo.getHostName())) {
             Map<String, MetricsBuffer> ms = new HashMap<>();
             buffer.put(dbinfo.getDbGroupName() + ":" + dbinfo.getHostName(), ms);
         }
+
         String[] mgNames = this.frameworkContext.getMetricsDef().getGroupNames();
+
         for (String mgName : mgNames) {
             MetricsGroup mg = this.frameworkContext.getMetricsDef().getGroupByName(mgName);
-            if (mg == null) continue;
+
+            if (mg == null)
+                continue;
 
             if (buffer.containsKey(dbinfo.getDbGroupName() + ":" + dbinfo.getHostName())) {
                 Map<String, MetricsBuffer> bufs = buffer.get(dbinfo.getDbGroupName() + ":" + dbinfo.getHostName());
+
                 if (mg.getSubGroups() != null && mg.getSubGroups().size() > 0) { //sub groups
                     for (MetricsGroup subGrp : mg.getSubGroups()) {
                         String subGrpName = mg.getGroupName() + "." + subGrp.getGroupName();
+
                         if (!bufs.containsKey(subGrpName)) {
                             //MetricsBuffer buf = new MetricsBuffer(mg, this.recordCount+20);
                             MetricsBuffer buf = new MetricsBuffer(subGrp);//no more cache
@@ -91,10 +92,8 @@ public class MetricScanner {
                             log.info("add buffer for " + dbinfo + ", " + subGrpName);
                             bufs.put(subGrpName, buf);
                         }
-
                     }
-                } else //top level
-                {
+                } else {//top level
                     if (!bufs.containsKey(mg.getGroupName())) {
                         //MetricsBuffer buf = new MetricsBuffer(mg, this.recordCount+20);
                         MetricsBuffer buf = new MetricsBuffer(mg);//no more cache
@@ -112,18 +111,23 @@ public class MetricScanner {
     public void scan(int snap_id) {
         Set<String> clusternames = frameworkContext.getDbInfoManager().getMyDatabases(appUser.getName(), false).getMyDbList();
         log.info("Start scan metrics");
+
         if (this.buffer == null) {
             log.error("Data buffer was not found. Scan cannot continue.");
             return;
         }
+
         LinkedBlockingQueue<DBInstanceInfo> dbqueue = new LinkedBlockingQueue<>();
+
         for (String cl : clusternames) {
             DBCredential cred = DBUtils.findDBCredential(frameworkContext, cl, appUser);
             if (cred == null) {
                 log.info("No credential for group " + cl + ", skip it");
                 continue;//log the error
             }
+
             DBGroupInfo cls = frameworkContext.getDbInfoManager().findGroup(cl);
+
             if (cls == null) {
                 log.info("Group " + cl + " might have been deleted.");
                 continue;
@@ -136,12 +140,15 @@ public class MetricScanner {
         }
 
         int mythreadcnt = this.threadCount;
-        if (dbqueue.size() < mythreadcnt) mythreadcnt = dbqueue.size();
+
+        if (dbqueue.size() < mythreadcnt)
+            mythreadcnt = dbqueue.size();
+
         Thread th[] = new Thread[mythreadcnt];
         metricsScannerRunners = new MetricScannerRunner[mythreadcnt];
+
         for (int i = 0; i < mythreadcnt; i++) {
-            MetricScannerRunner runner = new
-                    MetricScannerRunner(frameworkContext,
+            MetricScannerRunner runner = new MetricScannerRunner(frameworkContext,
                     dbqueue,
                     appUser,
                     snap_id);
@@ -152,9 +159,10 @@ public class MetricScanner {
             th[i].setName("MetricScannerRunner - " + i);
             th[i].start();
         }
-        for (int i = 0; i < th.length; i++)
+
+        for (Thread thread : th)
             try {
-                th[i].join();
+                thread.join();
             } catch (Exception ex) {
             }
 
@@ -165,14 +173,17 @@ public class MetricScanner {
     public void shutdown() {
         if (this.metricsScannerRunners != null) {
             for (MetricScannerRunner runner : this.metricsScannerRunners) {
-                if (runner != null) runner.shutdown();
+                if (runner != null)
+                    runner.shutdown();
             }
         }
     }
 
     public void setThreadCount(int threadCount) {
-        if (threadCount <= 0) threadCount = 1;
-        else this.threadCount = threadCount;
+        if (threadCount <= 0)
+            threadCount = 1;
+        else
+            this.threadCount = threadCount;
     }
 
 }

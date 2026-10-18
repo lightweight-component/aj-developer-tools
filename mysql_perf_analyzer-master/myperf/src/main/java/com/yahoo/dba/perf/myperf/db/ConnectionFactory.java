@@ -33,11 +33,11 @@ public class ConnectionFactory {
      * @return
      * @throws java.sql.SQLException
      */
-    public static Connection connect(DBInstanceInfo db, DBCredential cred, MyPerfContext context)
-            throws SQLException {
+    public static Connection connect(DBInstanceInfo db, DBCredential cred, MyPerfContext context) throws SQLException {
         Properties info = new Properties();
         info.put("user", cred.getUsername());
         info.put("password", cred.getPassword());
+
         if ("oracle".equalsIgnoreCase(db.getDbType())) {
             info.put("oracle.net.CONNECT_TIMEOUT", String.valueOf(context.getConnectionTimeout()));
             info.put("oracle.net.READ_TIMEOUT", String.valueOf(context.getConnectionReadTimeout()));
@@ -46,6 +46,7 @@ public class ConnectionFactory {
             info.put("connectTimeout", String.valueOf(context.getConnectionTimeout()));
             info.put("socketTimeout", String.valueOf(context.getConnectionReadTimeout()));
         }
+
         return DriverManager.getConnection(db.getConnectionString(), info);
     }
 
@@ -54,6 +55,7 @@ public class ConnectionFactory {
         Properties info = new Properties();
         info.put("user", username);
         info.put("password", password);
+
         if ("oracle".equalsIgnoreCase(db.getDbType())) {
             info.put("oracle.net.CONNECT_TIMEOUT", String.valueOf(context.getConnectionTimeout()));
             info.put("oracle.net.READ_TIMEOUT", String.valueOf(context.getConnectionReadTimeout()));
@@ -62,6 +64,7 @@ public class ConnectionFactory {
             info.put("connectTimeout", String.valueOf(context.getConnectionTimeout()));
             info.put("socketTimeout", String.valueOf(context.getConnectionReadTimeout()));
         }
+
         return DriverManager.getConnection(db.getConnectionString(), info);
     }
 

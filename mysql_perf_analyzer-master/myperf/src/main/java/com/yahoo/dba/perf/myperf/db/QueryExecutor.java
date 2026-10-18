@@ -51,15 +51,19 @@ public class QueryExecutor {
         long startTime = System.currentTimeMillis();
         long execTime = startTime;
         try {
-            if (sqlManager == null) log.error("No sqlManager specified");//code error
-            if (qps == null) log.error("No QPS specified");//code error
+            if (sqlManager == null)
+                log.error("No sqlManager specified");//code error
+            if (qps == null)
+                log.error("No QPS specified");//code error
             Sql sql = sqlManager.getSql(qps.getSql());
-            if (sql == null) log.error("No SQL found for handle " + qps.getSql());//code error
+            if (sql == null)
+                log.error("No SQL found for handle " + qps.getSql());//code error
             String sqlText = null;
             if (sql.getQueryClass() != null) {
                 sqlText = DynamicQueryFactory.getQuery(sql.getQueryClass(), conn, false);
             }
-            if (sqlText == null) sqlText = sql.getSqlText(conn.getVersion());
+            if (sqlText == null)
+                sqlText = sql.getSqlText(conn.getVersion());
 
             boolean usePreparedStatement = sql != null && sql.getParamCount() > 0 && !sql.isReplace();
             actualSql = sqlText;
@@ -107,14 +111,17 @@ public class QueryExecutor {
         String actualSql = null;
         long startTimestamp = System.currentTimeMillis();
         try {
-            if (sqlManager == null) log.error("No sqlManager specified");
-            if (qps == null) log.error("No QPS specified");
+            if (sqlManager == null)
+                log.error("No sqlManager specified");
+            if (qps == null)
+                log.error("No QPS specified");
             Sql sql = sqlManager.getSql(qps.getSql());
             String sqlText = null;
             if (sql.getQueryClass() != null) {
                 sqlText = DynamicQueryFactory.getQuery(sql.getQueryClass(), conn, false);
             }
-            if (sqlText == null) sqlText = sql.getSqlText(conn.getVersion());
+            if (sqlText == null)
+                sqlText = sql.getSqlText(conn.getVersion());
             boolean usePreparedStatement = sql != null && sql.getParamCount() > 0 && !sql.isReplace();
             actualSql = sqlText;
             if (sql != null && sql.getParamCount() > 0) {
@@ -168,8 +175,10 @@ public class QueryExecutor {
         String actualSql = null;
         //long startTimestamp = System.currentTimeMillis();
         try {
-            if (sqlManager == null) log.error("No sqlManager specified");
-            if (qps == null) log.error("No QPS specified");
+            if (sqlManager == null)
+                log.error("No sqlManager specified");
+            if (qps == null)
+                log.error("No QPS specified");
             String sqlText = qps.getSqlText(); //if not predefined
             Sql sql = null;
             if (sqlText == null || sqlText.isEmpty())
@@ -205,7 +214,8 @@ public class QueryExecutor {
                     if (keyColumn != null && !keyColumn.isEmpty() && valueColumn != null && !valueColumn.isEmpty()) {
                         while (rs != null && rs.next()) {
                             String key = rs.getString(keyColumn.toLowerCase());
-                            if (normalizeKey) key = key.toUpperCase();
+                            if (normalizeKey)
+                                key = key.toUpperCase();
                             metrics.put(key, rs.getString(valueColumn.toLowerCase()));
                         }
                     } else {
@@ -245,8 +255,10 @@ public class QueryExecutor {
         String actualSql = null;
         //long startTimestamp = System.currentTimeMillis();
         try {
-            if (sqlManager == null) log.error("No sqlManager specified");
-            if (qps == null) log.error("No QPS specified");
+            if (sqlManager == null)
+                log.error("No sqlManager specified");
+            if (qps == null)
+                log.error("No QPS specified");
             String sqlText = qps.getSqlText(); //if not predefined
             Sql sql = null;
             if (sqlText == null || sqlText.isEmpty())
@@ -281,7 +293,8 @@ public class QueryExecutor {
                         ? ((PreparedStatement) stmt).executeQuery() : stmt.executeQuery(actualSql)) {
                     Map<String, Map<String, String>> metrics = new HashMap<>();
                     int colCnt = 0;
-                    if (rs != null) colCnt = rs.getMetaData().getColumnCount();
+                    if (rs != null)
+                        colCnt = rs.getMetaData().getColumnCount();
                     while (rs != null && rs.next()) {
                         String key = rs.getString(keyColumn);
                         Map<String, String> metricsperKey = new HashMap<>(colCnt);
@@ -341,14 +354,17 @@ public class QueryExecutor {
         //QueryInputValidator.validateSql(this.sqlManager, qps);
         String actualSql = null;
         try {
-            if (qps == null) log.error("No QPS specified");
-            if (sqlManager == null) log.error("No sqlManager specified");
+            if (qps == null)
+                log.error("No QPS specified");
+            if (sqlManager == null)
+                log.error("No sqlManager specified");
             Sql sql = sqlManager.getSql(qps.getSql());
             String sqlText = null;
             if (sql.getQueryClass() != null) {
                 sqlText = DynamicQueryFactory.getQuery(sql.getQueryClass(), conn, false);
             }
-            if (sqlText == null) sqlText = sql.getSqlText(conn.getVersion());
+            if (sqlText == null)
+                sqlText = sql.getSqlText(conn.getVersion());
             boolean usePreparedStatement = sql != null && sql.getParamCount() > 0 && !sql.isReplace();
             actualSql = sqlText;
             if (sql != null && sql.getParamCount() > 0) {
@@ -411,7 +427,8 @@ public class QueryExecutor {
     }
 
     private static String escapeSingleQuote(SqlParameter param, String str) {
-        if (str == null) return null;
+        if (str == null)
+            return null;
         if (param != null) {
             boolean valid = param.isValidValue(str);
             if (valid)

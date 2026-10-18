@@ -9,8 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DynamicQueryFactory {
-    private static Map<String, DynamicQuery> queryMap = new HashMap<>();
-
+    private static final Map<String, DynamicQuery> queryMap = new HashMap<>();
 
     static {
         //queryMap.put("com.yahoo.dba.perf.framework.process.SharedCursorQuery", new SharedCursorQuery());
@@ -21,6 +20,7 @@ public class DynamicQueryFactory {
     public static String getQuery(String queryClass, DBConnectionWrapper conn, boolean gc) {
         if (queryMap.containsKey(queryClass))
             return queryMap.get(queryClass).getQueryString(conn, gc);
+
         return null;
     }
 }

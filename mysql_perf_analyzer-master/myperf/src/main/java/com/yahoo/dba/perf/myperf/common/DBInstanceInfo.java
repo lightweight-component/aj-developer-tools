@@ -228,7 +228,8 @@ public class DBInstanceInfo implements Serializable {
      * @return
      */
     public boolean supportClusterQuery() {
-        if ("Oracle".equalsIgnoreCase(this.dbType)) return true;
+        if ("Oracle".equalsIgnoreCase(this.dbType))
+            return true;
         return false;
     }
 

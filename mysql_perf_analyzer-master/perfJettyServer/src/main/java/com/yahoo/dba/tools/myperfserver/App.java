@@ -231,7 +231,9 @@ public class App {
 
         try {
             Properties props = new Properties();
-            props.load(new FileInputStream(path));
+            try (FileInputStream in = new FileInputStream(path)) {
+                props.load(in);
+            }
             String useHttpsStr = props.getProperty("useHttps", "no");
             useHttpsStr = useHttpsStr.trim().toLowerCase();
             if (useHttpsStr.equals("yes") || useHttpsStr.equals("y") || useHttpsStr.equals("true"))
@@ -466,9 +468,9 @@ public class App {
         if (pid < 0)
             return;// not supported
         try {
-            FileWriter fw = new FileWriter(PID_FILE);
-            fw.write(String.valueOf(pid));
-            fw.close();
+            try (FileWriter fw = new FileWriter(PID_FILE)) {
+                fw.write(String.valueOf(pid));
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -476,11 +478,10 @@ public class App {
 
     private static int getHistoryPid() {
         try {
-            BufferedReader fr = new BufferedReader(
-                    new FileReader(PID_FILE));
-            String line = fr.readLine();
-            fr.close();
-            return Integer.parseInt(line);
+            try (BufferedReader fr = new BufferedReader(new FileReader(PID_FILE))) {
+                String line = fr.readLine();
+                return Integer.parseInt(line);
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -507,7 +508,7 @@ public class App {
         JettyJasperInitializer sci = new JettyJasperInitializer();
         ContainerInitializer initializer = new ContainerInitializer(
                 (ServletContainerInitializer) sci, null);
-        List<ContainerInitializer> initializers = new ArrayList<>();
+        List<ContainerInitializer> initializers = new ArrayList<ContainerInitializer>();
         initializers.add(initializer);
         return initializers;
     }

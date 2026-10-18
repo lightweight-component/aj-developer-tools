@@ -69,7 +69,8 @@ public class MySQLMetricsDb extends MetricsDbBase implements Serializable, Runna
         Connection conn = null;
         try {
             conn = DriverManager.getConnection(this.getConnectionString(), this.getUsername(), this.getPassword());
-            if (!autocommit) conn.setAutoCommit(false);
+            if (!autocommit)
+                conn.setAutoCommit(false);
             return conn;
         } catch (Exception ex) {
             log.error("Exception when connect to " + this.getConnectionString() + " as " + this.getUsername(), ex);

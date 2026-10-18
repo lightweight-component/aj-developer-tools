@@ -17,10 +17,6 @@ public class MetricsResultObject implements CustomResultObject {
     @Setter
     private List<Metric> metrics;
 
-    public MetricsResultObject() {
-
-    }
-
     @Override
     public String getName() {
         return "metrics";//fixed the name
@@ -30,16 +26,22 @@ public class MetricsResultObject implements CustomResultObject {
     public String getValueJsonString() {
         StringBuilder sb = new StringBuilder();
         sb.append("{");
+
         if (this.metrics != null) {
             boolean first = true;
+
             for (Metric m : this.metrics) {
-                if (!first) sb.append(",");
-                else first = false;
+                if (!first)
+                    sb.append(",");
+                else
+                    first = false;
+
                 sb.append("\"").append(m.getName()).append("\"");
                 sb.append(":{");
                 sb.append("\"shortName\":\"").append(m.getShortName()).append("\"");
                 sb.append(",\"inc\":").append(m.isIncremental() ? "1" : "0");
                 sb.append(",\"unit\":\"").append(m.getMetricUnit()).append("\"");
+
                 if (m.getAverageTimeUnit() != null)
                     sb.append(",\"avg\":\"").append(m.getAverageTimeUnit()).append("\"");
                 if (m.getAdjustment() != null)
@@ -48,9 +50,11 @@ public class MetricsResultObject implements CustomResultObject {
                     sb.append(",\"display\":\"").append(m.getChartDisplayUnit()).append("\"");
                 if (m.getDescription() != null)
                     sb.append(",\"description\":\"").append(m.getDescription()).append("\"");
+
                 sb.append("}\r\n");
             }
         }
+
         sb.append("}");
         return sb.toString();
     }
@@ -62,11 +66,14 @@ public class MetricsResultObject implements CustomResultObject {
                 m.setName(metricsGroupName + "." + m.getName());
             }
         }
+
         this.metrics = metrics;
     }
 
     public void addMetric(Metric m) {
-        if (this.metrics == null) this.metrics = new ArrayList<>();
+        if (this.metrics == null)
+            this.metrics = new ArrayList<>();
+
         this.metrics.add(m);
     }
 }

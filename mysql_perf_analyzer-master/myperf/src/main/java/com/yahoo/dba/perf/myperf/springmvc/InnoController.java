@@ -97,8 +97,6 @@ public class InnoController extends MyPerfBaseController {
         int state = BEFORE_STARTLINE;
         String currentSection = null;
         LinkedHashMap<String, ResultList> listMap = new LinkedHashMap<>();
-        StringReader reader = new StringReader(str);
-        BufferedReader bufReader = new BufferedReader(reader);
         String line = null;
 
         Map<String, String> valMap = new LinkedHashMap<>();
@@ -107,7 +105,7 @@ public class InnoController extends MyPerfBaseController {
         List<String> deadLockInfo = new ArrayList<>();//TODO not parsing the content for now
         Transaction curTx = null;
         SemaphoreEntry curSemap = null;
-        try {
+        try (BufferedReader bufReader = new BufferedReader(new StringReader(str))) {
             while ((line = bufReader.readLine()) != null) {
                 switch (state) {
                     case BEFORE_STARTLINE:
@@ -179,7 +177,8 @@ public class InnoController extends MyPerfBaseController {
                                 log.info("Processing deadlocks: " + deadLockInfo.size());
                                 listMap.put("inno_status_deadlocks", buildDeadlockList(deadLockInfo));
                             } else if ("TRANSACTIONS".equalsIgnoreCase(currentSection)) {
-                                if (curTx != null) txList.add(curTx);
+                                if (curTx != null)
+                                    txList.add(curTx);
                                 curTx = null;
                                 log.info("Processing tx: " + txList.size());
                                 listMap.put("inno_status_txs", buildTransactionList(txList));
@@ -251,7 +250,8 @@ public class InnoController extends MyPerfBaseController {
 
         rList.setColumnDescriptor(desc);
         for (SemaphoreEntry tx : semapList) {
-            if (tx.thread_id == null) continue;
+            if (tx.thread_id == null)
+                continue;
             ResultRow row = new ResultRow();
             rList.addRow(row);
             row.setColumnDescriptor(desc);
@@ -290,7 +290,8 @@ public class InnoController extends MyPerfBaseController {
 
     private void parseFileIO(Map<String, String> valMap, String str) {
         try {
-            if (str == null || str.isEmpty()) return;
+            if (str == null || str.isEmpty())
+                return;
             str = str.trim();
             if (str.startsWith("I/O thread ")) {
                 String vals[] = str.split(":");
@@ -312,7 +313,8 @@ public class InnoController extends MyPerfBaseController {
                     String[] res = this.splitSpaceDelemitNameValuePair(s);
                     if (res != null) {
                         String name = res[0];
-                        if (name.indexOf(":") >= 0) name = name.substring(0, name.indexOf(":"));
+                        if (name.indexOf(":") >= 0)
+                            name = name.substring(0, name.indexOf(":"));
                         valMap.put(name, res[1]);
                     }
                 }
@@ -323,7 +325,8 @@ public class InnoController extends MyPerfBaseController {
 
     private void parseRowOperation(Map<String, String> valMap, String str) {
         try {
-            if (str == null || str.isEmpty()) return;
+            if (str == null || str.isEmpty())
+                return;
             str = str.trim();
             if (str.indexOf("queries inside InnoDB") >= 0 || str.indexOf("read views") >= 0) {
                 String vals[] = str.split(",");
@@ -377,7 +380,8 @@ public class InnoController extends MyPerfBaseController {
 
     private void parseSemaphore(Map<String, String> valMap, String str) {
         try {
-            if (str == null || str.isEmpty()) return;
+            if (str == null || str.isEmpty())
+                return;
             str = str.trim();
             if (str.startsWith("OS WAIT ARRAY INFO: ")) {
                 String str2 = str.substring(str.indexOf(':') + 1).trim();
@@ -446,13 +450,16 @@ public class InnoController extends MyPerfBaseController {
      * @return 2 element array. The first is name, the second is value
      */
     private String[] splitSpaceDelemitNameValuePair(String str) {
-        if (str == null || str.isEmpty()) return null;
+        if (str == null || str.isEmpty())
+            return null;
         String str2 = str.trim();
         int idx = str2.lastIndexOf(' ');//since we trimmed, it cannot be the last one
-        if (idx <= 0) return null;
+        if (idx <= 0)
+            return null;
         String name = str2.substring(0, idx);
         String val = str2.substring(idx + 1);
-        if (name.isEmpty() || val.isEmpty()) return null;
+        if (name.isEmpty() || val.isEmpty())
+            return null;
         name = name.trim();
         try {
             //check if we can parse
@@ -470,13 +477,16 @@ public class InnoController extends MyPerfBaseController {
     }
 
     private String[] splitSpaceDelemitValueNamePair(String str) {
-        if (str == null || str.isEmpty()) return null;
+        if (str == null || str.isEmpty())
+            return null;
         String str2 = str.trim();
         int idx = str2.indexOf(' ');//since we trimmed, it cannot be the last one
-        if (idx <= 0) return null;
+        if (idx <= 0)
+            return null;
         String val = str2.substring(0, idx);
         String name = str2.substring(idx + 1);
-        if (name.isEmpty() || val.isEmpty()) return null;
+        if (name.isEmpty() || val.isEmpty())
+            return null;
         name = name.trim();
         try {
             //check if we can parse
@@ -495,7 +505,8 @@ public class InnoController extends MyPerfBaseController {
 
     private void parseLog(Map<String, String> valMap, String str) {
         try {
-            if (str == null || str.isEmpty()) return;
+            if (str == null || str.isEmpty())
+                return;
             str = str.trim();
             if (str.indexOf(',') < 0)//not comma separated line, so name value pair
             {
@@ -518,7 +529,8 @@ public class InnoController extends MyPerfBaseController {
 
     private void parseIBuf(Map<String, String> valMap, String str) {
         try {
-            if (str == null || str.isEmpty()) return;
+            if (str == null || str.isEmpty())
+                return;
             str = str.trim();
             if (str.startsWith("Ibuf: ")) {
                 String str2 = str.substring(5).trim();
@@ -540,7 +552,8 @@ public class InnoController extends MyPerfBaseController {
             } else if (str.startsWith("Hash table")) {
                 String[] strs = str.split(",");
                 for (String s : strs) {
-                    if (s != null) s = s.trim();
+                    if (s != null)
+                        s = s.trim();
                     else continue;
                     if (s.startsWith("Hash table")) {
                         String[] res = splitSpaceDelemitNameValuePair(s);
@@ -562,7 +575,8 @@ public class InnoController extends MyPerfBaseController {
 
     private void parseBufferPool(Map<String, String> valMap, String str) {
         try {
-            if (str == null || str.isEmpty()) return;
+            if (str == null || str.isEmpty())
+                return;
             String str2 = str.trim();
             if (str2.startsWith("Total memory")) {
                 String vals[] = str2.split(";");
@@ -580,7 +594,8 @@ public class InnoController extends MyPerfBaseController {
                     if (str.indexOf(hts) >= 0) {
                         str2 = str.substring(str.indexOf(hts) + hts.length()).trim();
                         int idx = str2.lastIndexOf(')');
-                        if (idx >= 0) valMap.put("Internal hash tables - " + hts, str2.substring(0, idx + 1));
+                        if (idx >= 0)
+                            valMap.put("Internal hash tables - " + hts, str2.substring(0, idx + 1));
                     }
                 }
             } else if (str2.startsWith("Dictionary memory allocated")
@@ -889,8 +904,10 @@ public class InnoController extends MyPerfBaseController {
 
         public boolean parse(String line) {
             //--Thread 140455387199232 has waited at btr/btr0cur.c line 501 for 0.0000 seconds the semaphore:
-            if (line == null || line.isEmpty()) return false;
-            if (this.thread_id == null && !line.startsWith("--Thread ")) return false;
+            if (line == null || line.isEmpty())
+                return false;
+            if (this.thread_id == null && !line.startsWith("--Thread "))
+                return false;
             try {
                 if (line.startsWith("--Thread ")) {
                     Pattern pt = Pattern.compile("\\-\\-Thread\\s+(\\d+)\\s+has\\s+waited\\s+at\\s+(.+)\\s+for\\s+(.+)\\s+seconds\\s+the\\s+semaphore:");

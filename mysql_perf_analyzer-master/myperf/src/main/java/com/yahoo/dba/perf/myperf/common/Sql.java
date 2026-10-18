@@ -115,13 +115,15 @@ public class Sql implements Serializable {
     }
 
     public String getSqlText(String version) {
-        if (version == null) return this.getSqlText();
+        if (version == null)
+            return this.getSqlText();
 
         for (VSql s : this.vsqls) {
             if (s.getMinVersion() != null && version.compareTo(s.getMinVersion()) < 0) {
                 continue;
             }
-            if (s.getMaxVersion() != null && version.compareTo(s.getMaxVersion()) > 0) continue;
+            if (s.getMaxVersion() != null && version.compareTo(s.getMaxVersion()) > 0)
+                continue;
             return s.getText();
         }
         return this.getSqlText();
@@ -151,7 +153,8 @@ public class Sql implements Serializable {
      */
     public int getParamIndex(String name) {
         for (int i = 0; i < this.parameters.size(); i++) {
-            if (name.equalsIgnoreCase(this.parameters.get(i).getName())) return i + 1;
+            if (name.equalsIgnoreCase(this.parameters.get(i).getName()))
+                return i + 1;
         }
         return -1;
     }

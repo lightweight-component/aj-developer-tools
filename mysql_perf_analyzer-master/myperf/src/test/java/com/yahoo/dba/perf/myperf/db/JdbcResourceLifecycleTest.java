@@ -109,7 +109,8 @@ public class JdbcResourceLifecycleTest extends TestCase {
         sql.setHandle("test");
         sql.setSqlText(parameterized ? "select '&p_1'" : "select 'value'");
         sql.setParamCount(parameterized ? 1 : 0);
-        if (parameterized) sql.addParameter("p_1", null);
+        if (parameterized)
+            sql.addParameter("p_1", null);
         sql.setReplace(replace);
         SqlManager manager = new SqlManager();
         manager.getSqlMap().put("test", sql);
@@ -232,18 +233,23 @@ public class JdbcResourceLifecycleTest extends TestCase {
         int row;
 
         final ResultSetMetaData columns = proxy(ResultSetMetaData.class, (p, m, a) -> {
-            if ("getColumnCount".equals(m.getName())) return 1;
-            if ("getColumnName".equals(m.getName())) return "value";
-            if ("getColumnType".equals(m.getName())) return Types.VARCHAR;
+            if ("getColumnCount".equals(m.getName()))
+                return 1;
+            if ("getColumnName".equals(m.getName()))
+                return "value";
+            if ("getColumnType".equals(m.getName()))
+                return Types.VARCHAR;
             return defaultValue(m.getReturnType());
         });
         final ResultSet result = proxy(ResultSet.class, (p, m, a) -> {
             if ("close".equals(m.getName())) {
                 resultOpen = false;
                 events.add("result.close");
-                if (resultCloseFailure != null) throw resultCloseFailure;
+                if (resultCloseFailure != null)
+                    throw resultCloseFailure;
             } else if ("next".equals(m.getName())) {
-                if (readFailure != null) throw readFailure;
+                if (readFailure != null)
+                    throw readFailure;
                 return row++ == 0;
             } else if ("getMetaData".equals(m.getName())) return columns;
             else if ("getString".equals(m.getName())) return "value";
@@ -252,14 +258,17 @@ public class JdbcResourceLifecycleTest extends TestCase {
         final PreparedStatement statement = proxy(PreparedStatement.class, (p, m, a) -> {
             if ("close".equals(m.getName())) {
                 events.add("statement.close");
-                if (statementCloseFailure != null) throw statementCloseFailure;
+                if (statementCloseFailure != null)
+                    throw statementCloseFailure;
             } else if ("setQueryTimeout".equals(m.getName()) && configurationFailure != null) {
                 throw configurationFailure;
             } else if ("setString".equals(m.getName())) boundValue = (String) a[1];
             else if ("getUpdateCount".equals(m.getName())) return 1;
             else if ("executeQuery".equals(m.getName()) || "execute".equals(m.getName())) {
-                if (queryFailure != null) throw queryFailure;
-                if (a != null && a.length > 0) executedSql = (String) a[0];
+                if (queryFailure != null)
+                    throw queryFailure;
+                if (a != null && a.length > 0)
+                    executedSql = (String) a[0];
                 if ("executeQuery".equals(m.getName())) {
                     assertFalse("Previous result was still open", resultOpen);
                     resultOpen = true;
@@ -281,8 +290,10 @@ public class JdbcResourceLifecycleTest extends TestCase {
                 events.add("connection.rollback");
             } else if ("getMetaData".equals(m.getName())) return metadata;
             else if ("prepareStatement".equals(m.getName()) || "createStatement".equals(m.getName())) {
-                if (creationFailure != null) throw creationFailure;
-                if ("prepareStatement".equals(m.getName())) preparedSql = (String) a[0];
+                if (creationFailure != null)
+                    throw creationFailure;
+                if ("prepareStatement".equals(m.getName()))
+                    preparedSql = (String) a[0];
                 return statement;
             }
             return defaultValue(m.getReturnType());
@@ -294,9 +305,12 @@ public class JdbcResourceLifecycleTest extends TestCase {
     }
 
     private static Object defaultValue(Class<?> type) {
-        if (type == boolean.class) return false;
-        if (type == int.class) return 0;
-        if (type == long.class) return 0L;
+        if (type == boolean.class)
+            return false;
+        if (type == int.class)
+            return 0;
+        if (type == long.class)
+            return 0L;
         return null;
     }
 }

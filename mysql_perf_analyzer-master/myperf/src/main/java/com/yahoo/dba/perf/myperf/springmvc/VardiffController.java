@@ -136,12 +136,14 @@ public class VardiffController extends MyPerfBaseController {
         for (Map.Entry<String, String> e : param1.entrySet()) {
             String k = e.getKey();
             String v = e.getValue();
-            if (v != null) v = v.trim();
+            if (v != null)
+                v = v.trim();
             else v = "";
             String v2 = null;
             if (param2.containsKey(k))
                 v2 = param2.get(k);
-            if (v2 != null) v2 = v2.trim();
+            if (v2 != null)
+                v2 = v2.trim();
             else v2 = "";
             if (!v.equals(v2)) {
                 ResultRow row = new ResultRow();
@@ -159,8 +161,10 @@ public class VardiffController extends MyPerfBaseController {
         for (Map.Entry<String, String> e : param2.entrySet()) {
             String k = e.getKey();
             String v = e.getValue();
-            if (v == null || v.isEmpty()) continue;
-            if (diffSet.contains(k) || param1.containsKey(k)) continue;
+            if (v == null || v.isEmpty())
+                continue;
+            if (diffSet.contains(k) || param1.containsKey(k))
+                continue;
             ResultRow row = new ResultRow();
             List<String> cols = new ArrayList<>();
             cols.add(k);

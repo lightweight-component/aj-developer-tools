@@ -95,7 +95,8 @@ public class WebAppUtil {
 
     public static DBCredential findDBCredential(MyPerfContext ctx, String dbid, AppUser appUser) {
         DBCredential cred = null;
-        if (appUser == null) return null;
+        if (appUser == null)
+            return null;
         try {
             //first, check if the user has his own credential
             cred = ctx.getMetaDb().retrieveDBCredential(appUser.getName(), dbid);
@@ -158,7 +159,8 @@ public class WebAppUtil {
                 throw new RuntimeException("failed to connect to target db (" + dbinfo + ")");
             return connWrapper;
         } catch (Throwable th) {
-            if (th instanceof RuntimeException) throw RuntimeException.class.cast(th);
+            if (th instanceof RuntimeException)
+                throw RuntimeException.class.cast(th);
             throw new RuntimeException(th);
         }
     }
@@ -175,12 +177,14 @@ public class WebAppUtil {
                 //something wrong.
                 log.info("Cannot find connection manager");
             } else {
-                if (hasError) conns.checkinConnectionOnError(conn);
+                if (hasError)
+                    conns.checkinConnectionOnError(conn);
                 else if (reuse) conns.checkinConnection(conn);
                 else conns.checkinConnectionAndClose(conn);
             }
         } catch (Throwable th) {
-            if (th instanceof RuntimeException) throw RuntimeException.class.cast(th);
+            if (th instanceof RuntimeException)
+                throw RuntimeException.class.cast(th);
             throw new RuntimeException(th);
         }
     }

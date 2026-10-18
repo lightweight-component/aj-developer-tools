@@ -118,7 +118,6 @@ public class MetaDB implements Serializable {
         }
     }
 
-
     private void checkAndCreateAppUserTable(Connection conn) throws SQLException {
         if (!DBUtils.hasTable(conn, SCHEMA_NAME, APPUSER_TABLENAME)) {
             if (!DBUtils.hasTable(conn, SCHEMA_NAME, APPUSER_TABLENAME)) {
@@ -128,6 +127,7 @@ public class MetaDB implements Serializable {
                     stmt.execute(sql);
                     sql = "create index UK_" + APPUSER_TABLENAME + " on " + APPUSER_TABLENAME + "(USERNAME)";
                     stmt.execute(sql);
+
                     try (PreparedStatement pstmt = conn.prepareStatement("insert into " + APPUSER_TABLENAME + " (USERNAME,MD5HASH,USER_PRIVILEGE, VERIFIED) VALUES(?,?,?,?)")) {
                         pstmt.setString(1, DEFAULT_USER);
                         try {
@@ -221,7 +221,6 @@ public class MetaDB implements Serializable {
             }
         }
     }
-
 
     private void checkAndCreateUserAclTable(Connection conn) throws SQLException {
         if (!DBUtils.hasTable(conn, SCHEMA_NAME, USERACL_TABLENAME)) {
@@ -716,7 +715,8 @@ public class MetaDB implements Serializable {
                 stmt.setString(1, username);
                 try (ResultSet rs = stmt.executeQuery()) {
                     existingGroups = new HashSet<>();
-                    while (rs != null && rs.next()) existingGroups.add(rs.getString(1));
+                    while (rs != null && rs.next())
+                        existingGroups.add(rs.getString(1));
                 }
             }
             //first, let's update existing ones

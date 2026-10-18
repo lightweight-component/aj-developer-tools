@@ -78,8 +78,6 @@ public class QueryController extends MyPerfBaseController {
             try {
                 connWrapper = WebAppUtil.getDBConnection(req, this.frameworkContext, dbinfo);
 
-                if (connWrapper == null)
-                    return this.respondFailure("Failed to connecto to database (" + dbinfo + ")", req);
             } catch (Throwable th) {
                 log.error("Exception", th);
                 status = Constants.STATUS_BAD;
@@ -153,14 +151,18 @@ public class QueryController extends MyPerfBaseController {
     private ResultList filterResultList(ResultList rList, HttpServletRequest req) {
         try {
             String rf = req.getParameter("rf");
-            if (rf == null || rf.isEmpty()) return rList;
+            if (rf == null || rf.isEmpty())
+                return rList;
             int idx = rList.getColumnIndex(rf);
-            if (idx < 0) return rList;
+            if (idx < 0)
+                return rList;
 
             String[] filtered_vals = req.getParameterValues("rfv");
-            if (filtered_vals == null || filtered_vals.length == 0) return rList;
+            if (filtered_vals == null || filtered_vals.length == 0)
+                return rList;
             Set<String> filteredSet = new HashSet<>(filtered_vals.length);
-            for (String s : filtered_vals) filteredSet.add(s.toLowerCase());
+            for (String s : filtered_vals)
+                filteredSet.add(s.toLowerCase());
 
             ResultList newList = new ResultList();
             newList.setColumnDescriptor(rList.getColumnDescriptor());

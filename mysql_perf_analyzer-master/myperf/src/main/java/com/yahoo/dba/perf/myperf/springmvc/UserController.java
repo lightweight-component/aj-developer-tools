@@ -299,7 +299,8 @@ public class UserController extends MyPerfBaseController {
         int status = Constants.STATUS_OK;
         String message = "OK";
         String name = req.getParameter("name");
-        if (name != null) name = name.trim().toLowerCase();
+        if (name != null)
+            name = name.trim().toLowerCase();
         String passwd = req.getParameter("password");
         String userprivilege = "0"; //standard user
         String email = req.getParameter("email");
@@ -356,7 +357,8 @@ public class UserController extends MyPerfBaseController {
         int status = Constants.STATUS_OK;
         String message = "OK";
         String name = req.getParameter("name");
-        if (name != null) name = name.trim().toLowerCase();
+        if (name != null)
+            name = name.trim().toLowerCase();
         String passwd = req.getParameter("password");
         String userprivilege = req.getParameter("userprivilege");
         String email = req.getParameter("email");
@@ -405,7 +407,8 @@ public class UserController extends MyPerfBaseController {
         int status = Constants.STATUS_OK;
         String message = "OK";
         String name = req.getParameter("name");
-        if (name != null) name = name.trim().toLowerCase();
+        if (name != null)
+            name = name.trim().toLowerCase();
         String email = req.getParameter("email");
 
         if (name == null) {
@@ -580,7 +583,8 @@ public class UserController extends MyPerfBaseController {
 
     private void appendUserListToModel(HttpServletRequest req, ModelAndView mv) {
         AppUser appUser = retrieveAppUser(req);
-        if (appUser == null || !appUser.isAdminUser()) return;
+        if (appUser == null || !appUser.isAdminUser())
+            return;
         List<String> allUsers = new ArrayList<>();
         List<String> newUsers = new ArrayList<>();
         List<AppUser> userList = this.frameworkContext.getMetaDb().retrieveAllUsers();

@@ -40,12 +40,10 @@ public class AlertSubscribers {
 
         //parse and set params
         public void setParams(String paramString) {
-            if (paramString == null || paramString.isEmpty()) return;
-            JsonReader jsonReader = null;
-            try {
-                jsonReader = Json.createReader(new ByteArrayInputStream(paramString.getBytes()));
+            if (paramString == null || paramString.isEmpty())
+                return;
+            try (JsonReader jsonReader = Json.createReader(new ByteArrayInputStream(paramString.getBytes()))) {
                 JsonObject jsonObject = jsonReader.readObject();
-                jsonReader.close();
 
                 String thresholdString = jsonObject.getString("threshold", null);
                 if (thresholdString != null && !thresholdString.isEmpty())
@@ -79,7 +77,8 @@ public class AlertSubscribers {
             mtrStr.append("\"params\":[");
             int cnt = 0;
             for (Map.Entry<String, String> e : this.params.entrySet()) {
-                if (cnt > 0) mtrStr.append(",\r\n");
+                if (cnt > 0)
+                    mtrStr.append(",\r\n");
                 mtrStr.append("{\"name\": \"").append(e.getKey()).append("\",\"value\":\"")
                         .append(e.getValue())
                         .append("\"}");
@@ -105,7 +104,8 @@ public class AlertSubscribers {
         }
 
         public void deleteSubscription(Subscription sub) {
-            if (sub == null) return;
+            if (sub == null)
+                return;
             for (int i = this.subscriptions.size() - 1; i >= 0; i--) {
                 Subscription sub2 = this.subscriptions.get(i);
                 if (sub2.alertName.equals(sub.alertName)) {
@@ -134,8 +134,10 @@ public class AlertSubscribers {
         }
 
         public void addSubscription(Subscription sub) {
-            if (sub == null) return;
-            if (sub.host == null || sub.host.isEmpty()) this.subscriptions.add(sub);
+            if (sub == null)
+                return;
+            if (sub.host == null || sub.host.isEmpty())
+                this.subscriptions.add(sub);
             else {
                 if (!this.hostsSubscriptions.containsKey(sub.host))
                     this.hostsSubscriptions.put(sub.host, new HostSubscriptions());
@@ -145,7 +147,8 @@ public class AlertSubscribers {
         }
 
         public void deleteSubscription(Subscription sub) {
-            if (sub == null) return;
+            if (sub == null)
+                return;
             if (sub.host == null || sub.host.isEmpty()) {
                 for (int i = this.subscriptions.size() - 1; i >= 0; i--) {
                     Subscription sub2 = this.subscriptions.get(i);
@@ -164,7 +167,8 @@ public class AlertSubscribers {
             Subscription sub = null;
             if (this.hostsSubscriptions.containsKey(host))
                 sub = this.hostsSubscriptions.get(host).getSubscription(alertName);
-            if (sub == null) sub = this.subscriptionsMap.get(alertName);
+            if (sub == null)
+                sub = this.subscriptionsMap.get(alertName);
             return sub;
         }
 
@@ -231,7 +235,8 @@ public class AlertSubscribers {
 
         boolean status = this.context.getMetricDb() != null ?
                 this.context.getMetricDb().upsertAlertSubscription(sub) : false;
-        if (!status) return false;
+        if (!status)
+            return false;
         synchronized (this.groupSubscriptions) {
             String group = sub.group;
             if (!this.groupSubscriptions.containsKey(group))
@@ -244,7 +249,8 @@ public class AlertSubscribers {
     public boolean deleteSubscription(Subscription sub) {
         boolean status = this.context.getMetricDb() != null ?
                 this.context.getMetricDb().deleteAlertSubscription(sub) : false;
-        if (!status) return false;
+        if (!status)
+            return false;
         synchronized (this.groupSubscriptions) {
             String group = sub.group;
             if (this.groupSubscriptions.containsKey(group))
@@ -263,14 +269,16 @@ public class AlertSubscribers {
      */
     public Subscription getSubscription(String group, String host, String alertName) {
         synchronized (this.groupSubscriptions) {
-            if (!this.groupSubscriptions.containsKey(group)) return null;
+            if (!this.groupSubscriptions.containsKey(group))
+                return null;
             return this.groupSubscriptions.get(group).getSubscription(host, alertName);
         }
     }
 
     public List<Subscription> getSubscriptions(String group, String host) {
         synchronized (this.groupSubscriptions) {
-            if (!this.groupSubscriptions.containsKey(group)) return null;
+            if (!this.groupSubscriptions.containsKey(group))
+                return null;
             return this.groupSubscriptions.get(group).getSubscription(host);
         }
     }

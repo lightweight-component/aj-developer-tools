@@ -70,14 +70,17 @@ public class ProfileController extends MyPerfBaseController {
             if (useJson) {
                 jsonString = profiler.runExplainPlanJson();
             } else if (explainPlan) listMap.put("plan", profiler.runExplainPlan());
-            if (profile) listMap.put("profile", profiler.runProfile());
-            if (sessionStatus) listMap.put("stats", profiler.runStats());
+            if (profile)
+                listMap.put("profile", profiler.runProfile());
+            if (sessionStatus)
+                listMap.put("stats", profiler.runStats());
         } catch (Exception ex) {
             status = Constants.STATUS_BAD;
             message = "Error when profiling: " + ex.getMessage();
             log.warn("Error when profiling", ex);
         } finally {
-            if (profiler != null) profiler.destroy();
+            if (profiler != null)
+                profiler.destroy();
         }
         ModelAndView mv = null;
         mv = new ModelAndView(this.jsonView);

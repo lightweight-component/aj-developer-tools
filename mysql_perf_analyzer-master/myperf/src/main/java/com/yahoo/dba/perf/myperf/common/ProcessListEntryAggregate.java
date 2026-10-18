@@ -57,7 +57,8 @@ public class ProcessListEntryAggregate implements Serializable, Comparable<Proce
     }
 
     public float getAverage() {
-        if (this.count == 0) return 0;
+        if (this.count == 0)
+            return 0;
         else
             return (float) this.total_time_sec / (float) this.count;
     }
@@ -79,12 +80,14 @@ public class ProcessListEntryAggregate implements Serializable, Comparable<Proce
 
     @Override
     public int compareTo(ProcessListEntryAggregate obj) {
-        if (obj == null) return -1;
+        if (obj == null)
+            return -1;
         return obj.getTotal_time_sec() - this.getTotal_time_sec();
     }
 
     public static void updateDataMap(Map<String, ProcessListEntryAggregate> m, String sql, int time_sec) {
-        if (m == null) return;
+        if (m == null)
+            return;
         if (m.containsKey(sql)) {
             m.get(sql).record(time_sec);
         } else {
@@ -102,7 +105,8 @@ public class ProcessListEntryAggregate implements Serializable, Comparable<Proce
      * @return
      */
     public static String generateDigest(String str) {
-        if (str == null || str.isEmpty()) return "00000000";
+        if (str == null || str.isEmpty())
+            return "00000000";
         try {
             MessageDigest md = MessageDigest.getInstance("SHA1");
             md.update(str.getBytes());

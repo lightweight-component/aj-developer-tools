@@ -59,7 +59,8 @@ public class AppUser implements Serializable {
     }
 
     public boolean match(String hash, long ts, int seed) {
-        if (hash == null) return false;
+        if (hash == null)
+            return false;
         try {
             return hash.equals(MD5Util.MD5(ts + ":" + this.md5Hash + ":" + seed));
         } catch (Exception ex) {
@@ -84,7 +85,8 @@ public class AppUser implements Serializable {
     }
 
     public boolean matchPassword(String pd) {
-        if (pd == null) return false;//we always need password
+        if (pd == null)
+            return false;//we always need password
         return this.calMd5(pd).equals(this.md5Hash);
     }
 

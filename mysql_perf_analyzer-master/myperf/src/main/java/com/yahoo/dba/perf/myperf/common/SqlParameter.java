@@ -56,7 +56,8 @@ public class SqlParameter implements Serializable {
                 return false;
             }
         } else if (TYPE_NONBREAKABLE_STRING.equalsIgnoreCase(this.dataType)) {
-            if (input == null) return true;
+            if (input == null)
+                return true;
             else if (input.indexOf(' ') >= 0) return false;
             else if (input.indexOf('\t') >= 0) return false;
             else if (input.indexOf('\n') >= 0) return false;
@@ -70,7 +71,8 @@ public class SqlParameter implements Serializable {
     }
 
     public static String escapeSingleQuote(String input) {
-        if (input == null) return null;
+        if (input == null)
+            return null;
         return input.replaceAll("'", "''");
     }
 }

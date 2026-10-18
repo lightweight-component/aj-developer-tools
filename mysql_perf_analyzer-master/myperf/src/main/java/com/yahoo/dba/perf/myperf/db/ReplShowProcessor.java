@@ -36,7 +36,8 @@ public class ReplShowProcessor implements CustomQueryProcessor {
                 if (s.host.equalsIgnoreCase(server.host) && s.port.equals(server.port))
                     findOne = true;
             }
-            if (!findOne) repls.add(server);
+            if (!findOne)
+                repls.add(server);
         }
 
         //slef and children
@@ -204,10 +205,12 @@ public class ReplShowProcessor implements CustomQueryProcessor {
     }
 
     private void outputTree(ReplServer server, Map<String, ReplStatus> statusResults, Set<String> probed, int level, ResultList rList) {
-        if (server == null) return;
+        if (server == null)
+            return;
         //always output self
         ReplStatus rpl = statusResults.get(server.toString());
-        if (rpl == null) return; //don't expect so
+        if (rpl == null)
+            return; //don't expect so
         addOutputRow(rpl, rList, level);
         //if current server probed, or no children stop here
         if (probed.contains(server.toString()) || server.repls.size() == 0)
@@ -415,7 +418,8 @@ public class ReplShowProcessor implements CustomQueryProcessor {
     }
 
     private static String getHostnameByIp(String ip) {
-        if (ip == null || ip.isEmpty()) return null;
+        if (ip == null || ip.isEmpty())
+            return null;
         char c1 = ip.charAt(0);
         char c2 = ip.charAt(ip.length() - 1);
         if (c1 >= '0' && c1 <= '9' && c2 >= '0' && c2 <= '9') {

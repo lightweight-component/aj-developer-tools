@@ -57,9 +57,7 @@ public class ConfigHistory implements Serializable {
      */
     public void read(InputStream in)
             throws Exception {
-        BufferedReader br = null;
-        try {
-            br = new BufferedReader(new InputStreamReader(in));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
             String line = null;
             ConfigBlock cb = null;
             while ((line = br.readLine()) != null) {
@@ -75,7 +73,8 @@ public class ConfigHistory implements Serializable {
                     cb = new ConfigBlock();
                     this.lastCheckedConfig = cb;
                 } else if (line.startsWith("[") && line.endsWith("]")) {
-                    if (cb != null) cb.setTime(line.substring(1, line.length() - 1));
+                    if (cb != null)
+                        cb.setTime(line.substring(1, line.length() - 1));
                 } else if (line.indexOf('=') > 0) {
                     int idx = line.indexOf('=');
                     if (idx < line.length() - 1)
@@ -84,11 +83,6 @@ public class ConfigHistory implements Serializable {
                         cb.addVariable(line.substring(0, idx), "");
                 }
 
-            }
-        } finally {
-            if (br != null) try {
-                br.close();
-            } catch (Exception iex) {
             }
         }
 
@@ -102,9 +96,7 @@ public class ConfigHistory implements Serializable {
      */
     public void write(OutputStream out)
             throws Exception {
-        PrintWriter bw = null;
-        try {
-            bw = new PrintWriter(out);
+        try (PrintWriter bw = new PrintWriter(out)) {
             //let's start with changes and only leave first and last as references at the end
             for (ConfigBlock cb : this.changes) {
                 bw.println("[CHANGES]");
@@ -139,32 +131,15 @@ public class ConfigHistory implements Serializable {
                         bw.println(e.getKey() + "=");
                 }
             }
-        } finally {
-            if (bw != null) {
-                try {
-                    bw.flush();
-                    bw.close();
-                } catch (Exception ex) {
-                }
-            }
         }
 
     }
 
     public void store(File root, DBInstanceInfo db) {
         File f = new File(root, db.getDbGroupName() + "_" + db.getHostName() + "_" + db.getPort() + ".cnf");
-        FileOutputStream out = null;
-
-        try {
-            out = new FileOutputStream(f);
+        try (FileOutputStream out = new FileOutputStream(f)) {
             write(out);
         } catch (Exception ex) {
-
-        } finally {
-            if (out != null) try {
-                out.close();
-            } catch (Exception ex) {
-            }
         }
     }
 
@@ -176,21 +151,14 @@ public class ConfigHistory implements Serializable {
      */
     public static ConfigHistory load(File root, DBInstanceInfo db) {
         File f = new File(root, db.getDbGroupName() + "_" + db.getHostName() + "_" + db.getPort() + ".cnf");
-        if (!f.exists()) return null;
+        if (!f.exists())
+            return null;
 
-        FileInputStream in = null;
-        try {
-            in = new FileInputStream(f);
+        try (FileInputStream in = new FileInputStream(f)) {
             ConfigHistory ch = new ConfigHistory();
             ch.read(in);
             return ch;
         } catch (Exception ex) {
-
-        } finally {
-            if (in != null) try {
-                in.close();
-            } catch (Exception ex) {
-            }
         }
         return null;
     }
@@ -202,7 +170,8 @@ public class ConfigHistory implements Serializable {
      * @return true if updated, false if no change
      */
     public boolean updateLast(ConfigBlock last) {
-        if (last == null) return false;
+        if (last == null)
+            return false;
         if (this.startingConfig == null) {
             //first time we build info
             this.startingConfig = last;
@@ -219,15 +188,18 @@ public class ConfigHistory implements Serializable {
         for (Map.Entry<String, String> e : lastMap.entrySet()) {
             String key = e.getKey();
             String val = e.getValue();
-            if (EXCLUDE_ENTRIES.containsKey(key)) continue;
-            if (val == null) val = "";//treat null as empty
+            if (EXCLUDE_ENTRIES.containsKey(key))
+                continue;
+            if (val == null)
+                val = "";//treat null as empty
 
             //1. The prev has no record
             if (!prevMap.containsKey(key)) {
                 diffMap.put(key, val);
             } else {
                 String oldVal = prevMap.get(key);
-                if (oldVal == null) oldVal = "";
+                if (oldVal == null)
+                    oldVal = "";
                 if (!val.equals(oldVal)) {
                     diffMap.put(key, val);//record new value
                     diffMap.put("+-" + key, oldVal);//record old value with +-
@@ -238,7 +210,8 @@ public class ConfigHistory implements Serializable {
         for (Map.Entry<String, String> e : prevMap.entrySet()) {
             String key = e.getKey();
             String val = e.getValue();
-            if (EXCLUDE_ENTRIES.containsKey(key)) continue;
+            if (EXCLUDE_ENTRIES.containsKey(key))
+                continue;
             if (!lastMap.containsKey(key))
                 diffMap.put("-" + key, val);//use - to record a variable is removed
         }

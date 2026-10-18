@@ -47,7 +47,8 @@ public class StatDefManager implements Serializable {
     }
 
     public String getStatDescription(String name) {
-        if (name == null) return null;
+        if (name == null)
+            return null;
         name = name.trim().toLowerCase();
         if (this.statMap.containsKey(name))
             return this.statMap.get(name);
@@ -79,9 +80,11 @@ public class StatDefManager implements Serializable {
             while (reader.hasNext()) {
                 //loop till one sql tag is found
                 int evtType = reader.next();
-                if (evtType != XMLStreamConstants.START_ELEMENT) continue;
+                if (evtType != XMLStreamConstants.START_ELEMENT)
+                    continue;
                 String tagName = reader.getLocalName();
-                if (!"stat".equals(tagName)) continue;
+                if (!"stat".equals(tagName))
+                    continue;
                 String name = reader.getAttributeValue(null, "name");
                 if (name != null && name.trim().length() > 0) {
                     this.statMap.put(name.toLowerCase(), reader.getElementText());
@@ -99,20 +102,12 @@ public class StatDefManager implements Serializable {
     }
 
     public boolean init() {
-        InputStream in = null;
-
-        try {
-            in = this.getClass().getClassLoader().getResourceAsStream(this.sourcePath);
+        try (InputStream in = this.getClass().getClassLoader().getResourceAsStream(this.sourcePath)) {
             this.load(in);
             log.info("Load preloaded stat def: " + this.statMap.size() + ", input " + (in == null) + ", source path=" + this.sourcePath);
             return true;
         } catch (Exception ex) {
             log.error("Exception", ex);
-        } finally {
-            if (in != null) try {
-                in.close();
-            } catch (Exception ex) {
-            }
         }
         return false;
     }

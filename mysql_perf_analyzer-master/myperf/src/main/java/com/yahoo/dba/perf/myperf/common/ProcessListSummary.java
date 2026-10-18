@@ -86,7 +86,8 @@ public class ProcessListSummary implements Serializable {
 
         @Override
         public int compareTo(KeyValIntPair o) {
-            if (o == null) return -1;
+            if (o == null)
+                return -1;
             return o.value - value;//reverse order
         }
 
@@ -104,9 +105,11 @@ public class ProcessListSummary implements Serializable {
      * It should be invoked after processlist set
      */
     public void summarize() {
-        if (this.processList == null) return;//something wrong
+        if (this.processList == null)
+            return;//something wrong
         for (ProcessListEntry e : this.processList) {
-            if ("system user".equalsIgnoreCase(e.getUser())) continue;//ignore replication
+            if ("system user".equalsIgnoreCase(e.getUser()))
+                continue;//ignore replication
             //update user
             if (!this.userSummary.containsKey(e.getUser()))
                 this.userSummary.put(e.getUser(), 1);
@@ -141,13 +144,16 @@ public class ProcessListSummary implements Serializable {
                 this.commandHostSummary.put(e.getHost() + "-" + e.getCommand(), this.commandHostSummary.get(e.getHost() + "-" + e.getCommand()) + 1);
 
             //now active SQL only
-            if ("sleep".equalsIgnoreCase(e.getCommand())) continue;
+            if ("sleep".equalsIgnoreCase(e.getCommand()))
+                continue;
 
             //1. Strip comments
             String s = stripComments(e.getInfo());
-            if (s == null || s.isEmpty()) continue;
+            if (s == null || s.isEmpty())
+                continue;
             int t = e.getTime();
-            if (t == Integer.MAX_VALUE || t < 0) t = 0;//overflow
+            if (t == Integer.MAX_VALUE || t < 0)
+                t = 0;//overflow
 
             ProcessListEntryAggregate.updateDataMap(this.queries, s, t);
             totalAccumultaedTime += t;
@@ -172,13 +178,16 @@ public class ProcessListSummary implements Serializable {
      * @return
      */
     private static String stripComments(String str) {
-        if (str == null) return "";
+        if (str == null)
+            return "";
         String s = str.trim();
         while (s.startsWith("/*")) {
             int idx = s.indexOf("*/");
-            if (idx < 0) return s;//might not be valie
+            if (idx < 0)
+                return s;//might not be valie
             s = s.substring(idx + 2);
-            if (s == null) return s;
+            if (s == null)
+                return s;
             else s = s.trim();
         }
         return s;
@@ -186,14 +195,16 @@ public class ProcessListSummary implements Serializable {
 
     //TODO in case there is a LIMIT in the middle
     private String stripLimit(String str) {
-        if (str == null) return "";
+        if (str == null)
+            return "";
         String s = str.trim();
         Matcher mt = pt.matcher(s);
         if (!mt.find())
             return s;
         if (mt.end() == s.length()) {
             s = s.substring(0, mt.start());
-            if (s != null) s = s.trim();
+            if (s != null)
+                s = s.trim();
             return s;
         }
         mt = pt2.matcher(s);
@@ -201,7 +212,8 @@ public class ProcessListSummary implements Serializable {
             return s;
         if (mt.end() == s.length()) {
             s = s.substring(0, mt.start());
-            if (s != null) s = s.trim();
+            if (s != null)
+                s = s.trim();
             return s;
         }
         return s;//don't care middle one
@@ -303,7 +315,8 @@ public class ProcessListSummary implements Serializable {
         for (Map.Entry<String, Integer> e : this.hostSummary.entrySet()) {
             tmpList.add(new KeyValIntPair(e.getKey(), e.getValue()));
             count++;
-            if (count >= 20) break;
+            if (count >= 20)
+                break;
         }
         Collections.sort(tmpList);
         for (KeyValIntPair p : tmpList)
@@ -347,7 +360,8 @@ public class ProcessListSummary implements Serializable {
             pw.println(String.format("%s: count - %d, time - %d sec, avg - %3f sec, min - %d sec, max -%d sec",
                     p.getChecksum(), p.getCount(), p.getTotal_time_sec(), p.getAverage(), p.getMin_time_sec(), p.getMax_time_sec()));
             count++;
-            if (count > 20) break;//since we sort them and attach process list, display only top 20
+            if (count > 20)
+                break;//since we sort them and attach process list, display only top 20
         }
         //tmpList2.clear();
 
@@ -361,7 +375,8 @@ public class ProcessListSummary implements Serializable {
             pw.println(String.format("%s: count - %d, time - %d sec, avg - %3f sec, min - %d sec, max -%d sec",
                     p.getChecksum(), p.getCount(), p.getTotal_time_sec(), p.getAverage(), p.getMin_time_sec(), p.getMax_time_sec()));
             count++;
-            if (count > 20) break;//since we sort them and attach process list, display only top 20
+            if (count > 20)
+                break;//since we sort them and attach process list, display only top 20
         }
         tmpList2.clear();
 
@@ -379,7 +394,8 @@ public class ProcessListSummary implements Serializable {
             pw.println(String.format("%s: count - %d, time - %d sec, avg - %3f sec, min - %d sec, max -%d sec",
                     p.getChecksum(), p.getCount(), p.getTotal_time_sec(), p.getAverage(), p.getMin_time_sec(), p.getMax_time_sec()));
             count++;
-            if (count > 20) break;//since we sort them and attach process list, display only top 20
+            if (count > 20)
+                break;//since we sort them and attach process list, display only top 20
         }
         //tmpList2.clear();
 
@@ -393,7 +409,8 @@ public class ProcessListSummary implements Serializable {
             pw.println(String.format("%s: count - %d, time - %d sec, avg - %3f sec, min - %d sec, max -%d sec",
                     p.getChecksum(), p.getCount(), p.getTotal_time_sec(), p.getAverage(), p.getMin_time_sec(), p.getMax_time_sec()));
             count++;
-            if (count > 20) break;//since we sort them and attach process list, display only top 20
+            if (count > 20)
+                break;//since we sort them and attach process list, display only top 20
         }
         tmpList2.clear();
 
@@ -408,7 +425,8 @@ public class ProcessListSummary implements Serializable {
         pw.println("------ Active Process List ------");
         int idx = 1;
         for (ProcessListEntry e : this.processList) {
-            if ("Sleep".equalsIgnoreCase(e.getCommand())) continue;//ignore sleep one
+            if ("Sleep".equalsIgnoreCase(e.getCommand()))
+                continue;//ignore sleep one
             //dump the process list
             pw.println("------ Query " + idx + " ---");
             pw.println(e.getInfo());
@@ -428,11 +446,9 @@ public class ProcessListSummary implements Serializable {
             pw.println();
             pw.println("------ Innodb Status ------");
 
-            StringReader reader = new StringReader(this.innodbStatus);
-            BufferedReader bufReader = new BufferedReader(reader);
-            String line = null;
-            boolean skip = false;
-            try {
+            try (BufferedReader bufReader = new BufferedReader(new StringReader(this.innodbStatus))) {
+                String line = null;
+                boolean skip = false;
                 while ((line = bufReader.readLine()) != null) {
                     if (line.startsWith("---TRANSACTION ") && line.contains("not started") && !line.contains("estimating"))
                         skip = true;
@@ -445,12 +461,6 @@ public class ProcessListSummary implements Serializable {
                 }
             } catch (Exception ex) {
                 log.info("innodb status parsing error", ex);
-
-            } finally {
-                if (bufReader != null) try {
-                    bufReader.close();
-                } catch (Exception iex) {
-                }
             }
         }
 

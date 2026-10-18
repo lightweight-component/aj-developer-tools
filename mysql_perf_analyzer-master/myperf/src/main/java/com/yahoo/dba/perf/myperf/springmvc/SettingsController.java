@@ -37,7 +37,8 @@ public class SettingsController extends MyPerfBaseController {
             this.frameworkContext.getMyperfConfig().init(this.frameworkContext);
 
             AutoScanner scanner = this.frameworkContext.getAutoScanner();
-            if (scanner.isRunning()) scanner.stop();
+            if (scanner.isRunning())
+                scanner.stop();
             if (this.frameworkContext.getMyperfConfig().isConfigured()) {
                 if ("start".equalsIgnoreCase(task)) {
                     log.info("To start/restart metricsdb");
@@ -56,7 +57,8 @@ public class SettingsController extends MyPerfBaseController {
             }
         } else if ("stop".equalsIgnoreCase(task) && appUser.isAdminUser()) {
             AutoScanner scanner = this.frameworkContext.getAutoScanner();
-            if (scanner.isRunning()) scanner.stop();
+            if (scanner.isRunning())
+                scanner.stop();
             return this.respondSuccess("Auto Scanner Scheduler has been stopped.", req);
         }
 
@@ -75,8 +77,10 @@ public class SettingsController extends MyPerfBaseController {
         ModelAndView mv = new ModelAndView(this.jsonView);
         String community = snmpSetting == null ? SNMPSettings.SNMPSetting.DEFAULT_COMMUNITY : snmpSetting.getCommunity();
         String ver = snmpSetting == null ? SNMPSettings.SNMPSetting.DEFAULT_VERSION : snmpSetting.getVersion();
-        if (community == null || community.isEmpty()) community = SNMPSettings.SNMPSetting.DEFAULT_COMMUNITY;
-        if (ver == null || ver.isEmpty()) ver = SNMPSettings.SNMPSetting.DEFAULT_VERSION;
+        if (community == null || community.isEmpty())
+            community = SNMPSettings.SNMPSetting.DEFAULT_COMMUNITY;
+        if (ver == null || ver.isEmpty())
+            ver = SNMPSettings.SNMPSetting.DEFAULT_VERSION;
         String enabled = snmpSetting == null ? "yes" : snmpSetting.getEnabled();
         StringBuilder sb = new StringBuilder();
         sb.append("{\"status\":0,\"message\":\"OK\", \"community\":\"").append(community)
@@ -147,21 +151,24 @@ public class SettingsController extends MyPerfBaseController {
                 retentionDays = Integer.parseInt(req.getParameter("runtimeRecordRententionCount"));
             } catch (Exception ex) {
             }
-            if (retentionDays < 1) retentionDays = 60;
+            if (retentionDays < 1)
+                retentionDays = 60;
             config.setRecordRententionDays(retentionDays);
             int scanInterval = 300;
             try {
                 scanInterval = Integer.parseInt(req.getParameter("runtimeScanIntervalSeconds"));
             } catch (Exception ex) {
             }
-            if (scanInterval < 1) scanInterval = 300;
+            if (scanInterval < 1)
+                scanInterval = 300;
             config.setScannerIntervalSeconds(scanInterval);
             int alertScanInterval = 300;
             try {
                 alertScanInterval = Integer.parseInt(req.getParameter("alertScanIntervalSeconds"));
             } catch (Exception ex) {
             }
-            if (alertScanInterval < 60) alertScanInterval = 300;
+            if (alertScanInterval < 60)
+                alertScanInterval = 300;
             config.setAlertScanIntervalSeconds(alertScanInterval);
 
             int threadCount = 4;
@@ -169,7 +176,8 @@ public class SettingsController extends MyPerfBaseController {
                 threadCount = Integer.parseInt(req.getParameter("threadCount"));
             } catch (Exception ex) {
             }
-            if (threadCount < 1) threadCount = 4;
+            if (threadCount < 1)
+                threadCount = 4;
             config.setScannerThreadCount(threadCount);
             config.setMetricsDbType(req.getParameter("metricsDbType"));
             config.setAlertNotificationEmails(req.getParameter("notificationEmails"));
@@ -201,7 +209,8 @@ public class SettingsController extends MyPerfBaseController {
                 config.setHipchatUrl(hipchatUrl);
                 //only change authtoken if provided.
                 String hipchatAuthToken = req.getParameter("hipchatAuthToken");
-                if (hipchatAuthToken != null) hipchatAuthToken = hipchatAuthToken.trim();
+                if (hipchatAuthToken != null)
+                    hipchatAuthToken = hipchatAuthToken.trim();
                 if (hipchatAuthToken != null && !hipchatAuthToken.isEmpty()) {
                     if (!hipchatAuthToken.equals(config.getHipchatAuthToken()))
                         hipchatChanged = true;
@@ -244,7 +253,8 @@ public class SettingsController extends MyPerfBaseController {
 
     private String testMetricsDB(String host, String port, String schema, String user, String pwd, MyPerfConfiguration config) {
         int toTest = 0; //test if only there is a change
-        if (config == null) toTest = 1;
+        if (config == null)
+            toTest = 1;
         else if (!"mysql".equalsIgnoreCase(config.getMetricsDbType()))
             toTest = 2;
         else if (host != null && !host.equalsIgnoreCase(config.getMetricsDbHost()))
@@ -257,7 +267,8 @@ public class SettingsController extends MyPerfBaseController {
             toTest = 6;
         else if (pwd != null && !pwd.isEmpty() && !pwd.equalsIgnoreCase(config.getMetricsDbPassword()))
             toTest = 7;
-        if (toTest == 0) return null;
+        if (toTest == 0)
+            return null;
         log.info("MetricsDB changed, need restest. Reason: " + toTest);
         DBInstanceInfo dbinfo = new DBInstanceInfo();
         dbinfo.setDbGroupName("test_only");

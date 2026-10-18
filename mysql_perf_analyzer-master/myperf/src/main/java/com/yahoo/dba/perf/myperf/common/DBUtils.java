@@ -152,7 +152,8 @@ public class DBUtils {
 
     public static DBCredential findDBCredential(MyPerfContext ctx, String dbid, AppUser appUser) {
         DBCredential cred = null;
-        if (appUser == null) return null;
+        if (appUser == null)
+            return null;
         try {
             //first, check if the user has his own credential
             cred = ctx.getMetaDb().retrieveDBCredential(appUser.getName(), dbid);

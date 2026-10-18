@@ -140,7 +140,8 @@ public class DatalistController extends MyPerfBaseController {
         rs.setColumnDescriptor(desc);
         Set<String> mydbs = this.frameworkContext.getDbInfoManager().getMyDatabases(name, true).getMyDbList();
 
-        if (mydbs == null) return rs;
+        if (mydbs == null)
+            return rs;
         for (String s : mydbs) {
             ResultRow row = new ResultRow();
             row.setColumnDescriptor(desc);

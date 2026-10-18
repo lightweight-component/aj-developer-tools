@@ -31,7 +31,8 @@ public class ResultListUtil {
     public static ResultList fromSqlResultSet(ResultSet rs, int maxCount) throws SQLException {
         log.debug(new Date() + ": Process results ...");
         ResultList resList = new ResultList();
-        if (rs == null) return resList;
+        if (rs == null)
+            return resList;
         ResultSetMetaData meta = rs.getMetaData();
         int colCnt = meta.getColumnCount();
         ColumnDescriptor desc = new ColumnDescriptor();
@@ -68,7 +69,8 @@ public class ResultListUtil {
             }
             resList.addRow(row);
             rowCnt++;
-            if (maxCount > 0 && rowCnt >= maxCount) break;
+            if (maxCount > 0 && rowCnt >= maxCount)
+                break;
         }
         log.debug(new Date() + ": Process results done: " + resList.getRows().size());
         return resList;
@@ -91,7 +93,8 @@ public class ResultListUtil {
         }
 
         ResultList resList = new ResultList();
-        if (rs == null) return resList;
+        if (rs == null)
+            return resList;
         ResultSetMetaData meta = rs.getMetaData();
         int colCnt = meta.getColumnCount();
         ColumnDescriptor desc = new ColumnDescriptor();
@@ -182,7 +185,8 @@ public class ResultListUtil {
                 mi++;
             }
             prevkeys = newkeys;
-            if (maxCount > 0 && rowCnt >= maxCount) break;
+            if (maxCount > 0 && rowCnt >= maxCount)
+                break;
         }
         return resList;
     }
@@ -197,7 +201,8 @@ public class ResultListUtil {
      */
     public static ResultList expandSqlResultSet(Sql sql, ResultSet rs) throws SQLException {
         ResultList resList = new ResultList();
-        if (rs == null) return resList;
+        if (rs == null)
+            return resList;
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.addColumn("NAME", false, 1);
         desc.addColumn("VALUE", false, 2);
@@ -286,7 +291,8 @@ public class ResultListUtil {
             {
                 boolean first = true;
                 for (int i = 0; i < cols.size(); i++) {
-                    if (!first) sb.append(",");
+                    if (!first)
+                        sb.append(",");
                     first = false;
                     sb.append("\"").append(cols.get(i).getName() + "\"");
                 }
@@ -295,12 +301,14 @@ public class ResultListUtil {
             boolean firstRow = true;
             sb.append("\"results\":[");
             for (ResultRow row : rs.getRows()) {
-                if (!firstRow) sb.append(",");
+                if (!firstRow)
+                    sb.append(",");
                 int len = row.getColumns().size();
                 boolean first = true;
                 sb.append("{");
                 for (int i = 0; i < len; i++) {
-                    if (!first) sb.append(",");
+                    if (!first)
+                        sb.append(",");
                     sb.append("\"").append(escapeJson(cols.get(i).getName())).append("\":");
                     if (cols.get(i).isNumberType()) {
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
@@ -354,7 +362,8 @@ public class ResultListUtil {
             {
                 boolean first = true;
                 for (int i = 0; i < cols.size(); i++) {
-                    if (!first) sb.append(",");
+                    if (!first)
+                        sb.append(",");
                     first = false;
                     sb.append("\"").append(cols.get(i).getName().toUpperCase() + "\"");
                 }
@@ -370,12 +379,14 @@ public class ResultListUtil {
             boolean firstRow = true;
             sb.append("\"results\":[");
             for (ResultRow row : rs.getRows()) {
-                if (!firstRow) sb.append(",");
+                if (!firstRow)
+                    sb.append(",");
                 int len = row.getColumns().size();
                 boolean first = true;
                 sb.append("{");
                 for (int i = 0; i < len; i++) {
-                    if (!first) sb.append(",");
+                    if (!first)
+                        sb.append(",");
                     sb.append("\"").append(escapeJson(cols.get(i).getName().toUpperCase())).append("\":");
                     if (cols.get(i).isNumberType()) {
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
@@ -472,9 +483,11 @@ public class ResultListUtil {
                 boolean first = true;
                 for (int i = 0; i < cols.size(); i++) {
                     //ignore key column
-                    if (keyColumn.equalsIgnoreCase(cols.get(i).getName())) continue;
+                    if (keyColumn.equalsIgnoreCase(cols.get(i).getName()))
+                        continue;
 
-                    if (!first) sb.append(",");
+                    if (!first)
+                        sb.append(",");
                     first = false;
                     sb.append("\"").append(cols.get(i).getName() + "\"");
                 }
@@ -483,7 +496,8 @@ public class ResultListUtil {
             //add keys
             sb.append("\"keys\":[");
             for (int i = 0; i < keys.length; i++) {
-                if (i > 0) sb.append(",");
+                if (i > 0)
+                    sb.append(",");
                 sb.append("{")
                         .append("\"name\":\"").append(keys[i]).append("\", ")
                         .append("\"shortName\":\"").append("k").append(i).append("\"")
@@ -517,7 +531,8 @@ public class ResultListUtil {
                 //if we have a new group by key, we should generate output for previous one
                 // and clear the temp storage
                 if (valueMap.size() > 0 && isDiff(prevGrpKey, newGrpKey)) {
-                    if (!firstRow) sb.append(",");
+                    if (!firstRow)
+                        sb.append(",");
                     firstRow = false;
                     sb.append("{");
                     for (int i = 0; i < groupByColumns.length; i++) {
@@ -526,9 +541,11 @@ public class ResultListUtil {
                     sb.append("\"").append(metricName).append("\":{");
                     boolean firstKey = true;
                     for (Map.Entry<String, String> e : valueMap.entrySet()) {
-                        if (e.getValue() == null) continue;
+                        if (e.getValue() == null)
+                            continue;
                         String jkey = keyMap.get(e.getKey());
-                        if (!firstKey) sb.append(",");
+                        if (!firstKey)
+                            sb.append(",");
                         firstKey = false;
                         sb.append("\"").append(jkey).append("\":").append(e.getValue());
                     }
@@ -543,7 +560,8 @@ public class ResultListUtil {
                 }
             }
             //todo: output last group
-            if (!firstRow) sb.append(",");
+            if (!firstRow)
+                sb.append(",");
             {
                 sb.append("{");
                 for (int i = 0; i < groupByColumns.length; i++) {
@@ -552,9 +570,11 @@ public class ResultListUtil {
                 sb.append("\"").append(metricName).append("\":{");
                 boolean firstKey = true;
                 for (Map.Entry<String, String> e : valueMap.entrySet()) {
-                    if (e.getValue() == null) continue;
+                    if (e.getValue() == null)
+                        continue;
                     String jkey = keyMap.get(e.getKey());
-                    if (!firstKey) sb.append(",");
+                    if (!firstKey)
+                        sb.append(",");
                     firstKey = false;
                     sb.append("\"").append(jkey).append("\":").append(e.getValue());
                 }
@@ -569,9 +589,12 @@ public class ResultListUtil {
 
     //compare tow arrays if the same
     public static boolean isDiff(String[] arr1, String[] arr2) {
-        if (arr1 == null && arr2 == null) return false;
-        if (arr1 == null || arr2 == null) return true;
-        if (arr1.length != arr2.length) return true;
+        if (arr1 == null && arr2 == null)
+            return false;
+        if (arr1 == null || arr2 == null)
+            return true;
+        if (arr1.length != arr2.length)
+            return true;
         for (int i = 0; i < arr1.length; i++) {
             if (arr1[i] != null && !arr1[i].equals(arr2[i]))
                 return true;
@@ -633,7 +656,8 @@ public class ResultListUtil {
                 for (int i = 0; i < cols.size(); i++) {
                     if (filter && !ms.contains(cols.get(i).getName()))
                         continue;
-                    if (!first) sb.append(",");
+                    if (!first)
+                        sb.append(",");
                     first = false;
                     sb.append("\"").append(cols.get(i).getName().toUpperCase() + "\"");
                 }
@@ -642,14 +666,16 @@ public class ResultListUtil {
             boolean firstRow = true;
             sb.append("\"results\":[");
             for (ResultRow row : rs.getRows()) {
-                if (!firstRow) sb.append(",");
+                if (!firstRow)
+                    sb.append(",");
                 int len = row.getColumns().size();
                 boolean first = true;
                 sb.append("{");
                 for (int i = 0; i < len; i++) {
                     if (filter && !ms.contains(cols.get(i).getName()))
                         continue;
-                    if (!first) sb.append(",");
+                    if (!first)
+                        sb.append(",");
                     sb.append("\"").append(escapeJson(cols.get(i).getName().toUpperCase())).append("\":");
                     if (cols.get(i).isNumberType()) {
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
@@ -684,7 +710,8 @@ public class ResultListUtil {
             for (Map.Entry<String, String> e : qpsA.getSqlParams().entrySet()) {
                 sb.append(",\"a_").append(e.getKey()).append("\":\"").append(e.getValue()).append("\"");
             }
-            if (qpsB != null) sb.append(",");
+            if (qpsB != null)
+                sb.append(",");
         }
         if (qpsB != null) {
             sb.append("\"b_group\":\"").append(qpsB.getGroup()).append("\"");
@@ -727,7 +754,8 @@ public class ResultListUtil {
         boolean firstRow = true;
         if (rsA != null) {
             for (ResultRow row : rsA.getRows()) {
-                if (!firstRow) sb.append(",");
+                if (!firstRow)
+                    sb.append(",");
                 int len = row.getColumns().size();
                 sb.append("{\"DB\":\"A\"");
                 for (int i = 0; i < len; i++) {
@@ -747,7 +775,8 @@ public class ResultListUtil {
         }
         if (rsB != null) {
             for (ResultRow row : rsB.getRows()) {
-                if (!firstRow) sb.append(",");
+                if (!firstRow)
+                    sb.append(",");
                 int len = row.getColumns().size();
                 sb.append("{\"DB\":\"B\"");
                 for (int i = 0; i < len; i++) {
@@ -799,7 +828,8 @@ public class ResultListUtil {
             for (Map.Entry<String, String> e : qpsA.getSqlParams().entrySet()) {
                 sb.append(",\"a_").append(e.getKey()).append("\":\"").append(e.getValue()).append("\"");
             }
-            if (qpsB != null) sb.append(",");
+            if (qpsB != null)
+                sb.append(",");
         }
         if (qpsB != null)//parameter from b
         {
@@ -834,12 +864,14 @@ public class ResultListUtil {
         sb.append("\"results\":[");//start of the result list
         if (combined != null)
             for (ResultRow row : combined.getRows()) {
-                if (!firstRow) sb.append(",");
+                if (!firstRow)
+                    sb.append(",");
                 int len = row.getColumns().size();
                 boolean first = true;
                 sb.append("{");//start of one row
                 for (int i = 0; i < len; i++) {
-                    if (!first) sb.append(",");
+                    if (!first)
+                        sb.append(",");
                     sb.append("\"").append(escapeJson(cols.get(i).getName())).append("\":");
                     if (cols.get(i).isNumberType()) {
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
@@ -866,7 +898,8 @@ public class ResultListUtil {
     }
 
     public static String escapeJson(String str) {
-        if (str == null) return "";
+        if (str == null)
+            return "";
         StringBuilder sb = new StringBuilder(str.length());
         char[] carray = str.toCharArray();
         for (int i = 0; i < carray.length; i++) {
@@ -893,17 +926,22 @@ public class ResultListUtil {
     }
 
     private static boolean isSame(String[] s1, String[] s2) {
-        if (s1 == null && s2 == null) return true;
+        if (s1 == null && s2 == null)
+            return true;
         else if (s1 == null && s2 != null) return false;
         else if (s1 != null && s2 == null) return false;
         else if (s1.length != s2.length) return false;
         for (int i = 0; i < s1.length; i++) {
             String ss1 = s1[i];
             String ss2 = s2[i];
-            if (ss1 == null && ss2 == null) continue;
-            if (ss1 == null && ss2 != null) return false;
-            if (ss1 != null && ss2 == null) return false;
-            if (!ss1.equalsIgnoreCase(ss2)) return false;
+            if (ss1 == null && ss2 == null)
+                continue;
+            if (ss1 == null && ss2 != null)
+                return false;
+            if (ss1 != null && ss2 == null)
+                return false;
+            if (!ss1.equalsIgnoreCase(ss2))
+                return false;
         }
         return true;
     }
@@ -914,7 +952,8 @@ public class ResultListUtil {
      * @param rList
      */
     public static void updateColumnWidth(ResultList rList) {
-        if (rList == null || rList.getColumnDescriptor() == null || rList.getRows().size() == 0) return;
+        if (rList == null || rList.getColumnDescriptor() == null || rList.getRows().size() == 0)
+            return;
         List<ColumnInfo> cols = rList.getColumnDescriptor().getColumns();
         for (ColumnInfo col : cols) {
             col.setMaxLength(col.getName().length());
@@ -923,7 +962,8 @@ public class ResultListUtil {
             List<String> l = row.getColumns();
             for (int i = 0; i < l.size(); i++) {
                 String s = l.get(i);
-                if (s != null && s.length() > cols.get(i).getMaxLength()) cols.get(i).setMaxLength(s.length());
+                if (s != null && s.length() > cols.get(i).getMaxLength())
+                    cols.get(i).setMaxLength(s.length());
             }
         }
     }
@@ -962,20 +1002,22 @@ public class ResultListUtil {
 
 
     private static List<BindVariable> parseBinds(String binds, XMLInputFactory inputFactory) {
-        if (binds == null) return null;
+        if (binds == null)
+            return null;
         List<BindVariable> vars = new ArrayList<>();
         //<binds><bind name=":1" pos="1" dty="1" dtystr="VARCHAR2(2000)" maxlen="2000" csid="873" len="15">Billing Contact</bind></binds>
 
-        CharArrayReader in = new CharArrayReader(binds.toCharArray());
         XMLStreamReader reader = null;
-        try {
+        try (CharArrayReader in = new CharArrayReader(binds.toCharArray())) {
             reader = inputFactory.createXMLStreamReader(in);
             while (reader.hasNext()) {
                 //loop till one sql tag is found
                 int evtType = reader.next();
-                if (evtType != XMLStreamConstants.START_ELEMENT) continue;
+                if (evtType != XMLStreamConstants.START_ELEMENT)
+                    continue;
                 String tagName = reader.getLocalName();
-                if (!"bind".equals(tagName)) continue;
+                if (!"bind".equals(tagName))
+                    continue;
                 BindVariable var = new BindVariable();
                 int attrCount = reader.getAttributeCount();
                 for (int i = 0; i < attrCount; i++) {
@@ -1015,7 +1057,8 @@ public class ResultListUtil {
             ResultList newList = new ResultList();
             ColumnDescriptor desc = new ColumnDescriptor();
             for (ColumnInfo col : rList.getColumnDescriptor().getColumns()) {
-                if ("binds_xml".equalsIgnoreCase(col.getName())) continue;
+                if ("binds_xml".equalsIgnoreCase(col.getName()))
+                    continue;
                 desc.addColumn(col.getName(), col.isNumberType(), desc.getColumns().size());
             }
             desc.addColumn("NAME", false, desc.getColumns().size());
@@ -1041,7 +1084,8 @@ public class ResultListUtil {
                     newRow.setColumnDescriptor(desc);
                     List<String> cols = new ArrayList<>(row.getColumns().size() + 5);
                     for (int i = 0; i < row.getColumns().size(); i++) {
-                        if (i == idx) continue;
+                        if (i == idx)
+                            continue;
                         cols.add(row.getColumns().get(i));
                     }
                     cols.add(null);
@@ -1058,7 +1102,8 @@ public class ResultListUtil {
                         newRow.setColumnDescriptor(desc);
                         List<String> cols = new ArrayList<>(row.getColumns().size() + 5);
                         for (int i = 0; i < row.getColumns().size(); i++) {
-                            if (i == idx) continue;
+                            if (i == idx)
+                                continue;
                             cols.add(row.getColumns().get(i));
                         }
                         cols.add(var.name);
@@ -1104,7 +1149,8 @@ public class ResultListUtil {
             {
                 boolean first = true;
                 for (int i = 0; i < cols.size(); i++) {
-                    if (!first) sb.append(",");
+                    if (!first)
+                        sb.append(",");
                     first = false;
                     sb.append("\"").append(cols.get(i).getName().toUpperCase() + "\"");
                 }
@@ -1113,12 +1159,14 @@ public class ResultListUtil {
             boolean firstRow = true;
             sb.append("\"results\":[");
             for (ResultRow row : rs.getRows()) {
-                if (!firstRow) sb.append(",");
+                if (!firstRow)
+                    sb.append(",");
                 int len = row.getColumns().size();
                 boolean first = true;
                 sb.append("{");
                 for (int i = 0; i < len; i++) {
-                    if (!first) sb.append(",");
+                    if (!first)
+                        sb.append(",");
                     sb.append("\"").append(escapeJson(cols.get(i).getName().toUpperCase())).append("\":");
                     if (cols.get(i).isNumberType()) {
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)

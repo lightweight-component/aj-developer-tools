@@ -5,26 +5,24 @@
  */
 package com.yahoo.dba.perf.myperf.process;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.db.DBConnectionWrapper;
 import com.yahoo.dba.perf.myperf.db.UserDBConnections;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.*;
 import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Slf4j
 public class GlobalVariableChangeScanTask implements Runnable {
-
-    private MyPerfContext context;
+    private final MyPerfContext context;
     private static final String STORAGE_DIR = "autoscan";
+
     @Setter
     @Getter
     private AppUser appUser;
@@ -42,39 +40,36 @@ public class GlobalVariableChangeScanTask implements Runnable {
         conns = new UserDBConnections();
         conns.setAppUser(appUser.getName());
         conns.setFrameworkContext(context);
-
         File root = new File(new File(this.context.getFileReposirtoryPath()), STORAGE_DIR);
 
         //get all dbids
         List<DBInstanceInfo> dbs = new ArrayList<>();
         for (Map.Entry<String, DBGroupInfo> e : context.getDbInfoManager().getClusters().entrySet()) {
             DBGroupInfo g = e.getValue();
-            for (DBInstanceInfo i : g.getInstances()) {
-                dbs.add(i);
-            }
+            dbs.addAll(g.getInstances());
         }
-
 
         //now get current timestamp
         sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-        for (DBInstanceInfo db : dbs)//now we need scan for each db
-        {
-            ConfigBlock cb = scanHost(db);
-            if (cb != null) {
-                updateConfigBlock(db, cb);
-            }
-        }
 
+        for (DBInstanceInfo db : dbs) {//now we need to scan for each db
+            ConfigBlock cb = scanHost(db);
+
+            if (cb != null)
+                updateConfigBlock(db, cb);
+        }
     }
 
     private void updateConfigBlock(DBInstanceInfo db, ConfigBlock cb) {
         File root = new File(new File(this.context.getFileReposirtoryPath()), STORAGE_DIR);
         ConfigHistory ch = ConfigHistory.load(root, db);
-        if (ch == null) ch = new ConfigHistory();//a brand new
+
+        if (ch == null)
+            ch = new ConfigHistory();//a brand new
+
         if (ch.updateLast(cb))//if any changes, update
             ch.store(root, db);
-
     }
 
     private ConfigBlock scanHost(DBInstanceInfo dbinfo) {
@@ -84,39 +79,47 @@ public class GlobalVariableChangeScanTask implements Runnable {
             //log the error
             return null;
         }
+
         log.info("Scan for host (" + dbinfo + ") as user " + cred.getUsername());
         //find one connection is enough
         DBConnectionWrapper conn = null;
-        ConfigBlock cb = null;
+        ConfigBlock cb;
+
         try {
             conn = conns.checkoutConnection(dbinfo, cred);
+
             if (conn == null) {
                 log.info("Failed to access " + dbinfo + ", skip it");
                 return null;
             }
+
             String sqlText = "show global variables";
             try (Statement stmt = conn.getConnection().createStatement();
-                ResultSet rs = stmt.executeQuery(sqlText)) {
+                 ResultSet rs = stmt.executeQuery(sqlText)) {
                 cb = new ConfigBlock();
+
                 while (rs != null && rs.next()) {
                     String key = rs.getString("VARIABLE_NAME").toUpperCase();
-                    //exclude a timestamp variable
-                    if ("TIMESTAMP".equalsIgnoreCase(key))
+
+                    if ("TIMESTAMP".equalsIgnoreCase(key)) // exclude a timestamp variable
                         continue;
+
                     cb.addVariable(key, rs.getString("VALUE"));
                 }
+
                 Calendar c = Calendar.getInstance();
                 Date dt = c.getTime();
                 cb.setTime(sdf.format(dt));
             }
         } catch (Exception ex) {
             log.warn("exception", ex);
-            //we should not used failed data
-            return null;
+
+            return null; // we should be not used failed data
         } finally {
             if (conn != null)
                 conns.checkinConnectionAndClose(conn);
         }
+
         log.info("Done configuration scan for host (" + dbinfo + ") as user " + cred.getUsername());
         return cb;
     }

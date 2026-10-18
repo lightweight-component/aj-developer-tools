@@ -20,8 +20,6 @@ import java.io.Serializable;
 /**
  * This will have two
  * Modify the way repl down is alerted. Now only alert repl status changes.
- *
- * @author xrao
  */
 @Slf4j
 public class InstanceStates implements Serializable {
@@ -99,7 +97,7 @@ public class InstanceStates implements Serializable {
         this.prevSnapshot = this.currSnapshot;
         this.currSnapshot = stat.copy();
         this.lastUpdateTime = stat.getTimestamp();
-        //use hard coded threshold for now
+        //use hard-coded threshold for now
         boolean isSnapValid = this.prevSnapshot.getTimestamp() >= 0L && this.currSnapshot.getTimestamp() > this.prevSnapshot.getTimestamp();
         long interval = this.currSnapshot.getTimestamp() - this.prevSnapshot.getTimestamp();
         Date dt = new Date(stat.getTimestamp());
@@ -218,14 +216,18 @@ public class InstanceStates implements Serializable {
             String alertName = entry.getKey();
             Float metricValue = entry.getValue();
             AlertDefinition def = context.getMetricsDef().getUdmManager().getAlertByName(alertName);
-            if (def == null) continue;
+            if (def == null)
+                continue;
             AlertSubscribers.Subscription subscript = context.getMetricsDef().getUdmManager()
                     .getAlertSubscriptions().getSubscription(dbgroup, host, alertName);
-            if (subscript == null) continue;
+            if (subscript == null)
+                continue;
             //since this is metrics based alerts, we only care about threshold
             Float threshold = subscript.threshold;
-            if (threshold == null) threshold = def.getDefaultThreshold();
-            if (threshold == null) continue; //something wrong with definition
+            if (threshold == null)
+                threshold = def.getDefaultThreshold();
+            if (threshold == null)
+                continue; //something wrong with definition
             if (AlertDefinition.METRICS_VALUE_TYPE_VALUE.equals(def.getMetricValueType())) {
                 //only need current value to compare
                 if (AlertDefinition.METRICS_COMPARISION_GREATER_THAN.equalsIgnoreCase(def.getMetricComparison())) {
@@ -241,12 +243,14 @@ public class InstanceStates implements Serializable {
             } else {
                 //need average change per second to compare
                 //no previous one to compare
-                if (this.prevSnapshot == null || this.prevSnapshot.getTimestamp() < 0L) continue;
+                if (this.prevSnapshot == null || this.prevSnapshot.getTimestamp() < 0L)
+                    continue;
                 if (this.prevSnapshot.getMetricsMap() == null
                         || this.prevSnapshot.getMetricsMap().size() == 0
                         || !this.prevSnapshot.getMetricsMap().containsKey(alertName)) continue;
                 long interval = this.currSnapshot.getTimestamp() - this.prevSnapshot.getTimestamp();
-                if (interval <= 0L) continue; //something wrong
+                if (interval <= 0L)
+                    continue; //something wrong
                 float avg = metricValue.floatValue() - this.prevSnapshot.getMetricsMap().get(alertName).floatValue();
                 if (AlertDefinition.METRICS_VALUE_TYPE_DIFF_AVG.equals(def.getMetricValueType()))
                     avg = (float) (((metricValue.floatValue() - this.prevSnapshot.getMetricsMap().get(alertName).floatValue()) * 1000.0) / (float) interval);
@@ -370,7 +374,7 @@ public class InstanceStates implements Serializable {
             toSend = true; //first alert
         else if (!reason.equalsIgnoreCase(this.lastWebAlertReason))
             toSend = true;//different type of alert
-        else if (ts >= this.lastWebAlertTime + webAlertIntervalMinutes * 60000)
+        else if (ts >= this.lastWebAlertTime + webAlertIntervalMinutes * 60000L)
             toSend = true;
         if (toSend) {
             this.lastWebAlertTime = ts;
@@ -381,13 +385,15 @@ public class InstanceStates implements Serializable {
 
     //Check if we can run a new report
     //Return true if we can
-    //Otherwise slots full
+    //Otherwise slot full
     synchronized public boolean canRunReport() {
         boolean canRun = false;
+
         if (this.reportsWIP < REPORTS_WIP_THRESHOLDS) {
             this.reportsWIP++;
             canRun = true;
         }
+
         return canRun;
     }
 
@@ -395,6 +401,7 @@ public class InstanceStates implements Serializable {
      * Free report slot
      */
     synchronized public void reportDone() {
-        if (this.reportsWIP > 0) this.reportsWIP--;
+        if (this.reportsWIP > 0)
+            this.reportsWIP--;
     }
 }

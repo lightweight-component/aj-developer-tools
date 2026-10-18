@@ -5,16 +5,14 @@
  */
 package com.yahoo.dba.perf.myperf.common;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.meta.MetaDB;
 import com.yahoo.dba.perf.myperf.metrics.MetricsDbBase;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
 import java.io.Serializable;
+import java.util.*;
 
 
 /**
@@ -34,9 +32,6 @@ public class DBInfoManager implements Serializable {
     private Map<String, MyDatabases> mydbs = new HashMap<>();
     private HashMap<String, Date> lastScanTime = new HashMap<>();
 
-    public DBInfoManager() {
-    }
-
     synchronized public Map<String, DBGroupInfo> getClusters() {
         return groups;
     }
@@ -44,31 +39,41 @@ public class DBInfoManager implements Serializable {
     synchronized public DBGroupInfo findGroup(String groupName) {
         if (groups != null && groups.containsKey(groupName))
             return groups.get(groupName);
+
         return null;
     }
 
     synchronized public void addOrUpdateInstance(DBInstanceInfo dbinfo) {
         DBGroupInfo cls = this.findGroup(dbinfo.getDbGroupName());
+
         if (cls == null) {
             cls = new DBGroupInfo();
             cls.setGroupName(dbinfo.getDbGroupName());
             this.groups.put(cls.getGroupName(), cls);
         }
+
         cls.addOrUpdateInstance(dbinfo);
     }
 
     synchronized public DBInstanceInfo findDB(String groupName, String hostname) {
         DBGroupInfo cls = this.findGroup(groupName);
-        if (cls == null) return null;
+
+        if (cls == null)
+            return null;
         for (DBInstanceInfo inst : cls.getInstances()) {
-            if (hostname.equalsIgnoreCase(inst.getHostName())) return inst;
+            if (hostname.equalsIgnoreCase(inst.getHostName()))
+                return inst;
         }
+
         return null;
     }
 
     synchronized public boolean removeDBHost(String groupName, String hostname) {
         DBGroupInfo cls = this.findGroup(groupName);
-        if (cls == null) return false;
+
+        if (cls == null)
+            return false;
+
         for (int i = cls.getInstances().size() - 1; i >= 0; i--) {
             DBInstanceInfo inst = cls.getInstances().get(i);
             if (hostname.equalsIgnoreCase(inst.getHostName())) {
@@ -81,7 +86,8 @@ public class DBInfoManager implements Serializable {
 
     synchronized public void removeGroup(String groupName) {
         DBGroupInfo cls = this.findGroup(groupName);
-        if (cls == null) return;
+        if (cls == null)
+            return;
         this.groups.remove(groupName);
         this.projectDb.removeDbGroup(groupName);
     }
@@ -162,7 +168,8 @@ public class DBInfoManager implements Serializable {
             }
             if (!restricted)
                 for (String key : this.groups.keySet()) {
-                    if (!mydb.contains(key)) alldb.add(key);
+                    if (!mydb.contains(key))
+                        alldb.add(key);
                 }
         }
         return alldb;
@@ -264,8 +271,8 @@ public class DBInfoManager implements Serializable {
      * This method will copy db credential when assign a DB to a restricted user or default admin/scanner user.
      * Assume the assigner can access the underlying database.
      *
-     * @param restrictedUserName
-     * @param username
+     * @param targetUserName
+     * @param restrictedUser
      * @param dbGroup
      * @param dbuser
      * @param password

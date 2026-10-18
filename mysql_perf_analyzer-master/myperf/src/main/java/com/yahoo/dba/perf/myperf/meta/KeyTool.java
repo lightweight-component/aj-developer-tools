@@ -19,7 +19,6 @@ import javax.crypto.NoSuchPaddingException;
 
 @Slf4j
 public class KeyTool {
-
     private static void maskFileReadonly(String filename) {
         try {
             if ((new File(filename)).exists())
@@ -28,12 +27,10 @@ public class KeyTool {
         } catch (Exception ex) {
             log.info("Faild to execute shell command", ex);
         }
-
     }
 
     public static class DesEncrypter {
-        private static final char[] base64Table =
-                "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz./".toCharArray();
+        private static final char[] base64Table = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz./".toCharArray();
         public static final String BASE64_ENCODING = "BASE64";
         public static final String BASE16_ENCODING = "HEX";
 
@@ -44,17 +41,15 @@ public class KeyTool {
         //SecretKey key = KeyGenerator.getInstance("DES").generateKey();
 
         private static void saveKeyToFile(SecretKey key) throws FileNotFoundException, IOException {
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(".des"));
-            oos.writeObject(key);
-            oos.close();
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(".des"))) {
+                oos.writeObject(key);
+            }
         }
 
         private static SecretKey getKeyFromFile() throws IOException, ClassNotFoundException {
-            SecretKey key = null;
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(".des"));
-            key = (SecretKey) ois.readObject();
-            ois.close();
-            return key;
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(".des"))) {
+                return (SecretKey) ois.readObject();
+            }
         }
 
 

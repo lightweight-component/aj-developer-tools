@@ -32,12 +32,15 @@ public class AppUserManager implements Serializable {
      * @return
      */
     synchronized public AppUser getUser(String name) {
-        if (name == null || name.isEmpty()) return null;
-        if (this.userMap.containsKey(name)) return this.userMap.get(name);
+        if (name == null || name.isEmpty())
+            return null;
+        if (this.userMap.containsKey(name))
+            return this.userMap.get(name);
 
         if (this.metaDb != null) {
             AppUser appUser = this.metaDb.retrieveUserInfo(name);
-            if (appUser != null) this.addUser(appUser);
+            if (appUser != null)
+                this.addUser(appUser);
             return appUser;
         }
         return null;

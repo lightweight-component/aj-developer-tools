@@ -140,7 +140,8 @@ public class AlertsController extends MyPerfBaseController {
                                                  HttpServletResponse resp) {
         Object tsObj = req.getSession().getAttribute("LAST_ALERT_REQ_STAMP");
         long ts = System.currentTimeMillis() - 300000; //5 minutes back
-        if (tsObj != null) ts = Long.parseLong(tsObj.toString());
+        if (tsObj != null)
+            ts = Long.parseLong(tsObj.toString());
 
         //only want 10
         List<AlertEntry> alerts = this.frameworkContext.getAlerts().getEntries(ts, 10);

@@ -143,7 +143,8 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
     private ResultList queryDisk(SNMPClient client, QueryParameters qps) throws Exception {
         boolean diff = "1".equalsIgnoreCase(qps.getSqlParams().get("p_2"));
         Map<String, List<SNMPTriple>> snmpData = client.getMultiDiskData();
-        if (snmpData == null) return null;
+        if (snmpData == null)
+            return null;
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.addColumn("NAME", false, 0);
         desc.addColumn("OID", false, 1);
@@ -177,7 +178,8 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
     private ResultList queryNetwork(SNMPClient client, QueryParameters qps) throws Exception {
         boolean diff = "1".equalsIgnoreCase(qps.getSqlParams().get("p_2"));
         Map<String, List<SNMPTriple>> snmpData = client.getNetIfData(null);
-        if (snmpData == null) return null;
+        if (snmpData == null)
+            return null;
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.addColumn("NAME", false, 0);
         desc.addColumn("OID", false, 1);
@@ -213,7 +215,8 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
     private ResultList queryStorage(SNMPClient client, QueryParameters qps) throws Exception {
         boolean diff = "1".equalsIgnoreCase(qps.getSqlParams().get("p_2"));
         Map<String, List<SNMPTriple>> snmpData = client.getStorageData(null);
-        if (snmpData == null) return null;
+        if (snmpData == null)
+            return null;
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.addColumn("NAME", false, 0);
         desc.addColumn("OID", false, 1);
@@ -247,7 +250,8 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
     private ResultList querySystemData(SNMPClient client, QueryParameters qps) throws Exception {
         boolean diff = "1".equalsIgnoreCase(qps.getSqlParams().get("p_2"));
         List<SNMPTriple> snmpData = client.querySysData3();
-        if (snmpData == null) return null;
+        if (snmpData == null)
+            return null;
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.addColumn("NAME", false, 0);
         desc.addColumn("OID", false, 1);
@@ -283,7 +287,8 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
         } catch (Exception ex) {
             log.error("Failed to retrieve mysqld perf data", ex);
         }
-        if (snmpData == null) return null;
+        if (snmpData == null)
+            return null;
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.addColumn("NAME", false, 0);
         desc.addColumn("OID", false, 1);
@@ -315,7 +320,8 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
         //p2 will be oid
         String oid = qps.getSqlParams().get("p_2");
         List<SNMPTriple> snmpData = client.querySingleSNMPEntryByOID(oid);
-        if (snmpData == null) return null;
+        if (snmpData == null)
+            return null;
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.addColumn("NAME", false, 0);
         desc.addColumn("OID", false, 1);
@@ -340,7 +346,8 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
         //p2 will be oid
         String oid = qps.getSqlParams().get("p_2");
         List<SNMPTriple> snmpData = client.querySingleSNMPTableByOID(oid);
-        if (snmpData == null) return null;
+        if (snmpData == null)
+            return null;
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.addColumn("NAME", false, 0);
         desc.addColumn("OID", false, 1);

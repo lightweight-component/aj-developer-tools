@@ -177,13 +177,12 @@ public class MyPerfConfiguration implements Serializable {
 
 
     synchronized private boolean readConfig(File cfgFile, MyPerfContext ctx) {
-        FileInputStream in = null;
-        try {
-            in = new FileInputStream(cfgFile);
+        try (FileInputStream in = new FileInputStream(cfgFile)) {
             Properties props = new Properties();
             props.load(in);
             this.metricsScannerUser = props.getProperty("metricsScannerUser");
-            if (this.metricsScannerUser == null) return false;
+            if (this.metricsScannerUser == null)
+                return false;
             this.alertNotificationEmails = props.getProperty("alertNotificationEmails");
             this.adminEmail = props.getProperty("adminEmail");
 
@@ -191,7 +190,8 @@ public class MyPerfConfiguration implements Serializable {
             if (this.scannerIntervalSeconds < 1)
                 this.scannerIntervalSeconds = 300;//minimum 1 second, if not set, use default
             this.alertScanIntervalSeconds = Integer.parseInt(props.getProperty("alertScanIntervalSeconds", "300"));
-            if (this.alertScanIntervalSeconds < 60) this.alertScanIntervalSeconds = 300;//minimum 1 minute
+            if (this.alertScanIntervalSeconds < 60)
+                this.alertScanIntervalSeconds = 300;//minimum 1 minute
             this.recordRententionDays = Integer.parseInt(props.getProperty("recordRententionDays", "60"));
             this.scannerThreadCount = Integer.parseInt(props.getProperty("scannerThreadCount", "4"));
             this.reuseMonUserConnction = !"n".equalsIgnoreCase(props.getProperty("reuseMonUserConnction", "y"));
@@ -212,14 +212,6 @@ public class MyPerfConfiguration implements Serializable {
             return true;
         } catch (Exception ex) {
             log.error("Failed to read configuration file " + cfgFile.getAbsolutePath(), ex);
-        } finally {
-            if (in != null) {
-                try {
-                    in.close();
-                } catch (Exception fex) {
-                }
-                ;
-            }
         }
         return false;
     }
@@ -232,9 +224,7 @@ public class MyPerfConfiguration implements Serializable {
      */
     synchronized public boolean store(MyPerfContext ctx) {
         File cfgFile = new File(this.myperfConfigPath);
-        PrintWriter pw = null;
-        try {
-            pw = new PrintWriter(new FileWriter(cfgFile));
+        try (PrintWriter pw = new PrintWriter(new FileWriter(cfgFile))) {
             pw.println("metricsScannerUser=" + this.metricsScannerUser);
             pw.println("adminEmail=" + this.adminEmail);
             pw.println("alertNotificationEmails=" + this.alertNotificationEmails);
@@ -263,14 +253,6 @@ public class MyPerfConfiguration implements Serializable {
             return true;
         } catch (Exception ex) {
             log.error("Failed to store configurations to file " + this.myperfConfigPath, ex);
-        } finally {
-            if (pw != null) {
-                try {
-                    pw.flush();
-                    pw.close();
-                } catch (Exception fex) {
-                }
-            }
         }
         return false;
     }

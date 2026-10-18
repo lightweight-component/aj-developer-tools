@@ -98,13 +98,13 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                     <debug>true</debug>
                     <verbose>true</verbose>
                     <fork>true</fork>
                     <executable>${maven.compiler.executable}</executable>
-                    <compilerVersion>1.6</compilerVersion>
+                    <compilerVersion>1.8</compilerVersion>
                 </configuration>
             </plugin>
             <plugin>

@@ -112,7 +112,8 @@ public class DBConnectionWrapper implements Comparable<DBConnectionWrapper> {
      * Version and oracle instance info. Called by setConnection
      */
     private void retrieveInfoUponOpen() {
-        if (this.connection == null) return;
+        if (this.connection == null)
+            return;
 
         String sql = null;
         if ("oracle".equalsIgnoreCase(this.db.getDbType()))

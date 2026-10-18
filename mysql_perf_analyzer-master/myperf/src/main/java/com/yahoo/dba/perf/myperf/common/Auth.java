@@ -39,11 +39,13 @@ public class Auth {
      * @return
      */
     public AppUser findUserByName(String name) {
-        if (name == null || name.isEmpty()) return null;
+        if (name == null || name.isEmpty())
+            return null;
         String username = name.trim().toLowerCase();
         //find the user from the system cache
         AppUser appUser = this.context.getUserManager().getUser(username);
-        if (appUser != null) return appUser;
+        if (appUser != null)
+            return appUser;
         //find the user from db and add it to system cache
         appUser = this.context.getUserManager().retrieveUserInfoFromMetaDB(username);
         if (appUser != null)
@@ -52,7 +54,8 @@ public class Auth {
     }
 
     public boolean login(AppUser appUser, HttpServletRequest request) {
-        if (appUser == null) return false;
+        if (appUser == null)
+            return false;
 
         //check if login session timed out
         HttpSession sess = request.getSession();

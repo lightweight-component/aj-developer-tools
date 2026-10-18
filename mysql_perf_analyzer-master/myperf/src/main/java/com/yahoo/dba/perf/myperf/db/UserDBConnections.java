@@ -102,7 +102,8 @@ public class UserDBConnections {
                 }
             }
             //if we reach here without credential, stop here
-            if (cred == null) return null;
+            if (cred == null)
+                return null;
         }
 
         //when reach here, we have no db connection available, need create one
@@ -146,7 +147,8 @@ public class UserDBConnections {
                 }
             }
             //if we reach here without credential, stop here
-            if (cred == null) return null;
+            if (cred == null)
+                return null;
         }
 
         //when reach here, we have no db connection available, need create one
@@ -196,7 +198,8 @@ public class UserDBConnections {
      * @param conn
      */
     public void checkinConnection(DBConnectionWrapper conn) {
-        if (conn == null) return;
+        if (conn == null)
+            return;
         conn.setCurrentStatement(null);
         conn.setInuse(false);
     }
@@ -266,7 +269,8 @@ public class UserDBConnections {
      * @param timeMillis
      */
     public void closeExpired(long timeMillis) {
-        if (timeMillis <= 0) timeMillis = this.connectionIdleTimeout;
+        if (timeMillis <= 0)
+            timeMillis = this.connectionIdleTimeout;
         List<DBConnectionWrapper> idleList = new ArrayList<>();
         synchronized (this.connections) {
             for (int i = this.connections.size() - 1; i >= 0; i--) {

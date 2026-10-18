@@ -49,7 +49,8 @@ public class Alerts implements Serializable {
             if (e.getTs() > ts) {
                 resList.add(e);
                 cnt++;
-                if (max > 0 && cnt >= max) break;
+                if (max > 0 && cnt >= max)
+                    break;
             }
         }
         return resList;

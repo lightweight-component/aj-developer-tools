@@ -81,10 +81,12 @@ public class MetricsController extends MyPerfBaseController {
 
 
     private void prefixMetricGroupName(String mg, ResultList rs) {
-        if (mg == null || "globalstatus".equals(mg) || mg.isEmpty() || rs == null) return;
+        if (mg == null || "globalstatus".equals(mg) || mg.isEmpty() || rs == null)
+            return;
         for (ColumnInfo col : rs.getColumnDescriptor().getColumns()) {
             String name = col.getName();
-            if ("TS".equals(name) || "SNAP_ID".equals(name)) continue;
+            if ("TS".equals(name) || "SNAP_ID".equals(name))
+                continue;
             if (!name.startsWith(mg + ".")) {
                 col.setName(mg + "." + name);
             }
@@ -118,12 +120,15 @@ public class MetricsController extends MyPerfBaseController {
             HashMap<String, HashMap<String, ArrayList<String>>> metricsByGroup = new HashMap<>();
             for (String s : ms) {   //all name should be in the form of {group}.{subgrp}.{metric name}
                 String[] cmp = s.split("\\."); //retrieve name component
-                if (cmp.length != 3) continue; //invalid name, ignore
-                if (cmp[2] == null || cmp[2].isEmpty()) continue;//invalid name, ignore
+                if (cmp.length != 3)
+                    continue; //invalid name, ignore
+                if (cmp[2] == null || cmp[2].isEmpty())
+                    continue;//invalid name, ignore
                 String mg = cmp[0];
                 String subGrpName = cmp[1];
                 String metricName = cmp[2];
-                if (mg == null || mg.isEmpty()) mg = "STATUS";
+                if (mg == null || mg.isEmpty())
+                    mg = "STATUS";
                 if ("UDM".equals(mg))//need special processing for UDM
                     mg = "UDM_" + subGrpName;
                 if (!metricsByGroup.containsKey(mg))
@@ -173,7 +178,8 @@ public class MetricsController extends MyPerfBaseController {
                     //if(mGroup == null || !mGroup.isStoreInCommonTable())
                     {
                         String prefix = mg + ".";
-                        if (subGrpName != null) prefix += subGrpName;
+                        if (subGrpName != null)
+                            prefix += subGrpName;
                         if (mg.startsWith("UDM_"))
                             prefix = "UDM." + subGrpName;
                         prefixMetricGroupName(prefix, tmpList);
@@ -270,8 +276,10 @@ public class MetricsController extends MyPerfBaseController {
         ResultList rList = null;
         try {
             String tblName = subGroup;
-            if (tblName == null || tblName.isEmpty() || tblName.equals("_")) tblName = metricgroup;
-            if (metricgroup.startsWith("UDM_")) tblName = metricgroup;
+            if (tblName == null || tblName.isEmpty() || tblName.equals("_"))
+                tblName = metricgroup;
+            if (metricgroup.startsWith("UDM_"))
+                tblName = metricgroup;
             else tblName = "MYSQL_" + tblName;
 
             List<Metric> mtrs = this.frameworkContext.getMetricsDef().getMetrics(metricgroup, subGroup, metrics);
@@ -305,8 +313,10 @@ public class MetricsController extends MyPerfBaseController {
         try {
             {
                 String tblName = subGroup;
-                if (tblName == null || tblName.isEmpty() || tblName.equals("_")) tblName = metricgroup;
-                if (metricgroup.startsWith("UDM_")) tblName = metricgroup;
+                if (tblName == null || tblName.isEmpty() || tblName.equals("_"))
+                    tblName = metricgroup;
+                if (metricgroup.startsWith("UDM_"))
+                    tblName = metricgroup;
                 else tblName = "MYSQL_" + tblName;
                 long sqlStartTime = System.currentTimeMillis();
                 rList = this.frameworkContext.getMetricDb().retrieveMetrics(tblName.toUpperCase(), metrics, false,
@@ -340,10 +350,12 @@ public class MetricsController extends MyPerfBaseController {
         for (String mname : metrics) {
             try {
                 String metricFullName = mg.getMetricFullName(mname);
-                if (metricFullName == null) continue;
+                if (metricFullName == null)
+                    continue;
                 ResultList tmpList = this.frameworkContext.getMetricDb().retrieveUDMMetrics(metricFullName,
                         dbinfo.getDbid(), Long.parseLong(startDate), Long.parseLong(endDate));
-                if (tmpList == null) continue;
+                if (tmpList == null)
+                    continue;
                 Metric m = mg.getMetricByName(mname).copy();
                 m.setName(metricFullName);
                 List<Metric> mtrs = new ArrayList<>(1);

@@ -231,8 +231,10 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
     }
 
     public void destroy() throws Exception {
-        if (this.autoScanner != null) this.autoScanner.stop();
-        if (this.metricDb != null) this.metricDb.destroy();
+        if (this.autoScanner != null)
+            this.autoScanner.stop();
+        if (this.metricDb != null)
+            this.metricDb.destroy();
         this.metaDb.destroy();
     }
 
@@ -247,7 +249,8 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
         ch.qos.logback.classic.Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
         String configuredLevel = getLogLevel();
-        if ("SEVERE".equals(configuredLevel)) configuredLevel = "ERROR";
+        if ("SEVERE".equals(configuredLevel))
+            configuredLevel = "ERROR";
         else if ("WARNING".equals(configuredLevel)) configuredLevel = "WARN";
         else if ("CONFIG".equals(configuredLevel) || "FINE".equals(configuredLevel)) configuredLevel = "DEBUG";
         else if ("FINER".equals(configuredLevel) || "FINEST".equals(configuredLevel)) configuredLevel = "TRACE";
@@ -327,7 +330,8 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
             String[] mgNames = this.metricsDef.getGroupNames();
             for (String mgName : mgNames) {
                 MetricsGroup mg = this.metricsDef.getGroupByName(mgName);
-                if (mg == null) continue;
+                if (mg == null)
+                    continue;
                 if (mg.getSubGroups() != null && mg.getSubGroups().size() > 0) {
                     //deal with sub groups
                     for (MetricsGroup subGrp : mg.getSubGroups()) {
@@ -346,7 +350,8 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
     }
 
     public String getSqlTextForMetricsGroup(String groupName) {
-        if (groupName == null) return null;
+        if (groupName == null)
+            return null;
         String sql = null;
 
         MetricsGroup mg = getMetricsDef().getGroupByName(groupName);
@@ -495,7 +500,8 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
      */
     private String getAlertEmailTime(AlertEntry alert) {
         long mytime = alert.getTs();
-        if (mytime <= 0L) mytime = System.currentTimeMillis();
+        if (mytime <= 0L)
+            mytime = System.currentTimeMillis();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         try {

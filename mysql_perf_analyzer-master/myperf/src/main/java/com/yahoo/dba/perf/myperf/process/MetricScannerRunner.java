@@ -31,16 +31,16 @@ import java.text.SimpleDateFormat;
  */
 @Slf4j
 public class MetricScannerRunner implements Runnable {
-    private MyPerfContext frameworkContext;
+    private final MyPerfContext frameworkContext;
 
     //note those objects are shared, so we need handle synchronization here
-    private LinkedBlockingQueue<DBInstanceInfo> dbqueue;//distributed job
-    private AppUser appUser;//to get db credentials
+    private final LinkedBlockingQueue<DBInstanceInfo> dbqueue;//distributed job
+    private final AppUser appUser;//to get db credentials
     private UserDBConnections conns;
     @Setter
     private Map<String, Map<String, MetricsBuffer>> buffer;
-    private int snap_id;
-    private AtomicBoolean running = new AtomicBoolean();
+    private final int snap_id;
+    private final AtomicBoolean running = new AtomicBoolean();
 
     protected SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
 
@@ -65,11 +65,15 @@ public class MetricScannerRunner implements Runnable {
         conns.setAppUser(appUser.getName());
         conns.setFrameworkContext(frameworkContext);
         int count = 0;
+
         while (!dbqueue.isEmpty() && running.get()) {
             try {
                 DBInstanceInfo db = this.dbqueue.poll(1, TimeUnit.SECONDS);
                 count++;
-                if (db == null || !db.isMetricsEnabled()) continue;
+
+                if (db == null || !db.isMetricsEnabled())
+                    continue;
+
                 long startTime = System.currentTimeMillis();
                 scanHost(db);
                 //record total scan time for each server
@@ -79,6 +83,7 @@ public class MetricScannerRunner implements Runnable {
                 log.warn("Exception: scan loop", ex);
             }
         }
+
         log.info(Thread.currentThread() + " done scan metrics: " + count + " servers.");
     }
 
@@ -89,44 +94,45 @@ public class MetricScannerRunner implements Runnable {
 
     private Map<String, Float> getAlertThreshold(DBInstanceInfo dbinfo) {
         HashMap<String, Float> thresholds = new HashMap<>(AlertSettings.COMMON_ALERTS.length);
+
         for (String alertType : AlertSettings.COMMON_ALERTS)
-            thresholds.put(alertType, this.frameworkContext
-                    .getAlertSettings()
-                    .getAlertThreshold(dbinfo.getDbGroupName(), dbinfo.getHostName(), alertType));
+            thresholds.put(alertType, this.frameworkContext.getAlertSettings().getAlertThreshold(dbinfo.getDbGroupName(), dbinfo.getHostName(), alertType));
+
         return thresholds;
     }
 
     private void reportOffline(DBInstanceInfo dbinfo) {
         try {
             Date dt = new Date();
+
             if (dbinfo.isAlertEnabled() && this.frameworkContext.getInstanceStatesManager().getStates(dbinfo.getDbid()).reportOffline(true, dt)) {
                 AlertEntry alert = new AlertEntry(dt.getTime(), "OFFLINE", null, dbinfo.getDbGroupName(), dbinfo.getHostName());
                 this.frameworkContext.getAutoScanner().getMetricDb().addNewAlert(Long.parseLong(sdf.format(dt)), dbinfo.getDbid(), "OFFLINE", "OFFLINE");
                 this.frameworkContext.addAlert(alert);
                 this.frameworkContext.emailAlert(alert);
             }
-        } catch (Exception ex) {
-
+        } catch (Exception ignored) {
         }
     }
 
     private void checkAndReportDiskUsageAlert(DBInstanceInfo dbinfo, String diskMount, long value) {
         Float threshold = this.frameworkContext.getAlertSettings().getAlertThreshold(dbinfo, "DISKUSAGE");
-        if (threshold == null || (float) value <= threshold) {
+
+        if (threshold == null || (float) value <= threshold)
             //log.info("Disk usage is under control: mount - "+diskMount+", used - "+value+", threshold - "+threshold);
             return;
-        }
+
         try {
             Date dt = new Date();
-            if (dbinfo.isAlertEnabled()
-                    && this.frameworkContext.getInstanceStatesManager().getStates(
+
+            if (dbinfo.isAlertEnabled() && this.frameworkContext.getInstanceStatesManager().getStates(
                     dbinfo.getDbid()).reportUserAlert(dt, "DISKUSAGE", diskMount + " " + String.valueOf(value) + "%")) {
                 AlertEntry alert = new AlertEntry(dt.getTime(), "DISKUSAGE", diskMount + " " + value + "%", dbinfo.getDbGroupName(), dbinfo.getHostName());
                 this.frameworkContext.getMetricDb().addNewAlert(Long.parseLong(sdf.format(dt)), dbinfo.getDbid(), "DISKUSAGE", diskMount + " " + value + "%");
                 this.frameworkContext.addAlert(alert);
                 this.frameworkContext.emailAlert(alert);
             }
-        } catch (Exception ex) {
+        } catch (Exception ignored) {
 
         }
     }
@@ -143,16 +149,17 @@ public class MetricScannerRunner implements Runnable {
         int snap_id;
         long startTimestamp;
         boolean statusUpdated = false;
-        boolean reportGenerated = false;//now report will generate at the moment the issue is detected
+        boolean reportGenerated = false;//now a report will generate at the moment the issue is detected
         boolean hasSnapAlert = false;
         String snapAlertType = null;
         String snapAlertValue = null;
-        boolean canQuerySNMP = true;//since we do multi round SNMP, if one failed, no meaning for next
+        boolean canQuerySNMP = true;//since we do multi-round SNMP, if one failed, no meaning for next
     }
 
     private void scanSnmpDisk(ScanData scanData, MetricsGroup mg) throws Exception {
         if (scanData.dbinfo.isSnmpEnabled() && scanData.canQuerySNMP) {
             SNMPClient snmpClient = null;
+
             try {
                 snmpClient = new SNMPClient(scanData.dbinfo.getHostName());
                 snmpClient.setSnmpSetting(this.frameworkContext.getSnmpSettings()
@@ -161,10 +168,14 @@ public class MetricScannerRunner implements Runnable {
                 long ts1 = System.currentTimeMillis();
                 Map<String, List<SNMPClient.SNMPTriple>> diskStats = snmpClient.getMultiDiskData();
                 long ts2 = System.currentTimeMillis();
+
                 for (Map.Entry<String, List<SNMPClient.SNMPTriple>> entry : diskStats.entrySet()) {
                     Map<String, String> snmpRes = new HashMap<>();
+
                     for (SNMPClient.SNMPTriple e : entry.getValue()) {
-                        if (entry.getKey().equals(e.value)) continue;
+                        if (entry.getKey().equals(e.value))
+                            continue;
+
                         try {
                             Long.parseLong(e.value);
                             snmpRes.put(e.name, e.value);
@@ -172,6 +183,7 @@ public class MetricScannerRunner implements Runnable {
                             snmpRes.put(e.name, "0");
                         }
                     }
+
                     storeKVTabularData(scanData, mg, entry.getKey(), snmpRes, (int) (ts2 - ts1));
                 }
             } catch (Throwable iex) {
@@ -180,7 +192,7 @@ public class MetricScannerRunner implements Runnable {
             } finally {
                 if (snmpClient != null) try {
                     snmpClient.stop();
-                } catch (Exception snmpExc) {
+                } catch (Exception ignored) {
                 }
             }
         }
@@ -190,38 +202,47 @@ public class MetricScannerRunner implements Runnable {
     private void scanSnmpStorage(ScanData scanData, MetricsGroup mg) throws Exception {
         if (scanData.dbinfo.isSnmpEnabled() && scanData.canQuerySNMP) {
             SNMPClient snmpClient = null;
+
             try {
                 snmpClient = new SNMPClient(scanData.dbinfo.getHostName());
-                snmpClient.setSnmpSetting(this.frameworkContext.getSnmpSettings()
-                        .getHostSetting(scanData.dbinfo.getDbGroupName(), scanData.dbinfo.getHostName()));
+                snmpClient.setSnmpSetting(this.frameworkContext.getSnmpSettings().getHostSetting(scanData.dbinfo.getDbGroupName(), scanData.dbinfo.getHostName()));
                 snmpClient.start();
                 long ts1 = System.currentTimeMillis();
                 Map<String, List<SNMPClient.SNMPTriple>> diskStats = snmpClient.getStorageData(null);
                 long ts2 = System.currentTimeMillis();
+
                 for (Map.Entry<String, List<SNMPClient.SNMPTriple>> entry : diskStats.entrySet()) {
                     String key = entry.getKey();
+
                     //excluding memroy stuff
                     if ("Cached memory".equals(key) || "Memory buffers".equals(key)
                             || "Physical memory".equals(key) || "/dev/shm".equals(key)
                             || "Swap space".equals(key) || "Virtual memory".endsWith(key))
                         continue;
+
                     Map<String, String> snmpRes = new HashMap<>();
                     long diskUsed = 0L;
                     long diskSize = 0L;
+
                     for (SNMPClient.SNMPTriple e : entry.getValue()) {
-                        if (entry.getKey().equals(e.value)) continue;
+                        if (entry.getKey().equals(e.value))
+                            continue;
+
                         try {
                             long lval = Long.parseLong(e.value);
+
                             if ("HRSTORAGEUSED".equalsIgnoreCase(e.name))
                                 diskUsed = lval;
                             else if ("HRSTORAGESIZE".equalsIgnoreCase(e.name)) {
                                 diskSize = lval;
                             }
+
                             snmpRes.put(e.name, e.value);
                         } catch (Exception ex) {
                             snmpRes.put(e.name, "0");
                         }
                     }
+
                     long used_pct = (diskSize != 0L) ? Math.round((diskUsed * 100.0) / diskSize) : 0L;
                     snmpRes.put("USED_PCT", String.valueOf(used_pct));
                     storeKVTabularData(scanData, mg, entry.getKey(), snmpRes, (int) (ts2 - ts1));
@@ -233,30 +254,35 @@ public class MetricScannerRunner implements Runnable {
             } finally {
                 if (snmpClient != null) try {
                     snmpClient.stop();
-                } catch (Exception snmpExc) {
+                } catch (Exception ignored) {
                 }
             }
         }
 
     }
 
-    private void scanSnmpNet(ScanData scanData, MetricsGroup mg) throws Exception {
+    private void scanSnmpNet(ScanData scanData, MetricsGroup mg) {
         if (scanData.dbinfo.isSnmpEnabled() && scanData.canQuerySNMP) {
             SNMPClient snmpClient = null;
+
             try {
                 snmpClient = new SNMPClient(scanData.dbinfo.getHostName());
-                snmpClient.setSnmpSetting(this.frameworkContext.getSnmpSettings()
-                        .getHostSetting(scanData.dbinfo.getDbGroupName(), scanData.dbinfo.getHostName()));
+                snmpClient.setSnmpSetting(this.frameworkContext.getSnmpSettings().getHostSetting(scanData.dbinfo.getDbGroupName(), scanData.dbinfo.getHostName()));
                 snmpClient.start();
                 long ts1 = System.currentTimeMillis();
                 Map<String, List<SNMPClient.SNMPTriple>> diskStats = snmpClient.getNetIfData(null);//assume eth0
                 long ts2 = System.currentTimeMillis();
+
                 if (diskStats != null && diskStats.size() > 0) {
                     for (Map.Entry<String, List<SNMPClient.SNMPTriple>> entry : diskStats.entrySet()) {
-                        if (entry.getValue().size() == 0) continue;
+                        if (entry.getValue().size() == 0)
+                            continue;
+
                         Map<String, String> snmpRes = new HashMap<>();
+
                         for (SNMPClient.SNMPTriple e : entry.getValue()) {
-                            if (entry.getKey().equals(e.value)) continue;
+                            if (entry.getKey().equals(e.value))
+                                continue;
                             try {
                                 Long.parseLong(e.value);
                                 snmpRes.put(e.name, e.value);
@@ -264,29 +290,30 @@ public class MetricScannerRunner implements Runnable {
                                 snmpRes.put(e.name, "0");
                             }
                         }
+
                         storeKVTabularData(scanData, mg, entry.getKey(), snmpRes, (int) (ts2 - ts1));
                     }
                 }
             } catch (Throwable iex) {
-                log.warn("Faled to scan snmp for " + scanData.dbinfo.getHostName(), iex);
+                log.warn("Failed to scan snmp for " + scanData.dbinfo.getHostName(), iex);
                 scanData.canQuerySNMP = false;
             } finally {
                 if (snmpClient != null) try {
                     snmpClient.stop();
-                } catch (Exception snmpExc) {
+                } catch (Exception ignored) {
                 }
             }
         }
 
     }
 
-    private void scanSnmpSys(ScanData scanData, MetricsGroup mg) throws Exception {
+    private void scanSnmpSys(ScanData scanData, MetricsGroup mg) {
         if (scanData.dbinfo.isSnmpEnabled() && scanData.canQuerySNMP) {
             SNMPClient snmpClient = null;
+
             try {
                 snmpClient = new SNMPClient(scanData.dbinfo.getHostName());
-                snmpClient.setSnmpSetting(this.frameworkContext.getSnmpSettings()
-                        .getHostSetting(scanData.dbinfo.getDbGroupName(), scanData.dbinfo.getHostName()));
+                snmpClient.setSnmpSetting(this.frameworkContext.getSnmpSettings().getHostSetting(scanData.dbinfo.getDbGroupName(), scanData.dbinfo.getHostName()));
                 snmpClient.start();
                 long ts1 = System.currentTimeMillis();
                 Map<String, String> snmpRes = snmpClient.querySysData();
@@ -306,12 +333,13 @@ public class MetricScannerRunner implements Runnable {
                 }
 
             } catch (Throwable iex) {
-                log.warn("Faled to scan snmp for " + scanData.dbinfo.getHostName(), iex);
+                log.warn("Failed to scan snmp for " + scanData.dbinfo.getHostName(), iex);
                 scanData.canQuerySNMP = false;
             } finally {
                 try {
-                    if (snmpClient != null) snmpClient.stop();
-                } catch (Exception snmpExc) {
+                    if (snmpClient != null)
+                        snmpClient.stop();
+                } catch (Exception ignored) {
                 }
             }
         }
@@ -336,7 +364,8 @@ public class MetricScannerRunner implements Runnable {
                 scanData.canQuerySNMP = false;
             } finally {
                 try {
-                    if (snmpClient != null) snmpClient.stop();
+                    if (snmpClient != null)
+                        snmpClient.stop();
                 } catch (Exception snmpExc) {
                 }
             }
@@ -371,7 +400,8 @@ public class MetricScannerRunner implements Runnable {
             long ts2 = System.currentTimeMillis();
             HashMap<String, String> resMap = new HashMap<>(rs.getRows().size());
             for (ResultRow row : rs.getRows()) {
-                if (row.getColumns() == null || row.getColumns().size() < 2) continue;//skip null
+                if (row.getColumns() == null || row.getColumns().size() < 2)
+                    continue;//skip null
                 resMap.put(row.getColumns().get(0), row.getColumns().get(1));
             }
             storeKVTabularData(scanData, mg, null, resMap, (int) (ts2 - ts1));
@@ -424,7 +454,8 @@ public class MetricScannerRunner implements Runnable {
         }
         for (Metric m : mg.getMetrics()) {
             String srcName = m.getSourceName().toLowerCase();
-            if (!kvPairs.containsKey(srcName)) continue;
+            if (!kvPairs.containsKey(srcName))
+                continue;
             int metricId = this.frameworkContext.getAutoScanner().getMetricDb()
                     .checkAndAddMetricCode(mg.getMetricFullName(m.getName()));
             if (metricId <= 0) {
@@ -462,7 +493,8 @@ public class MetricScannerRunner implements Runnable {
      * @throws SQLException
      */
     private void storeKVTabularData(ScanData scanData, MetricsGroup mg, String key, Map<String, String> kvPairs, int queryTime) throws SQLException {
-        if (mg == null) return;
+        if (mg == null)
+            return;
         if (mg.isStoreInCommonTable()) {
             storeKVTabularDataGeneric(scanData, mg,
                     kvPairs, queryTime);
@@ -483,7 +515,8 @@ public class MetricScannerRunner implements Runnable {
                 MetricsBuffer mbuf = retrieveMetricsBuffer(scanData, mg, subGrp);
                 if (mbuf != null) {
                     ByteBuffer buf = mbuf.recordOneRowByMetricsMap(kvPairs, scanData.snap_id, scanData.startTimestamp, queryTime);
-                    if (buf != null) this.frameworkContext.getMetricDb().putData(subGrp, key, buf);
+                    if (buf != null)
+                        this.frameworkContext.getMetricDb().putData(subGrp, key, buf);
                 }
             }
         } else {
@@ -491,7 +524,8 @@ public class MetricScannerRunner implements Runnable {
             MetricsBuffer mbuf = retrieveMetricsBuffer(scanData, mg, null);
             if (mbuf != null) {
                 ByteBuffer buf = mbuf.recordOneRowByMetricsMap(kvPairs, scanData.snap_id, scanData.startTimestamp, queryTime);
-                if (buf != null) this.frameworkContext.getMetricDb().putData(mg, key, buf);
+                if (buf != null)
+                    this.frameworkContext.getMetricDb().putData(mg, key, buf);
             }
         }
         //TODO attached UDM
@@ -499,28 +533,34 @@ public class MetricScannerRunner implements Runnable {
                 mg.getGroupName(),
                 scanData.dbinfo.getDbGroupName(),
                 scanData.dbinfo.getHostName());
-        if (attachedUDMs == null || attachedUDMs.size() == 0) return;
+        if (attachedUDMs == null || attachedUDMs.size() == 0)
+            return;
         for (String s : attachedUDMs) {
             UserDefinedMetrics udm = this.frameworkContext.getMetricsDef().getUdmManager().getUDMByName(s);
-            if (udm == null || udm.getMetricsGroup() == null) continue;
+            if (udm == null || udm.getMetricsGroup() == null)
+                continue;
             MetricsGroup udmG = udm.getMetricsGroup();
             MetricsBuffer mbuf = retrieveMetricsBuffer(scanData, udmG, null);
             if (mbuf != null) {
                 ByteBuffer buf = mbuf.recordOneRowByMetricsMap(kvPairs, scanData.snap_id, scanData.startTimestamp, queryTime);
-                if (buf != null) this.frameworkContext.getMetricDb().putData(udmG, key, buf);
+                if (buf != null)
+                    this.frameworkContext.getMetricDb().putData(udmG, key, buf);
             }
         }
     }
 
     private void recordUserAlertsFromMetricsData(ScanData scanData, MetricsGroup mg, Map<String, String> kvPairs) {
-        if (kvPairs == null) return;
+        if (kvPairs == null)
+            return;
         String mgName = "";
-        if (mg.getParentGroup() != null) mgName = mg.getParentGroup() + ".";
+        if (mg.getParentGroup() != null)
+            mgName = mg.getParentGroup() + ".";
         else if (mg.isUdmFlagged()) mgName = "UDM.";
         mgName += mg.getGroupName();
         List<AlertSubscribers.Subscription> subs = this.frameworkContext.getMetricsDef().getUdmManager()
                 .getAlertsAttachedToBuiltinMetrics(mgName, scanData.dbinfo.getDbGroupName(), scanData.dbinfo.getHostName());
-        if (subs == null | subs.size() == 0) return;
+        if (subs == null | subs.size() == 0)
+            return;
         for (AlertSubscribers.Subscription sub : subs) {
             AlertDefinition def = this.frameworkContext.getMetricsDef().getUdmManager().getAlerts().get(sub.alertName);
             String mname = def.getMetricName();
@@ -543,11 +583,13 @@ public class MetricScannerRunner implements Runnable {
     }
 
     private void recordUserAlertsFromGlobalStatus(ScanData scanData, Map<String, String> kvPairs) {
-        if (kvPairs == null) return;
+        if (kvPairs == null)
+            return;
         List<AlertSubscribers.Subscription> subs = this.frameworkContext.getMetricsDef().getUdmManager()
                 .getAlertsAttachedToGlobalStatus(scanData.dbinfo.getDbGroupName(), scanData.dbinfo.getHostName());
 
-        if (subs == null | subs.size() == 0) return;
+        if (subs == null | subs.size() == 0)
+            return;
         for (AlertSubscribers.Subscription sub : subs) {
             AlertDefinition def = this.frameworkContext.getMetricsDef().getUdmManager().getAlerts().get(sub.alertName);
             String mname = def.getMetricName();
@@ -646,7 +688,8 @@ public class MetricScannerRunner implements Runnable {
         scanData.dbinfo = dbinfo;
 
         try {
-            if (!tryConnect(scanData)) return false;
+            if (!tryConnect(scanData))
+                return false;
 
             scanData.snap_id = this.snap_id;
             scanData.startTimestamp = System.currentTimeMillis();//use a common timestamp
@@ -668,17 +711,22 @@ public class MetricScannerRunner implements Runnable {
                 String snmpEnabled = snmpSetting != null ? snmpSetting.getEnabled() : "yes";
                 boolean toScanSnmp = !"no".equalsIgnoreCase(snmpEnabled);
                 if ("mysql_snmp_sda".equalsIgnoreCase(mg.getSql())) {
-                    if (toScanSnmp) scanSnmpDisk(scanData, mg);
+                    if (toScanSnmp)
+                        scanSnmpDisk(scanData, mg);
                 } else if ("snmp_storage".equalsIgnoreCase(mg.getSql())) {
-                    if (toScanSnmp) scanSnmpStorage(scanData, mg);
+                    if (toScanSnmp)
+                        scanSnmpStorage(scanData, mg);
                 } else if ("snmp_net_eth0".equalsIgnoreCase(mg.getSql())) {
-                    if (toScanSnmp) scanSnmpNet(scanData, mg);
+                    if (toScanSnmp)
+                        scanSnmpNet(scanData, mg);
                 } else if ("mysql_snmp".equalsIgnoreCase(mg.getSql()))//hard wired
                 {
-                    if (toScanSnmp) scanSnmpSys(scanData, mg);
+                    if (toScanSnmp)
+                        scanSnmpSys(scanData, mg);
                 } else if ("mysql_snmp_mysqld".equalsIgnoreCase(mg.getSql()))//hard wired
                 {
-                    if (toScanSnmp) scanSnmpMysqld(scanData, mg);
+                    if (toScanSnmp)
+                        scanSnmpMysqld(scanData, mg);
                 } else if ("mysql_repl".equalsIgnoreCase(mg.getSql()))//replication
                 {
                     scanRepl(scanData, mg);

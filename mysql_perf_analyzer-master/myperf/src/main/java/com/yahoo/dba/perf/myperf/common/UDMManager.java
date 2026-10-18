@@ -62,9 +62,11 @@ public class UDMManager implements Serializable {
 
     public void init() {
         File udmroot = new File(new File(rootPath), UDM_DIR);
-        if (!udmroot.exists()) udmroot.mkdirs();
+        if (!udmroot.exists())
+            udmroot.mkdirs();
         File alertroot = new File(new File(rootPath), ALERT_DIR);
-        if (!alertroot.exists()) alertroot.mkdirs();
+        if (!alertroot.exists())
+            alertroot.mkdirs();
         this.loadUDM();
         this.loadAlertDef();
 
@@ -217,9 +219,7 @@ public class UDMManager implements Serializable {
         }
         for (File udmF : udmFiles) {
             //now load one by one
-            InputStream in = null;
-            try {
-                in = new FileInputStream(udmF);
+            try (InputStream in = new FileInputStream(udmF)) {
                 UserDefinedMetrics udm = UserDefinedMetrics.createFromJson(in);
                 if (udm == null)
                     log.warn("Failed to parse udm filr " + udmF.getName());
@@ -234,11 +234,6 @@ public class UDMManager implements Serializable {
                 }
             } catch (Exception ex) {
                 log.warn("Error when parsing udm " + udmF.getName(), ex);
-            } finally {
-                if (in != null) try {
-                    in.close();
-                } catch (Exception ex) {
-                }
             }
         }
     }
@@ -266,9 +261,7 @@ public class UDMManager implements Serializable {
         }
         for (File alertF : alertFiles) {
             //now load one by one
-            InputStream in = null;
-            try {
-                in = new FileInputStream(alertF);
+            try (InputStream in = new FileInputStream(alertF)) {
                 AlertDefinition alertDef = AlertDefinition.createFromJson(in);
                 if (alertDef == null)
                     log.warn("Failed to parse alert file " + alertF.getName());
@@ -276,11 +269,6 @@ public class UDMManager implements Serializable {
                     this.alerts.put(alertDef.getName(), alertDef);
             } catch (Exception ex) {
                 log.warn("Error when parsing aert def " + alertF.getName(), ex);
-            } finally {
-                if (in != null) try {
-                    in.close();
-                } catch (Exception ex) {
-                }
             }
         }
     }
@@ -292,19 +280,11 @@ public class UDMManager implements Serializable {
         if (udmFile.exists()) {
             throw new UserDefinedMetrics.UserDefinedMetricsException("UDM file " + fileName + " already exists.");
         }
-        FileWriter fw = null;
-        try {
-            fw = new FileWriter(udmFile);
+        try (FileWriter fw = new FileWriter(udmFile)) {
             fw.write(udm.toJSON(false));
             fw.flush();
-            fw.close();
         } catch (Exception ex) {
             throw new UserDefinedMetrics.UserDefinedMetricsException("Exception when store UDM file " + fileName + ": " + ex.getMessage());
-        } finally {
-            if (fw != null) try {
-                fw.close();
-            } catch (Exception iex) {
-            }
         }
     }
 
@@ -316,19 +296,11 @@ public class UDMManager implements Serializable {
             log.info("Overwrite alert def file: " + udmFile.getPath());
             //throw new UserDefinedMetrics.UserDefinedMetricsException("ALERT file "+fileName +" already exists.");
         }
-        FileWriter fw = null;
-        try {
-            fw = new FileWriter(udmFile);
+        try (FileWriter fw = new FileWriter(udmFile)) {
             fw.write(alertDef.toJSON(false));
             fw.flush();
-            fw.close();
         } catch (Exception ex) {
             throw new UserDefinedMetrics.UserDefinedMetricsException("Exception when store ALERT file " + fileName + ": " + ex.getMessage());
-        } finally {
-            if (fw != null) try {
-                fw.close();
-            } catch (Exception iex) {
-            }
         }
     }
 
@@ -340,7 +312,8 @@ public class UDMManager implements Serializable {
      * @throws UserDefinedMetrics.UserDefinedMetricsException
      */
     public void addUDM(UserDefinedMetrics udm) throws UserDefinedMetrics.UserDefinedMetricsException {
-        if (udm == null) return;
+        if (udm == null)
+            return;
         synchronized (udmUpdateLock) {
             //while we are updating, don't want other to do the same. Avoid duplicates
             if (this.udms.containsKey(udm.getName()))
@@ -359,7 +332,8 @@ public class UDMManager implements Serializable {
     }
 
     public void addAlertDefinition(AlertDefinition alertDef) throws UserDefinedMetrics.UserDefinedMetricsException {
-        if (alertDef == null) return;
+        if (alertDef == null)
+            return;
         synchronized (this.alertDefUpdateLock) {
             //while we are updating, don't want other to do the same. Avoid duplicates
             //if(this.alerts.containsKey(alertDef.getName()))

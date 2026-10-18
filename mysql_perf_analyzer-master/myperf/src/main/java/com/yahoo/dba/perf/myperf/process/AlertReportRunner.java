@@ -29,12 +29,15 @@ public class AlertReportRunner implements Runnable {
     private final DBInstanceInfo dbInfo;
     private final long timestamp;
     private final AppUser appUser;
+
     @Getter
     @Setter
     private DBConnectionWrapper connection;
+
     @Getter
     @Setter
     private String alertReason;
+
     @Getter
     @Setter
     private String alertValue;
@@ -78,25 +81,33 @@ public class AlertReportRunner implements Runnable {
         ResultList rList = null;
         ResultList trxList = null;
         ResultList clientList = null;
+
         try (Statement stmt = connection.getConnection().createStatement()) {
             stmt.setFetchSize(5000);
+
             try (ResultSet rs = stmt.executeQuery("select * from information_schema.processlist")) {
                 boolean hasRowInfo = rs != null && hasRowInfo(rs);
                 boolean hasRowRead = rs != null && hasRowsRead(rs);
+
                 while (rs != null && rs.next()) {
                     ProcessListEntry ps = new ProcessListEntry(rs, hasRowInfo, hasRowRead);
                     prList.add(ps);
                 }
             }
+
             if ("REPLLAG".equalsIgnoreCase(this.alertReason) || "REPLDOWN".equalsIgnoreCase(this.alertReason)) {
                 try (ResultSet rs = stmt.executeQuery("show slave status")) {
                     int i = 0;
                     int cnt = rs.getMetaData().getColumnCount();
+
                     while (rs.next()) {
                         String suffix = "";
+
                         if (i > 0)
                             suffix = "_" + i;
-                        for (int k = 0; k < cnt; k++) repMap.put(rs.getMetaData().getColumnName(k + 1) + suffix, rs.getString(k + 1));
+
+                        for (int k = 0; k < cnt; k++)
+                            repMap.put(rs.getMetaData().getColumnName(k + 1) + suffix, rs.getString(k + 1));
                         i++;
                     }
                 }
@@ -107,10 +118,12 @@ public class AlertReportRunner implements Runnable {
                     if (rs != null && rs.next())
                         innodbStatus = rs.getString("Status");
                 }
+
                 try (ResultSet rs = stmt.executeQuery("select * from information_schema.innodb_locks")) {
                     if (rs != null)
                         rList = ResultListUtil.fromSqlResultSet(rs, 0);
                 }
+
                 try (ResultSet rs = stmt.executeQuery("select * from information_schema.INNODB_TRX where to_seconds(now()) - to_seconds(trx_started) > 60")) {
                     if (rs != null)
                         trxList = ResultListUtil.fromSqlResultSet(rs, 0);
@@ -120,10 +133,10 @@ public class AlertReportRunner implements Runnable {
             if ("CONNECT_FAILURE".equalsIgnoreCase(alertReason)) {
                 //dump summary of processlist if possible
                 String sql = "select user, host, command, count(*) conns from information_schema.processlist group by user, host, command";
+
                 try (ResultSet rs = stmt.executeQuery(sql)) {
-                    if (rs != null) {
+                    if (rs != null)
                         clientList = ResultListUtil.fromSqlResultSet(rs, 0);
-                    }
                 }
             }
         } catch (Exception ex) {
@@ -132,6 +145,7 @@ public class AlertReportRunner implements Runnable {
             //release pending report count
             this.context.getInstanceStatesManager().getStates(this.dbInfo.getDbid()).reportDone();
         }
+
         if (prList.size() > 0 || repMap.size() > 0) {
             //sort by sql text
             Collections.sort(prList);
@@ -145,10 +159,13 @@ public class AlertReportRunner implements Runnable {
             prSum.summarize();
             AlertReport ar = this.context.createAlertReport(reportTimestamp, alertEntry);
             ar.setProcessListSummary(prSum);
+
             if (repMap.size() > 0)
                 ar.setReplicationSummary(repMap);
+
             ar.saveAsText();
         }
+
         if (this.dbInfo.isAlertEnabled())
             this.context.emailAlert(alertEntry);
     }

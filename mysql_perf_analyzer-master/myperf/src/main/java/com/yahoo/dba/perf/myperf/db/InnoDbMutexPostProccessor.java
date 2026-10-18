@@ -29,7 +29,6 @@ public class InnoDbMutexPostProccessor implements PostQueryResultProcessor {
         }
     }
 
-
     @Override
     public ResultList process(ResultList rs) {
         TreeMap<String, MutexName> mutexMetrics = new TreeMap<>();

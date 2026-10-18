@@ -128,9 +128,11 @@ public class UdmController extends MyPerfBaseController {
         }
         mv.addObject("dbMap", this.frameworkContext.getDbInfoManager().getClusters());
         mv.addObject("help_key", "udm");
-        if (!isValid && message != null) mv.addObject("message", message);
+        if (!isValid && message != null)
+            mv.addObject("message", message);
         else if (message != null) mv.addObject("okmessage", message);
-        if (cmd != null) mv.addObject("cmd", cmd);
+        if (cmd != null)
+            mv.addObject("cmd", cmd);
         mv.addObject("u", appUser);
         return mv;
     }
@@ -325,7 +327,8 @@ public class UdmController extends MyPerfBaseController {
                     //verify columns
                     int cols = meta.getColumnCount();
                     Map<String, Integer> colMap = new HashMap<>(cols);
-                    for (int i = 1; i <= cols; i++) colMap.put(meta.getColumnName(i).toUpperCase(), meta.getColumnType(i));
+                    for (int i = 1; i <= cols; i++)
+                        colMap.put(meta.getColumnName(i).toUpperCase(), meta.getColumnType(i));
                     if ("row".equals(udmType)) {
                         if (!colMap.containsKey(udm.getNameCol().toUpperCase()))
                             throw new Exception("Failed to find name column from SQL result: " + udm.getNameCol() + ", returned: " + colMap);
@@ -452,7 +455,8 @@ public class UdmController extends MyPerfBaseController {
         String message = "OK";
         String cmd = req.getParameter("cmd");
         String name = req.getParameter("name");
-        if (name != null) name = name.trim();
+        if (name != null)
+            name = name.trim();
         String auto = req.getParameter("auto");
         String storage = req.getParameter("storage");
         String source = req.getParameter("source");
@@ -531,7 +535,8 @@ public class UdmController extends MyPerfBaseController {
         String message = "OK";
         String cmd = req.getParameter("cmd");
         String name = req.getParameter("name");
-        if (name != null) name = name.trim();
+        if (name != null)
+            name = name.trim();
         String source = req.getParameter("source");
         String metricsName = req.getParameter("mname");
         String metricComparison = req.getParameter("mcomp");

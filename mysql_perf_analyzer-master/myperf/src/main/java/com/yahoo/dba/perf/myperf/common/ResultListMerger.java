@@ -17,8 +17,10 @@ public class ResultListMerger {
 
     public static ResultList mergeByKey(Sql sqlA, Sql sqlB, ResultList listA, ResultList listB, boolean diffOnly) {
         log.info("Merge diffonly: " + diffOnly);
-        if (listA == null) return listB;
-        if (listB == null) return listA;
+        if (listA == null)
+            return listB;
+        if (listB == null)
+            return listA;
 
         //we will use A to construct column descriptor
         ColumnDescriptor desc = new ColumnDescriptor();
@@ -117,7 +119,8 @@ public class ResultListMerger {
         finalList.setColumnDescriptor(desc);
         int combinedSize = listRows.size();
         int keySize = keyList.size();
-        if (combinedSize == 0) return finalList;
+        if (combinedSize == 0)
+            return finalList;
         ResultRow curRow = listRows.get(0);
         String curComp = curRow.getColumns().get(keySize);
         int idx = 1;
@@ -131,7 +134,8 @@ public class ResultListMerger {
                 row.setColumnDescriptor(desc);
                 List<String> cols = new ArrayList<>(curRow.getColumns().size() - 1);
                 for (int i = 0; i < curRow.getColumns().size(); i++) {
-                    if (i == keySize) continue;
+                    if (i == keySize)
+                        continue;
                     else if (i < keySize)
                         cols.add(curRow.getColumns().get(i));
                     else if ("A".equals(curComp)) {
@@ -155,7 +159,8 @@ public class ResultListMerger {
                     row.setColumnDescriptor(desc);
                     List<String> cols = new ArrayList<>(curRow.getColumns().size() - 1);
                     for (int i = 0; i < curRow.getColumns().size(); i++) {
-                        if (i == keySize) continue;
+                        if (i == keySize)
+                            continue;
                         else if (i < keySize)
                             cols.add(curRow.getColumns().get(i));
                         else if ("A".equals(curComp)) {
@@ -170,7 +175,8 @@ public class ResultListMerger {
                     row.setColumns(cols);
                     finalList.addRow(row);
                 }
-                if (idx == combinedSize - 1) break;//at the end
+                if (idx == combinedSize - 1)
+                    break;//at the end
                 curRow = listRows.get(idx + 1);//pre fetch one row
                 curComp = curRow.getColumns().get(keySize);
                 idx = idx + 2;

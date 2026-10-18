@@ -44,7 +44,8 @@ public class MetricsBuffer {
         while (rs != null && rs.next()) {
             hs.put(rs.getString(metrics.getMetricNameColumn()).toUpperCase(), rs.getString(metrics.getMetricValueColumn()));
         }
-        if (hs.size() == 0) return null;//TODO log error
+        if (hs.size() == 0)
+            return null;//TODO log error
 
         byte[] buf = new byte[this.recordLength];
         ByteBuffer buf2 = ByteBuffer.wrap(buf);
@@ -107,11 +108,13 @@ public class MetricsBuffer {
 
     public ByteBuffer recordOneRowByMetricsMap(Map<String, String> rs, int snap_id, long timestamp, int sql_time)
             throws SQLException {
-        if (rs.size() == 0) return null;//TODO log error
+        if (rs.size() == 0)
+            return null;//TODO log error
         HashMap<String, String> hs = new HashMap<>();
         for (Map.Entry<String, String> e : rs.entrySet()) {
             //skip null
-            if (e.getKey() == null || e.getValue() == null) continue;
+            if (e.getKey() == null || e.getValue() == null)
+                continue;
             hs.put(e.getKey().toUpperCase(), e.getValue());
         }
 
@@ -182,7 +185,8 @@ public class MetricsBuffer {
     }
 
     public static String escapeJson(String str) {
-        if (str == null) return "";
+        if (str == null)
+            return "";
         StringBuilder sb = new StringBuilder(str.length());
         char[] carray = str.toCharArray();
         for (int i = 0; i < carray.length; i++) {

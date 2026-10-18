@@ -30,7 +30,8 @@ public class DBGroupInfo implements Serializable {
 
     public DBInstanceInfo getInstance(int instanceNumber) {
         for (DBInstanceInfo inst : instances) {
-            if (instanceNumber == inst.getInstance()) return inst;
+            if (instanceNumber == inst.getInstance())
+                return inst;
         }
         return null;
     }
@@ -42,7 +43,8 @@ public class DBGroupInfo implements Serializable {
      */
     public boolean canAccessDirectly() {
         for (DBInstanceInfo inst : instances) {
-            if (!inst.isConnectionVerified()) return false;
+            if (!inst.isConnectionVerified())
+                return false;
         }
         return true;
     }

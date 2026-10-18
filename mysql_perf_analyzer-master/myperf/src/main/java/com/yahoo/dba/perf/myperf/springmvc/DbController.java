@@ -27,15 +27,16 @@ public class DbController extends MyPerfBaseController {
         this.dbManager = this.frameworkContext.getDbInfoManager();
     }
 
-
     private DBInstanceInfo parseRequest(HttpServletRequest request) {
         DBInstanceInfo db = new DBInstanceInfo();
         db.setDbType(request.getParameter("dbtype"));
         String grp = request.getParameter("dbGroupName");
-        if (grp != null) grp = grp.trim().toLowerCase();
+        if (grp != null)
+            grp = grp.trim().toLowerCase();
         db.setDbGroupName(grp);
         String host = request.getParameter("hostName");
-        if (host != null) host = host.trim().toLowerCase();
+        if (host != null)
+            host = host.trim().toLowerCase();
         db.setHostName(host);
         db.setPort(request.getParameter("port"));
         db.setDatabaseName(request.getParameter("databaseName"));
@@ -146,8 +147,10 @@ public class DbController extends MyPerfBaseController {
                     this.frameworkContext.getInstanceStatesManager().addInstanceStates(dbinfo.getDbid());
                 }
                 count++;
-                if (!isGroupAdd) break;
-                if (dbNumber >= endNumber || count >= 1000) break;
+                if (!isGroupAdd)
+                    break;
+                if (dbNumber >= endNumber || count >= 1000)
+                    break;
                 dbNumber++;
                 dbNumberStr = String.format("%0" + strLen + "d", dbNumber);
             } while (true);
@@ -177,7 +180,8 @@ public class DbController extends MyPerfBaseController {
                 }
             }
         }
-        if (message == null) message = "OK";
+        if (message == null)
+            message = "OK";
         return this.respondWithStatus(status, message, request);
     }
 
@@ -187,7 +191,8 @@ public class DbController extends MyPerfBaseController {
         String message = null;
         String grp = request.getParameter("dbGroupName");
         String newGrp = request.getParameter("dbNewGroupName");
-        if (newGrp != null) newGrp = newGrp.trim();
+        if (newGrp != null)
+            newGrp = newGrp.trim();
         if (newGrp == null || newGrp.isEmpty())
             message = "Please provide new group name.";
         else if (grp == null || grp.isEmpty())
@@ -217,7 +222,8 @@ public class DbController extends MyPerfBaseController {
         String grp = request.getParameter("dbGroupName");
         String username = request.getParameter("username");
         boolean visible = "1".equals(request.getParameter("visible"));
-        if (grp != null) grp = grp.trim();
+        if (grp != null)
+            grp = grp.trim();
         if (grp == null || grp.isEmpty())
             message = "Please provide db group name.";
         else if (username == null || username.isEmpty())
@@ -261,7 +267,8 @@ public class DbController extends MyPerfBaseController {
                     .listDbsByUserInfo(WebAppUtil.findUserFromRequest(request), retrieveAppUser(request).isRestrictedUser()));
 
             AppUser appUser = retrieveAppUser(request);
-            if (appUser == null || !appUser.isAdminUser()) return mv;
+            if (appUser == null || !appUser.isAdminUser())
+                return mv;
             List<String> restrictedUsers = new ArrayList<>();
             List<AppUser> userList = this.frameworkContext.getMetaDb().retrieveAllUsers();
             for (AppUser u : userList) {

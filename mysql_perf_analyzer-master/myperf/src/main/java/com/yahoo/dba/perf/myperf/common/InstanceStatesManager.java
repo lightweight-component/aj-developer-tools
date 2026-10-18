@@ -7,10 +7,13 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
+import java.io.File;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,15 +28,12 @@ public class InstanceStatesManager implements Serializable {
     private static final long serialVersionUID = 1L;
     public static String OBJ_FILE_NAME = "instance_status.ser";
     public static final String STORAGE_DIR = "autoscan";
+
     @Getter
     @Setter
     private String rootPath = "myperf_reports";//data will be stored under $rootPath/autoscan
 
     private Map<Integer, InstanceStates> statesMap = new HashMap<>();
-
-    public InstanceStatesManager() {
-
-    }
 
     /**
      * Make the data persistent
@@ -42,55 +42,33 @@ public class InstanceStatesManager implements Serializable {
         log.info("Store instance status snapshots");
         File root = new File(new File(this.rootPath), STORAGE_DIR);
         File objFile = new File(root, OBJ_FILE_NAME);
+
         storeObject(objFile);
     }
 
     public void storeObject(File objf) {
-        ObjectOutputStream outputStream = null;
-
-        try {
-
-            //Construct the LineNumberReader object
-            outputStream = new ObjectOutputStream(new FileOutputStream(objf));
+        try (ObjectOutputStream outputStream = new ObjectOutputStream(Files.newOutputStream(objf.toPath()))) {
             outputStream.writeObject(this.statesMap);
-
         } catch (Exception ex) {
             log.error("Exception when store instance status object", ex);
-        } finally {
-            //Close the ObjectOutputStream
-            try {
-                if (outputStream != null) {
-                    outputStream.flush();
-                    outputStream.close();
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
         }
     }
 
     @SuppressWarnings("unchecked")
     public Map<Integer, InstanceStates> readObject(File objf) {
-        ObjectInputStream input = null;
-        try {
-            input = new ObjectInputStream(
-                    new FileInputStream(objf));
+        try (ObjectInputStream input = new ObjectInputStream(Files.newInputStream(objf.toPath()))) {
             return (Map<Integer, InstanceStates>) input.readObject();
         } catch (Exception ex) {
             log.warn("Exception when read instance status object", ex);
-
-        } finally {
-            if (input != null) try {
-                input.close();
-            } catch (Exception iex) {
-            }
         }
+
         return null;
     }
 
     synchronized public InstanceStates getStates(int dbid) {
         if (statesMap.containsKey(dbid))
             return statesMap.get(dbid);
+
         return null;
     }
 
@@ -117,9 +95,11 @@ public class InstanceStatesManager implements Serializable {
     public void init(MyPerfContext context) {
         log.info("Initialize InstanceStatesManager");
         File root = new File(new File(this.rootPath), STORAGE_DIR);
-        if (!root.exists()) root.mkdirs();
+        if (!root.exists())
+            root.mkdirs();
 
         File objFile = new File(root, OBJ_FILE_NAME);
+
         if (objFile.exists()) {
             log.info("Load saved status");
             Map<Integer, InstanceStates> savedState = readObject(objFile);

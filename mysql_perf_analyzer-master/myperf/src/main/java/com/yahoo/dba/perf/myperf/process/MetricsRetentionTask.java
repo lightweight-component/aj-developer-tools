@@ -5,40 +5,31 @@
  */
 package com.yahoo.dba.perf.myperf.process;
 
+import com.yahoo.dba.perf.myperf.common.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import com.yahoo.dba.perf.myperf.common.*;
-
 import java.io.File;
-import java.util.*;
 import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Handle metrics retention
- *
- * @author xrao
  */
 @Slf4j
+@RequiredArgsConstructor
 public class MetricsRetentionTask implements Runnable {
-
-    private int renentionDays;
-    private MyPerfContext context;
-
-    private int[] dbidToPurge = null; //set as one time job, reuse code
+    private final MyPerfContext context;
 
     /**
-     * @param context
-     * @param metricsDB
-     * @param renentionDays will be ignored if dbidToPurge is set
-     * @param dbidToPurge   use to start a one time job to purge data for a specific db, set to -1 otherwise
+     * renentionDays will be ignored if dbidToPurge is set
      */
-    public MetricsRetentionTask(MyPerfContext context,
-                                int renentionDays,
-                                int[] dbidToPurge) {
-        this.renentionDays = renentionDays;
-        this.context = context;
-        this.dbidToPurge = dbidToPurge;
-    }
+    private final int renentionDays;
+
+    /**
+     * use to start an onefold job to purge data for a specific db, set to -1 otherwise
+     */
+    private final int[] dbidToPurge; //set as one time job, reuse code
 
     @Override
     public void run() {
@@ -49,19 +40,21 @@ public class MetricsRetentionTask implements Runnable {
             log.info("MetricsDB has yet to set.");
             return;
         }
+
         //get all dbids
         List<Integer> ids = new ArrayList<>();
         if (this.dbidToPurge == null) {
             for (Map.Entry<String, DBGroupInfo> e : context.getDbInfoManager().getClusters().entrySet()) {
                 DBGroupInfo g = e.getValue();
-                for (DBInstanceInfo i : g.getInstances()) {
+
+                for (DBInstanceInfo i : g.getInstances())
                     ids.add(i.getDbid());
-                }
             }
         } else {
             for (int id : this.dbidToPurge)
                 ids.add(id);
         }
+
         Calendar c = Calendar.getInstance();
         c.add(Calendar.DATE, -this.renentionDays);
         Date dt = c.getTime();
@@ -73,13 +66,15 @@ public class MetricsRetentionTask implements Runnable {
         List<MetricsGroup> mgs = new ArrayList<>();
 
         String[] groupNames = this.context.getMetricsDef().getGroupNames();
+
         for (String grpName : groupNames) {
             MetricsGroup group = this.context.getMetricsDef().getGroupByName(grpName);
-            if (group == null) continue; //not supposed to be so
-            if (group.getSubGroups().size() == 0) //no sub group, add self
-            {
+            if (group == null)
+                continue; //not supposed to be so
+
+            if (group.getSubGroups().size() == 0) //no subgroup, add self
                 mgs.add(group);
-            } else {
+             else {
                 for (MetricsGroup g : group.getSubGroups())
                     mgs.add(g);
             }
@@ -87,12 +82,16 @@ public class MetricsRetentionTask implements Runnable {
 
         for (Map.Entry<String, UserDefinedMetrics> entry : this.context.getMetricsDef().getUdmManager().getUdms().entrySet()) {
             MetricsGroup group = entry.getValue().getMetricsGroup();
-            if (group == null) continue; //not supposed to be so
+
+            if (group == null)
+                continue; //not supposed to be so
+
             mgs.add(group);
         }
 
         for (int dbid : ids) {
             log.info("Check and purge db: " + dbid);
+
             for (MetricsGroup g : mgs) {
                 if (this.dbidToPurge != null)
                     this.context.getMetricDb().purgeAll(g.getSinkTableName(), dbid);
@@ -100,6 +99,7 @@ public class MetricsRetentionTask implements Runnable {
                     this.context.getMetricDb().purge(g.getSinkTableName(), dbid, endDate);
             }
         }
+
         SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         purgeAlertReports(Integer.parseInt(sdf2.format(dt)));
@@ -125,16 +125,21 @@ public class MetricsRetentionTask implements Runnable {
                 log.warn("Failed to find alert root path: " + rootPath.getPath());
                 return;
             }
+
             log.warn("Start to purge alert reports: " + rootPath.getPath() + ", before " + lastPurgeDate);
 
             File[] dirByDates = rootPath.listFiles();
+
             for (File dir : dirByDates) {
                 String name = dir.getName();
                 log.info("Trying to delete report for date: " + name);
+
                 if (name.indexOf(".") > 0)
                     name = name.substring(0, name.indexOf("."));
+
                 try {
                     int nameDate = Integer.parseInt(name);
+
                     if (nameDate < lastPurgeDate) {
                         if (dir.isDirectory()) {
                             for (File ar : dir.listFiles()) {
@@ -143,6 +148,7 @@ public class MetricsRetentionTask implements Runnable {
                                     ar.delete();
                             }
                         }
+
                         dir.delete();
                     }
                 } catch (Exception ex) {
