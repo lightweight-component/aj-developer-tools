@@ -7,14 +7,9 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.PrintWriter;
-import java.io.Serializable;
+import java.io.*;
 import java.util.Properties;
 
 /**
@@ -24,28 +19,52 @@ import java.util.Properties;
  */
 @Slf4j
 public class MyPerfConfiguration implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
 
     //configuration default path
+    /**
+     * 定义storage dir常量。
+     */
     private static final String STORAGE_DIR = "autoscan";
+    /**
+     * 定义rootpath常量。
+     */
     private static final String ROOTPATH = "myperf_config";//data will be stored under $rootPath/autoscan
+    /**
+     * 定义myperf config file name常量。
+     */
     public static final String MYPERF_CONFIG_FILE_NAME = "myperf_configuration.properties";
     //allow to specify a customized path using system property
     //The path of the configuration file. All necessary directories have to be created with right permission
     //to allow read and modifications.
+    /**
+     * 定义myperf config path prop name常量。
+     */
     public static final String MYPERF_CONFIG_PATH_PROP_NAME = "myperf.configuratioin.path";
 
     //email for admin user, for now, only useful if our simple MailUtil works.
+    /**
+     * 保存admin email信息。
+     */
     @Getter
     @Setter
     private String adminEmail;
     //alert notification emails
+    /**
+     * 保存alert notification emails信息。
+     */
     @Getter
     @Setter
     private String alertNotificationEmails;
 
     //the user name used by the scanner to obtain credentials of managed database servers
     //default to our built in user
+    /**
+     * 保存metrics scanner user信息。
+     */
     @Getter
     @Setter
     private String metricsScannerUser = "myperf";
@@ -53,83 +72,143 @@ public class MyPerfConfiguration implements Serializable {
     //metrics scan and retention
 
     //The number of seconds between two consecutive metrics scans
+    /**
+     * 保存scanner interval seconds信息。
+     */
     @Getter
     @Setter
     private int scannerIntervalSeconds = 300;
+    /**
+     * 保存alert scan interval seconds信息。
+     */
     @Getter
     @Setter
     private int alertScanIntervalSeconds = 300;
     //metrics retention days
+    /**
+     * 保存record rentention days信息。
+     */
     @Getter
     @Setter
     private int recordRententionDays = 60;
     //number of threads used by scanner
+    /**
+     * 保存scanner thread count信息。
+     */
     @Getter
     @Setter
     private int scannerThreadCount = 4;
     //avoid email or notification bombing
     //TODO hard code to one hour.
     //suppress similar alerts from the same db for at least such time
+    /**
+     * 保存email alert interval minutes信息。
+     */
     @Getter
     @Setter
     private int emailAlertIntervalMinutes = 60;
+    /**
+     * 保存web alert interval minutes信息。
+     */
     @Getter
     @Setter
     private int webAlertIntervalMinutes = 5;
 
     //If set to false, connection to the managed database will not be cached and reused
+    /**
+     * 标记reuse mon user connction状态。
+     */
     @Getter
     @Setter
     private boolean reuseMonUserConnction = true;
 
     //maximum age for replication topology cache, hard code for now to 5 minutes
+    /**
+     * 保存repl topology cache max age信息。
+     */
     @Getter
     @Setter
     private long replTopologyCacheMaxAge = 300000L;
     //how far we want to probe the topology
+    /**
+     * 保存repl topology max depth信息。
+     */
     @Getter
     @Setter
     private int replTopologyMaxDepth = 3;
 
     //Metrics storage DB
     //Either use embedded derby db or mysql
+    /**
+     * 保存metrics db type信息。
+     */
     @Getter
     @Setter
     private String metricsDbType = "derby";
     //If use mysql for metrics storage, mysql configuration
 
+    /**
+     * 保存metrics db host信息。
+     */
     @Getter
     @Setter
     private String metricsDbHost;//If use mysql
+    /**
+     * 保存metrics db port信息。
+     */
     @Getter
     @Setter
     private int metricsDbPort = 3306;//if use mysql
+    /**
+     * 保存metrics db name信息。
+     */
     @Getter
     @Setter
     private String metricsDbName = "METRICSDB";
+    /**
+     * 保存metrics db user name信息。
+     */
     @Getter
     @Setter
     private String metricsDbUserName;
+    /**
+     * 保存metrics db password信息。
+     */
     @Getter
     @Setter
     private String metricsDbPassword;
 
     //hipchat integration
+    /**
+     * 保存hipchat url信息。
+     */
     @Getter
     @Setter
     private String hipchatUrl; //must be in the format like https://xxx.hipchat.com/v2/room/{roomnumber}/notification?
+    /**
+     * 保存hipchat auth token信息。
+     */
     @Getter
     @Setter
     private String hipchatAuthToken; //we will append authToken to construct the full url
 
     //If the app is just installed, it might not have been configured
+    /**
+     * 标记configured状态。
+     */
     @Getter
     @Setter
     private boolean configured = false;
 
     //internal use
+    /**
+     * 保存myperf config path信息。
+     */
     private String myperfConfigPath;
 
+    /**
+     * 创建MyPerfConfiguration对象。
+     */
     public MyPerfConfiguration() {
         reuseMonUserConnction = true; //default to cache and reuse
     }
@@ -180,6 +259,13 @@ public class MyPerfConfiguration implements Serializable {
     }
 
 
+    /**
+     * 读取config。
+     *
+     * @param cfgFile cfg file参数。
+     * @param ctx     ctx参数。
+     * @return 是否满足条件。
+     */
     synchronized private boolean readConfig(File cfgFile, MyPerfContext ctx) {
         try (FileInputStream in = new FileInputStream(cfgFile)) {
             Properties props = new Properties();

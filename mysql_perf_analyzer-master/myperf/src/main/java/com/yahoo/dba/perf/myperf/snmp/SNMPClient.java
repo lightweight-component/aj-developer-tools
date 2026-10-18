@@ -5,12 +5,10 @@
  */
 package com.yahoo.dba.perf.myperf.snmp;
 
+import com.yahoo.dba.perf.myperf.common.SNMPSettings;
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
-
-import com.yahoo.dba.perf.myperf.common.SNMPSettings;
 import org.snmp4j.*;
 import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.mp.MPv3;
@@ -33,72 +31,249 @@ import java.util.*;
 @Slf4j
 public class SNMPClient {
     //common UC DAVIS oid
+    /**
+     * 定义mem total swap常量。
+     */
     public final static String memTotalSwap = ".1.3.6.1.4.1.2021.4.3.0";
+    /**
+     * 定义mem avail swap常量。
+     */
     public final static String memAvailSwap = ".1.3.6.1.4.1.2021.4.4.0";
+    /**
+     * 定义mem total real常量。
+     */
     public final static String memTotalReal = ".1.3.6.1.4.1.2021.4.5.0";
+    /**
+     * 定义mem avail real常量。
+     */
     public final static String memAvailReal = ".1.3.6.1.4.1.2021.4.6.0";
+    /**
+     * 定义mem total swap txt常量。
+     */
     public final static String memTotalSwapTXT = ".1.3.6.1.4.1.2021.4.7.0";
+    /**
+     * 定义mem total real txt常量。
+     */
     public final static String memTotalRealTXT = ".1.3.6.1.4.1.2021.4.9.0";
+    /**
+     * 定义mem total free常量。
+     */
     public final static String memTotalFree = ".1.3.6.1.4.1.2021.4.11.0";
+    /**
+     * 定义mem shared常量。
+     */
     public final static String memShared = ".1.3.6.1.4.1.2021.4.13.0";
+    /**
+     * 定义mem buffer常量。
+     */
     public final static String memBuffer = ".1.3.6.1.4.1.2021.4.14.0";
+    /**
+     * 定义mem cached常量。
+     */
     public final static String memCached = ".1.3.6.1.4.1.2021.4.15.0";
+    /**
+     * 定义mem used swap txt常量。
+     */
     public final static String memUsedSwapTXT = ".1.3.6.1.4.1.2021.4.16.0";
+    /**
+     * 定义mem used real txt常量。
+     */
     public final static String memUsedRealTXT = ".1.3.6.1.4.1.2021.4.17.0";
+    /**
+     * 定义ss swap in常量。
+     */
     public final static String ssSwapIn = ".1.3.6.1.4.1.2021.11.3.0";
+    /**
+     * 定义ss swap out常量。
+     */
     public final static String ssSwapOut = ".1.3.6.1.4.1.2021.11.4.0";
+    /**
+     * 定义ss iosent常量。
+     */
     public final static String ssIOSent = ".1.3.6.1.4.1.2021.11.5.0";
+    /**
+     * 定义ss ioreceive常量。
+     */
     public final static String ssIOReceive = ".1.3.6.1.4.1.2021.11.6.0";
+    /**
+     * 定义ss sys interrupts常量。
+     */
     public final static String ssSysInterrupts = ".1.3.6.1.4.1.2021.11.7.0";
+    /**
+     * 定义ss sys context常量。
+     */
     public final static String ssSysContext = ".1.3.6.1.4.1.2021.11.8.0";
+    /**
+     * 定义ss cpu user常量。
+     */
     public final static String ssCpuUser = ".1.3.6.1.4.1.2021.11.9.0";
+    /**
+     * 定义ss cpu system常量。
+     */
     public final static String ssCpuSystem = ".1.3.6.1.4.1.2021.11.10.0";
+    /**
+     * 定义ss cpu idle常量。
+     */
     public final static String ssCpuIdle = ".1.3.6.1.4.1.2021.11.11.0";
+    /**
+     * 定义ss cpu raw user常量。
+     */
     public final static String ssCpuRawUser = ".1.3.6.1.4.1.2021.11.50.0";
+    /**
+     * 定义ss cpu raw nice常量。
+     */
     public final static String ssCpuRawNice = ".1.3.6.1.4.1.2021.11.51.0";
+    /**
+     * 定义ss cpu raw system常量。
+     */
     public final static String ssCpuRawSystem = ".1.3.6.1.4.1.2021.11.52.0";
+    /**
+     * 定义ss cpu raw idle常量。
+     */
     public final static String ssCpuRawIdle = ".1.3.6.1.4.1.2021.11.53.0";
+    /**
+     * 定义ss cpu raw wait常量。
+     */
     public final static String ssCpuRawWait = ".1.3.6.1.4.1.2021.11.54.0";
+    /**
+     * 定义ss cpu raw kernel常量。
+     */
     public final static String ssCpuRawKernel = ".1.3.6.1.4.1.2021.11.55.0";
+    /**
+     * 定义ss cpu raw interrupt常量。
+     */
     public final static String ssCpuRawInterrupt = ".1.3.6.1.4.1.2021.11.56.0";
+    /**
+     * 定义ss ioraw sent常量。
+     */
     public final static String ssIORawSent = ".1.3.6.1.4.1.2021.11.57.0";
+    /**
+     * 定义ss ioraw received常量。
+     */
     public final static String ssIORawReceived = ".1.3.6.1.4.1.2021.11.58.0";
+    /**
+     * 定义ss raw interrupts常量。
+     */
     public final static String ssRawInterrupts = ".1.3.6.1.4.1.2021.11.59.0";
+    /**
+     * 定义ss raw contexts常量。
+     */
     public final static String ssRawContexts = ".1.3.6.1.4.1.2021.11.60.0";
+    /**
+     * 定义ss cpu raw soft irq常量。
+     */
     public final static String ssCpuRawSoftIRQ = ".1.3.6.1.4.1.2021.11.61.0";
+    /**
+     * 定义ss raw swap in常量。
+     */
     public final static String ssRawSwapIn = ".1.3.6.1.4.1.2021.11.62.0";
+    /**
+     * 定义ss raw swap out常量。
+     */
     public final static String ssRawSwapOut = ".1.3.6.1.4.1.2021.11.63.0";
+    /**
+     * 定义ss cpu raw steal常量。
+     */
     public final static String ssCpuRawSteal = ".1.3.6.1.4.1.2021.11.64.0";
+    /**
+     * 定义ss cpu raw guest常量。
+     */
     public final static String ssCpuRawGuest = ".1.3.6.1.4.1.2021.11.65.0";
+    /**
+     * 定义ss cpu raw guest nice常量。
+     */
     public final static String ssCpuRawGuestNice = ".1.3.6.1.4.1.2021.11.66.0";
+    /**
+     * 定义la load1m常量。
+     */
     public final static String laLoad1m = ".1.3.6.1.4.1.2021.10.1.3.1";
+    /**
+     * 定义la load5m常量。
+     */
     public final static String laLoad5m = ".1.3.6.1.4.1.2021.10.1.3.2";
+    /**
+     * 定义la load15m常量。
+     */
     public final static String laLoad15m = ".1.3.6.1.4.1.2021.10.1.3.3";
+    /**
+     * 定义hr system uptime常量。
+     */
     public final static String hrSystemUptime = ".1.3.6.1.2.1.25.1.1.0";
+    /**
+     * 定义hr system num users常量。
+     */
     public final static String hrSystemNumUsers = ".1.3.6.1.2.1.25.1.5.0";
+    /**
+     * 定义hr system processes常量。
+     */
     public final static String hrSystemProcesses = ".1.3.6.1.2.1.25.1.6.0";
+    /**
+     * 定义tcp attempt fails常量。
+     */
     public final static String tcpAttemptFails = ".1.3.6.1.2.1.6.7.0";
+    /**
+     * 定义tcp curr estab常量。
+     */
     public final static String tcpCurrEstab = ".1.3.6.1.2.1.6.9.0";
     //tcpCurrEstab
+    /**
+     * 保存common sys oids信息。
+     */
     public static OID[] COMMON_SYS_OIDS = null;
 
+    /**
+     * 定义oid map常量。
+     */
     public static final Map<String, String> OID_MAP = new LinkedHashMap<>(); //Name to OID
+    /**
+     * 定义oid name map常量。
+     */
     public static final Map<String, String> OID_NAME_MAP = new LinkedHashMap<>(); //OID to Name
 
+    /**
+     * 保存snmp信息。
+     */
     Snmp snmp = null;
+    /**
+     * 保存address信息。
+     */
     String address = null;
+    /**
+     * 保存community信息。
+     */
     @Getter
     @Setter
     private String community;
+    /**
+     * 保存version信息。
+     */
     @Getter
     @Setter
     private String version;
     //v3 support
+    /**
+     * 保存username信息。
+     */
     private String username;
+    /**
+     * 保存password信息。
+     */
     private String password;
+    /**
+     * 保存authprotocol信息。
+     */
     private String authprotocol;
+    /**
+     * 保存privacypassphrase信息。
+     */
     private String privacypassphrase;
+    /**
+     * 保存privacyprotocol信息。
+     */
     private String privacyprotocol;
+    /**
+     * 保存context信息。
+     */
     private String context;
 
     static {
@@ -161,11 +336,30 @@ public class SNMPClient {
 
     ;
 
+    /**
+     * 表示snmptriple相关的类型。
+     */
     public static class SNMPTriple {
+        /**
+         * 保存oid信息。
+         */
         public String oid;
+        /**
+         * 保存name信息。
+         */
         public String name;
+        /**
+         * 保存value信息。
+         */
         public String value;
 
+        /**
+         * 创建SNMPTriple对象。
+         *
+         * @param oid   oid参数。
+         * @param name  name参数。
+         * @param value value参数。
+         */
         public SNMPTriple(String oid, String name, String value) {
             this.oid = oid;
             this.name = name;
@@ -247,6 +441,9 @@ public class SNMPClient {
         transport.listen();
     }
 
+    /**
+     * 执行stop操作。
+     */
     public void stop() throws IOException {
 
         if (snmp != null)
@@ -271,6 +468,11 @@ public class SNMPClient {
         return null;
     }
 
+    /**
+     * 创建pdu。
+     *
+     * @return 处理结果。
+     */
     private PDU createPDU() {
 
         if (!"3".equals(this.version))
@@ -317,6 +519,12 @@ public class SNMPClient {
         throw new RuntimeException("GET timed out");
     }
 
+    /**
+     * 获取event。
+     *
+     * @param oids oids参数。
+     * @return 处理结果。
+     */
     public ResponseEvent getEvent(OID oids[]) throws IOException {
         PDU pdu = createPDU();
 
@@ -358,6 +566,11 @@ public class SNMPClient {
         return target;
     }
 
+    /**
+     * 获取target v3。
+     *
+     * @return 处理结果。
+     */
     private Target getTargetV3() {
         //log.info("Use SNMP v3, "+this.privacyprotocol +"="+this.password+", "+this.privacyprotocol+"="+this.privacypassphrase);
         OID authOID = AuthMD5.ID;
@@ -390,8 +603,17 @@ public class SNMPClient {
         return target;
     }
 
+    /**
+     * 定义disk table oid常量。
+     */
     public static final String DISK_TABLE_OID = "1.3.6.1.4.1.2021.13.15.1.1";
+    /**
+     * 定义disk table device oid常量。
+     */
     public static final String DISK_TABLE_DEVICE_OID = "1.3.6.1.4.1.2021.13.15.1.1.2";
+    /**
+     * 定义disk table entries常量。
+     */
     public static final String[] DISK_TABLE_ENTRIES = {"",
             "diskIOIndex",
             "diskIODevice",
@@ -407,6 +629,12 @@ public class SNMPClient {
             "diskIONReadX",
             "diskIONWrittenX"};
 
+    /**
+     * 获取disk data。
+     *
+     * @param device device参数。
+     * @return 处理结果。
+     */
     public List<SNMPTriple> getDiskData(String device) throws IOException {
 
         int index = this.getDiskIndex(device);
@@ -450,6 +678,11 @@ public class SNMPClient {
         return resList;
     }
 
+    /**
+     * 获取multi disk data。
+     *
+     * @return 处理结果。
+     */
     public Map<String, List<SNMPTriple>> getMultiDiskData() throws IOException {
         Map<String, List<SNMPTriple>> resMap = new HashMap<>();
         Map<Integer, String> indexes = this.getDiskIndexes();
@@ -509,6 +742,12 @@ public class SNMPClient {
         return resMap;
     }
 
+    /**
+     * 获取disk index。
+     *
+     * @param device device参数。
+     * @return 处理结果。
+     */
     private int getDiskIndex(String device) {
         TableUtils tUtils = new TableUtils(snmp, new DefaultPDUFactory());
         log.debug("Query " + this.address + " for disk data: " + device);
@@ -545,6 +784,11 @@ public class SNMPClient {
         return -1;
     }
 
+    /**
+     * 获取disk indexes。
+     *
+     * @return 处理结果。
+     */
     private Map<Integer, String> getDiskIndexes() throws IOException {
         Map<Integer, String> diskIndexes = new HashMap<>();
         TableUtils tUtils = new TableUtils(snmp, new DefaultPDUFactory());
@@ -597,8 +841,17 @@ public class SNMPClient {
         return diskIndexes;
     }
 
+    /**
+     * 定义if table oid常量。
+     */
     public static final String IF_TABLE_OID = "1.3.6.1.2.1.31.1.1.1";
+    /**
+     * 定义if table device oid常量。
+     */
     public static final String IF_TABLE_DEVICE_OID = "1.3.6.1.2.1.31.1.1.1.1";
+    /**
+     * 定义if table entries常量。
+     */
     public static final String[] IF_TABLE_ENTRIES = {"",
             "ifName",
             "ifInMulticastPkts",
@@ -620,6 +873,12 @@ public class SNMPClient {
             "ifAlias",
             "ifCounterDiscontinuityTime"};
 
+    /**
+     * 获取net if indexes。
+     *
+     * @param device device参数。
+     * @return 处理结果。
+     */
     private Map<Integer, String> getNetIfIndexes(String device) throws IOException {
         Map<Integer, String> ifMaps = new HashMap<>();
 
@@ -660,7 +919,13 @@ public class SNMPClient {
         return ifMaps;
     }
 
-    public Map<String, List<SNMPTriple>> getNetIfData(String device)  {
+    /**
+     * 获取net if data。
+     *
+     * @param device device参数。
+     * @return 处理结果。
+     */
+    public Map<String, List<SNMPTriple>> getNetIfData(String device) {
         Map<Integer, String> ifMaps = new HashMap<>();
         Map<String, List<SNMPTriple>> resMap = new HashMap<>();
         Map<String, String> res = new HashMap<>();
@@ -725,6 +990,12 @@ public class SNMPClient {
         return resMap;
     }
 
+    /**
+     * 获取net if data3。
+     *
+     * @param device device参数。
+     * @return 处理结果。
+     */
     public Map<String, List<SNMPTriple>> getNetIfData3(String device) throws IOException {
 
         Map<String, List<SNMPTriple>> resMap = new HashMap<>();
@@ -781,8 +1052,17 @@ public class SNMPClient {
         return resMap;
     }
 
+    /**
+     * 定义storage table oid常量。
+     */
     public static final String STORAGE_TABLE_OID = "1.3.6.1.2.1.25.2.3.1";
+    /**
+     * 定义storage table device oid常量。
+     */
     public static final String STORAGE_TABLE_DEVICE_OID = "1.3.6.1.2.1.25.2.3.1.1";
+    /**
+     * 定义storage table entries常量。
+     */
     public static final String[] STORAGE_TABLE_ENTRIES = {"",
             "hrStorageIndex",
             "hrStorageType",
@@ -792,6 +1072,12 @@ public class SNMPClient {
             "hrStorageUsed",
             "hrStorageAllocationFailures"};
 
+    /**
+     * 获取storage data。
+     *
+     * @param device device参数。
+     * @return 处理结果。
+     */
     public Map<String, List<SNMPTriple>> getStorageData(String device) throws IOException {
         List<SNMPTriple> resList = querySingleSNMPTableByOID("." + STORAGE_TABLE_OID);
         List<Integer> idxList = new ArrayList<>();
@@ -855,6 +1141,12 @@ public class SNMPClient {
         return snmpList;
     }
 
+    /**
+     * 查询single snmptable by oid。
+     *
+     * @param oid oid参数。
+     * @return 处理结果。
+     */
     public List<SNMPTriple> querySingleSNMPTableByOID(String oid) throws IOException {
 
         if (oid == null || oid.isEmpty())
@@ -886,6 +1178,9 @@ public class SNMPClient {
         return snmpList;
     }
 
+    /**
+     * 定义process table oid常量。
+     */
     public static final String PROCESS_TABLE_OID = "1.3.6.1.2.1.25.4.2.1"; //hrSWRunTable
     //1.3.6.1.2.1.25.4.2.1.2.
 
@@ -940,11 +1235,23 @@ public class SNMPClient {
         return indexes;
     }
 
+    /**
+     * 定义process perf table oid常量。
+     */
     public static final String PROCESS_PERF_TABLE_OID = "1.3.6.1.2.1.25.5.1.1";//hrSWRunPerfTable
+    /**
+     * 定义process perf table entries常量。
+     */
     public static final String[] PROCESS_PERF_TABLE_ENTRIES = {"",
             "hrSWRunPerfCPU",
             "hrSWRunPerfMem"};
 
+    /**
+     * 获取process data。
+     *
+     * @param processName process name参数。
+     * @return 处理结果。
+     */
     public List<SNMPTriple> getProcessData(String processName) throws IOException {
         List<SNMPTriple> resList = new ArrayList<>();
         List<Integer> prIndexes = this.getProcessIndexes(processName);
@@ -974,7 +1281,7 @@ public class SNMPClient {
 
             for (VariableBinding b : binds)
                 res.put(b.getOid().toString(), b.getVariable().toString());
-                //log.info(b.getOid().toString() +", "+ b.getVariable().toString());
+            //log.info(b.getOid().toString() +", "+ b.getVariable().toString());
 
         }
         //log.info("result: "+res);
@@ -994,6 +1301,11 @@ public class SNMPClient {
         return resList;
     }
 
+    /**
+     * 查询mysqld。
+     *
+     * @return 处理结果。
+     */
     public Map<String, String> queryMysqld() throws IOException {
         log.debug("Query mysqld for " + address);
         Map<String, String> resMap = null;
@@ -1012,6 +1324,11 @@ public class SNMPClient {
         return resMap;
     }
 
+    /**
+     * 获取version int。
+     *
+     * @return 处理结果。
+     */
     public int getVersionInt() {
 
         if ("1".equals(this.version))
@@ -1022,6 +1339,11 @@ public class SNMPClient {
             return SnmpConstants.version2c;
     }
 
+    /**
+     * 设置snmp setting。
+     *
+     * @param setting setting参数。
+     */
     public void setSnmpSetting(SNMPSettings.SNMPSetting setting) {
 
         if (setting == null)

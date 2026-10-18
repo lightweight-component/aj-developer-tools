@@ -7,6 +7,7 @@ package com.yahoo.dba.perf.myperf.process;
 
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.db.ConnectionFactory;
+import com.yahoo.dba.perf.myperf.process.model.UnsafeQueryException;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,7 +18,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
-import com.yahoo.dba.perf.myperf.process.model.UnsafeQueryException;
 
 /**
  * MySQL query profiler
@@ -25,7 +25,13 @@ import com.yahoo.dba.perf.myperf.process.model.UnsafeQueryException;
  * @author xrao
  */
 public class MyProfiler implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 保存framework context信息。
+     */
     @Getter
     @Setter
     private MyPerfContext frameworkContext;//access common data
@@ -36,29 +42,60 @@ public class MyProfiler implements Serializable {
     @Getter
     @Setter
     private DBInstanceInfo dbinfo;//target database
+    /**
+     * 标记gather plan状态。
+     */
     @Getter
     @Setter
     private boolean gatherPlan;//if true, run explain plan first
+    /**
+     * 标记gather stats状态。
+     */
     @Getter
     @Setter
     private boolean gatherStats;//if true, gather session stats
+    /**
+     * 标记use profiling状态。
+     */
     @Getter
     @Setter
     private boolean useProfiling;//if true, set profiling as 1
+    /**
+     * 保存sql text信息。
+     */
     @Getter
     private String sqlText;//query to be profiled, for now, we only support SELECT
+    /**
+     * 保存db user信息。
+     */
     @Getter
     @Setter
     private String dbUser;
+    /**
+     * 保存connection time信息。
+     */
     private long connectionTime = 0L; //time used for connection
 
+    /**
+     * 保存connection信息。
+     */
     private transient Connection connection;
 
+    /**
+     * 设置sql text。
+     *
+     * @param sqlText sql text参数。
+     */
     public void setSqlText(String sqlText) throws UnsafeQueryException {
         checkQuerySafety(sqlText);
         this.sqlText = sqlText;
     }
 
+    /**
+     * 检查query safety。
+     *
+     * @param sqlText sql text参数。
+     */
     private void checkQuerySafety(String sqlText) throws UnsafeQueryException {
 
         if (sqlText == null || sqlText.isEmpty())
@@ -97,6 +134,9 @@ public class MyProfiler implements Serializable {
             throw new UnsafeQueryException("Only SELECT statement is supported at this moment");
     }
 
+    /**
+     * 执行destroy操作。
+     */
     public void destroy() {
 
         if (this.connection != null)
@@ -130,6 +170,11 @@ public class MyProfiler implements Serializable {
             connection.setReadOnly(true);
     }
 
+    /**
+     * 运行explain plan。
+     *
+     * @return 处理结果。
+     */
     public ResultList runExplainPlan() throws SQLException {
         try (Statement stmt = connection.createStatement()) {
             ResultList rList;
@@ -177,6 +222,11 @@ public class MyProfiler implements Serializable {
         return null;
     }
 
+    /**
+     * 运行profile。
+     *
+     * @return 处理结果。
+     */
     public ResultList runProfile() throws SQLException {
         try (Statement stmt = connection.createStatement()) {
             stmt.execute("set profiling=1");
@@ -238,6 +288,11 @@ public class MyProfiler implements Serializable {
         }
     }
 
+    /**
+     * 运行stats。
+     *
+     * @return 处理结果。
+     */
     public ResultList runStats() throws SQLException {
         HashMap<String, BigDecimal> startStat = new HashMap<>();
         HashMap<String, BigDecimal> endStat = new HashMap<>();

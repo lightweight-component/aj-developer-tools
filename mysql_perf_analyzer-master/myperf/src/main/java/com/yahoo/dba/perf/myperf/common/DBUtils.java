@@ -44,6 +44,11 @@ public class DBUtils {
         return false;
     }
 
+    /**
+     * 执行close操作。
+     *
+     * @param stmt stmt参数。
+     */
     public static void close(Statement stmt) {
 
         if (stmt != null) try {
@@ -52,6 +57,11 @@ public class DBUtils {
         }
     }
 
+    /**
+     * 执行close操作。
+     *
+     * @param rs rs参数。
+     */
     public static void close(ResultSet rs) {
 
         if (rs != null) try {
@@ -60,6 +70,11 @@ public class DBUtils {
         }
     }
 
+    /**
+     * 执行close操作。
+     *
+     * @param conn conn参数。
+     */
     public static void close(Connection conn) {
 
         if (conn != null) try {
@@ -124,6 +139,14 @@ public class DBUtils {
         }
     }
 
+    /**
+     * 测试connection。
+     *
+     * @param dbinfo   dbinfo参数。
+     * @param username username参数。
+     * @param password password参数。
+     * @return 处理结果。
+     */
     public static String testConnection(DBInstanceInfo dbinfo,
                                         String username,
                                         String password) {
@@ -148,6 +171,14 @@ public class DBUtils {
         }
     }
 
+    /**
+     * 判断是否包含table。
+     *
+     * @param conn       conn参数。
+     * @param schemaName schema name参数。
+     * @param tableName  table name参数。
+     * @return 是否满足条件。
+     */
     public static boolean hasTable(Connection conn, String schemaName, String tableName) {
         try (ResultSet rs = conn.getMetaData().getTables(null, schemaName, tableName.toUpperCase(), null)) {
             while (rs.next()) {
@@ -160,6 +191,14 @@ public class DBUtils {
         return false;
     }
 
+    /**
+     * 查找dbcredential。
+     *
+     * @param ctx     ctx参数。
+     * @param dbid    dbid参数。
+     * @param appUser app user参数。
+     * @return 处理结果。
+     */
     public static DBCredential findDBCredential(MyPerfContext ctx, String dbid, AppUser appUser) {
         DBCredential cred = null;
 

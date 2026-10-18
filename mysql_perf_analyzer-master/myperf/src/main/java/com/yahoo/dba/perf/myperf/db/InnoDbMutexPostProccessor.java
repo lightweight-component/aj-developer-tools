@@ -13,15 +13,43 @@ import com.yahoo.dba.perf.myperf.common.ResultRow;
 import java.util.List;
 import java.util.TreeMap;
 
+/**
+ * 表示inno db mutex post proccessor相关的类型。
+ */
 public class InnoDbMutexPostProccessor implements PostQueryResultProcessor {
+    /**
+     * 表示mutex name相关的类型。
+     */
     static class MutexName {
+        /**
+         * 保存type信息。
+         */
         String type;
+        /**
+         * 保存name信息。
+         */
         String name;
+        /**
+         * 保存wait type信息。
+         */
         String waitType;
+        /**
+         * 保存count信息。
+         */
         int count = 0;
 
+        /**
+         * 保存val信息。
+         */
         int val = 0;
 
+        /**
+         * 创建MutexName对象。
+         *
+         * @param type     type参数。
+         * @param name     name参数。
+         * @param waitType wait type参数。
+         */
         MutexName(String type, String name, String waitType) {
             this.type = type;
             this.name = name;
@@ -29,6 +57,12 @@ public class InnoDbMutexPostProccessor implements PostQueryResultProcessor {
         }
     }
 
+    /**
+     * 执行process操作。
+     *
+     * @param rs rs参数。
+     * @return 处理结果。
+     */
     @Override
     public ResultList process(ResultList rs) {
         TreeMap<String, MutexName> mutexMetrics = new TreeMap<>();

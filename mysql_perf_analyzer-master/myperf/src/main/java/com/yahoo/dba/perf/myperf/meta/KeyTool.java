@@ -7,18 +7,21 @@ package com.yahoo.dba.perf.myperf.meta;
 
 import lombok.extern.slf4j.Slf4j;
 
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
+import javax.crypto.*;
 import java.io.*;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import javax.crypto.BadPaddingException;
-import javax.crypto.NoSuchPaddingException;
 
+/**
+ * 表示key tool相关的类型。
+ */
 @Slf4j
 public class KeyTool {
+    /**
+     * 执行mask file readonly操作。
+     *
+     * @param filename filename参数。
+     */
     private static void maskFileReadonly(String filename) {
         try {
 
@@ -31,23 +34,51 @@ public class KeyTool {
         }
     }
 
+    /**
+     * 表示des encrypter相关的类型。
+     */
     public static class DesEncrypter {
+        /**
+         * 定义base64 table常量。
+         */
         private static final char[] base64Table = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz./".toCharArray();
+        /**
+         * 定义base64 encoding常量。
+         */
         public static final String BASE64_ENCODING = "BASE64";
+        /**
+         * 定义base16 encoding常量。
+         */
         public static final String BASE16_ENCODING = "HEX";
 
 
+        /**
+         * 保存ecipher信息。
+         */
         Cipher ecipher;
+        /**
+         * 保存dcipher信息。
+         */
         Cipher dcipher;
 
         //SecretKey key = KeyGenerator.getInstance("DES").generateKey();
 
+        /**
+         * 保存key to file。
+         *
+         * @param key key参数。
+         */
         private static void saveKeyToFile(SecretKey key) throws FileNotFoundException, IOException {
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(".des"))) {
                 oos.writeObject(key);
             }
         }
 
+        /**
+         * 获取key from file。
+         *
+         * @return 处理结果。
+         */
         private static SecretKey getKeyFromFile() throws IOException, ClassNotFoundException {
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(".des"))) {
                 return (SecretKey) ois.readObject();
@@ -55,6 +86,9 @@ public class KeyTool {
         }
 
 
+        /**
+         * 创建DesEncrypter对象。
+         */
         DesEncrypter() {
             SecretKey key = null;
             try {
@@ -87,6 +121,12 @@ public class KeyTool {
             }
         }
 
+        /**
+         * 执行encrypt操作。
+         *
+         * @param str str参数。
+         * @return 处理结果。
+         */
         public String encrypt(String str) {
             try {
                 // Encode the string into bytes using utf-8
@@ -105,6 +145,12 @@ public class KeyTool {
             return null;
         }
 
+        /**
+         * 执行decrypt操作。
+         *
+         * @param str str参数。
+         * @return 处理结果。
+         */
         public String decrypt(String str) {
             try {
                 // Decode base64 to get bytes
@@ -123,6 +169,12 @@ public class KeyTool {
             return null;
         }
 
+        /**
+         * 转换为b64。
+         *
+         * @param buffer buffer参数。
+         * @return 处理结果。
+         */
         public static String tob64(byte[] buffer) {
             boolean notleading = false;
             int len = buffer.length, pos = len % 3, c;
@@ -186,6 +238,12 @@ public class KeyTool {
                 return "0";
         }
 
+        /**
+         * 执行fromb64操作。
+         *
+         * @param str str参数。
+         * @return 处理结果。
+         */
         public static byte[] fromb64(String str) throws NumberFormatException {
             int len = str.length();
 

@@ -11,8 +11,8 @@ import com.yahoo.dba.perf.myperf.common.MyPerfContext;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.util.Map.Entry;
 import java.sql.SQLException;
+import java.util.Map.Entry;
 import java.util.Properties;
 
 
@@ -50,6 +50,15 @@ public class ConnectionFactory {
         return DriverManager.getConnection(db.getConnectionString(), info);
     }
 
+    /**
+     * 执行connect操作。
+     *
+     * @param db       db参数。
+     * @param username username参数。
+     * @param password password参数。
+     * @param context  context参数。
+     * @return 处理结果。
+     */
     public static Connection connect(DBInstanceInfo db, String username, String password, MyPerfContext context)
             throws SQLException {
         Properties info = new Properties();

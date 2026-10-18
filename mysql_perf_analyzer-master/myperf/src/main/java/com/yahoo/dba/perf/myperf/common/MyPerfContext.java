@@ -5,23 +5,6 @@
  */
 package com.yahoo.dba.perf.myperf.common;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import lombok.extern.slf4j.Slf4j;
-
-import com.yahoo.dba.perf.myperf.db.QueryExecutor;
-import com.yahoo.dba.perf.myperf.meta.MetaDB;
-import com.yahoo.dba.perf.myperf.metrics.DerbyMetricsDb;
-import com.yahoo.dba.perf.myperf.metrics.MetricsDbBase;
-import com.yahoo.dba.perf.myperf.metrics.MySQLMetricsDb;
-import com.yahoo.dba.perf.myperf.process.AutoScanner;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
-
-import java.io.File;
-import java.sql.DriverManager;
-import java.util.*;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
@@ -29,11 +12,26 @@ import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.util.FileSize;
-import org.slf4j.LoggerFactory;
-import java.io.Serializable;
-import java.text.SimpleDateFormat;
-import java.util.concurrent.atomic.AtomicBoolean;
+import com.yahoo.dba.perf.myperf.db.QueryExecutor;
+import com.yahoo.dba.perf.myperf.meta.MetaDB;
+import com.yahoo.dba.perf.myperf.metrics.DerbyMetricsDb;
+import com.yahoo.dba.perf.myperf.metrics.MetricsDbBase;
+import com.yahoo.dba.perf.myperf.metrics.MySQLMetricsDb;
+import com.yahoo.dba.perf.myperf.process.AutoScanner;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
+
+import java.io.File;
+import java.io.Serializable;
+import java.sql.DriverManager;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * MyPerfContext contains configuration data, accessor to common resources,
@@ -44,118 +42,236 @@ import org.slf4j.Logger;
 @Slf4j
 public class MyPerfContext implements Serializable, InitializingBean, DisposableBean {
 
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
     //Use this parameter to control debug log at system level at runtime
     //This way, we don't need change and load our log configuration
+    /**
+     * 保存debug信息。
+     */
     private AtomicBoolean DEBUG = new AtomicBoolean();
 
+    /**
+     * 保存myperf config信息。
+     */
     @Getter
     private MyPerfConfiguration myperfConfig = new MyPerfConfiguration(); //configurations, from settings page
+    /**
+     * 保存snmp settings信息。
+     */
     @Getter
     private SNMPSettings snmpSettings = new SNMPSettings();
+    /**
+     * 保存db info manager信息。
+     */
     @Getter
     private DBInfoManager dbInfoManager = new DBInfoManager(); //managed database servers
+    /**
+     * 保存sql manager信息。
+     */
     @Getter
     private SqlManager sqlManager = new SqlManager();//built in SQL definitions
+    /**
+     * 保存metrics def信息。
+     */
     @Getter
     private MetricsDefManager metricsDef = new MetricsDefManager();//metrics and alert definitions, builtin and user defined
+    /**
+     * 保存meta db信息。
+     */
     @Getter
     private MetaDB metaDb = new MetaDB(); //meta data, now only hold users and db credentials
+    /**
+     * 保存metric db信息。
+     */
     @Getter
     private MetricsDbBase metricDb; //database to store metrics and managed database server info
+    /**
+     * 保存query engine信息。
+     */
     @Getter
     private QueryExecutor queryEngine = new QueryExecutor(); //Run queries using JDBC
+    /**
+     * 保存user manager信息。
+     */
     @Getter
     private AppUserManager userManager = new AppUserManager(); //managed registered users
+    /**
+     * 保存auth信息。
+     */
     @Getter
     private Auth auth = new Auth();//user authentication
 
+    /**
+     * 保存stat def manager信息。
+     */
     @Getter
     private StatDefManager statDefManager = new StatDefManager();//help tool for terminology lookup
 
+    /**
+     * 保存auto scanner信息。
+     */
     @Getter
     private AutoScanner autoScanner = null; //metrics and alert scanner
+    /**
+     * 保存alert settings信息。
+     */
     @Getter
     private AlertSettings alertSettings = new AlertSettings(); //alert thresholding settings
 
     //for each server, we keep two snapshots of selected metrics
+    /**
+     * 保存instance states manager信息。
+     */
     @Getter
     private InstanceStatesManager instanceStatesManager = new InstanceStatesManager();
 
     //location to find built in sql
+    /**
+     * 保存sql path信息。
+     */
     @Getter
     @Setter
     private String sqlPath = "sql.xml";
 
     //directory where we can save files, reports, etc.
+    /**
+     * 保存file reposirtory path信息。
+     */
     @Getter
     @Setter
     private String fileReposirtoryPath = "myperf_reports";
+    /**
+     * 保存alert root path信息。
+     */
     @Getter
     @Setter
     private File alertRootPath;
 
     //database connection settings
+    /**
+     * 保存connection idle time信息。
+     */
     @Getter
     private long connectionIdleTime = 600000L;
+    /**
+     * 保存connection timeout信息。
+     */
     @Getter
     @Setter
     private long connectionTimeout = 5000L;//reduced to 5 seconds
+    /**
+     * 保存connection read timeout信息。
+     */
     @Getter
     @Setter
     private long connectionReadTimeout = 10000L;
+    /**
+     * 保存query timeout信息。
+     */
     @Getter
     @Setter
     private int queryTimeout = 300;
+    /**
+     * 保存query fetch size信息。
+     */
     @Getter
     @Setter
     private int queryFetchSize = 5000;
 
     //log settings
+    /**
+     * 保存log level信息。
+     */
     @Getter
     @Setter
     private String logLevel = "INFO";
+    /**
+     * 保存log path信息。
+     */
     @Getter
     @Setter
     private String logPath = "perf.log";
+    /**
+     * 保存log file size信息。
+     */
     @Getter
     @Setter
     private int logFileSize = 50000000;
+    /**
+     * 保存log file count信息。
+     */
     @Getter
     @Setter
     private int logFileCount = 5;
 
+    /**
+     * 保存config rep key信息。
+     */
     @Getter
     @Setter
     private String configRepKey;
 
+    /**
+     * 保存jdbc driver集合。
+     */
     @Getter
     @Setter
     private Map<String, String> jdbcDriver;
 
+    /**
+     * 保存start time信息。
+     */
     @Getter
     private Date startTime = new Date();//when this server started
 
     //metrics list
+    /**
+     * 保存metrics list集合。
+     */
     private List<String> metricsList;
+    /**
+     * 保存metrics list refresh lock信息。
+     */
     private Object metricsListRefreshLock = new Object();
 
     //hold alerts for notification
+    /**
+     * 保存alerts信息。
+     */
     @Getter
     private Alerts alerts = new Alerts();
 
     //attach HipchatIntegration to email alert
+    /**
+     * 保存hipchat信息。
+     */
     @Getter
     private HipchatIntegration hipchat = new HipchatIntegration();
 
+    /**
+     * 创建MyPerfContext对象。
+     */
     public MyPerfContext() {
         DEBUG.set(false);
     }
 
+    /**
+     * 执行enable debug操作。
+     *
+     * @param enable enable参数。
+     */
     public void enableDebug(boolean enable) {
         DEBUG.set(enable);
     }
 
+    /**
+     * 判断debug。
+     *
+     * @return 是否满足条件。
+     */
     public boolean isDebug() {
         return DEBUG.get();
     }
@@ -236,6 +352,9 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
         log.info("Done setup afterPropertiesSet.");
     }
 
+    /**
+     * 执行destroy操作。
+     */
     public void destroy() throws Exception {
 
         if (this.autoScanner != null)
@@ -247,6 +366,11 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
         this.metaDb.destroy();
     }
 
+    /**
+     * 设置connection idle time。
+     *
+     * @param connectionIdleTime connection idle time参数。
+     */
     public void setConnectionIdleTime(long connectionIdleTime) {
 
         if (connectionIdleTime <= 0)
@@ -255,6 +379,9 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
             this.connectionIdleTime = connectionIdleTime;
     }
 
+    /**
+     * 执行configure logging操作。
+     */
     private void configureLogging() {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
         ch.qos.logback.classic.Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -313,16 +440,29 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
         }
     }
 
+    /**
+     * 设置metric db base。
+     *
+     * @param metricDb metric db参数。
+     */
     public void setMetricDbBase(MetricsDbBase metricDb) {
         this.metricDb = metricDb;
     }
 
+    /**
+     * 获取metrics list。
+     *
+     * @return 处理结果。
+     */
     public List<String> getMetricsList() {
         synchronized (metricsListRefreshLock) {
             return Collections.unmodifiableList(metricsList);
         }
     }
 
+    /**
+     * 执行refresh metrics list操作。
+     */
     public void refreshMetricsList() {
         synchronized (metricsListRefreshLock) {
 
@@ -367,6 +507,12 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
         }
     }
 
+    /**
+     * 获取sql text for metrics group。
+     *
+     * @param groupName group name参数。
+     * @return 处理结果。
+     */
     public String getSqlTextForMetricsGroup(String groupName) {
 
         if (groupName == null)
@@ -390,6 +536,11 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
         return sql;
     }
 
+    /**
+     * 初始化metrics db。
+     *
+     * @return 是否满足条件。
+     */
     public boolean initMetricsDB() {
 
         if (!this.getMyperfConfig().isConfigured())
@@ -420,6 +571,11 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
         return true;
     }
 
+    /**
+     * 添加alert。
+     *
+     * @param alert alert参数。
+     */
     public void addAlert(AlertEntry alert) {
         try {
 
@@ -562,6 +718,14 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
         return sb.toString();
     }
 
+    /**
+     * 保存managed dbcredential for scanner。
+     *
+     * @param username username参数。
+     * @param dbGroup  db group参数。
+     * @param dbuser   dbuser参数。
+     * @param password password参数。
+     */
     public void saveManagedDBCredentialForScanner(String username, String dbGroup, String dbuser, String password) {
         AppUser defaultUser = getUserManager().getUser(MetaDB.DEFAULT_USER);
         AppUser metricsUser = getUserManager().getUser(getMyperfConfig().getMetricsScannerUser());

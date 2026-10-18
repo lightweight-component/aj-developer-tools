@@ -13,8 +13,18 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+/**
+ * 表示logout controller相关的类型。
+ */
 public class LogoutController extends MyPerfBaseController {
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req,
                                              HttpServletResponse resp) throws Exception {
@@ -34,13 +44,27 @@ public class LogoutController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 表示logout cleaner相关的类型。
+     */
     private static class LogoutCleaner implements Runnable {
+        /**
+         * 保存conns信息。
+         */
         private UserDBConnections conns;
 
+        /**
+         * 创建LogoutCleaner对象。
+         *
+         * @param conns conns参数。
+         */
         public LogoutCleaner(UserDBConnections conns) {
             this.conns = conns;
         }
 
+        /**
+         * 执行run操作。
+         */
         public void run() {
 
             if (conns != null) {

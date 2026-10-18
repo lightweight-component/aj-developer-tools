@@ -22,20 +22,49 @@ import java.util.*;
  */
 @Slf4j
 public class DBInfoManager implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 保存project db信息。
+     */
     private MetaDB projectDb;//note we store user cred here
+    /**
+     * 保存metrics db信息。
+     */
     @Setter
     @Getter
     private MetricsDbBase metricsDb;//db def
 
+    /**
+     * 保存groups集合。
+     */
     private Map<String, DBGroupInfo> groups = new TreeMap<>();
+    /**
+     * 保存mydbs集合。
+     */
     private Map<String, MyDatabases> mydbs = new HashMap<>();
+    /**
+     * 保存last scan time信息。
+     */
     private HashMap<String, Date> lastScanTime = new HashMap<>();
 
+    /**
+     * 获取clusters。
+     *
+     * @return 处理结果。
+     */
     synchronized public Map<String, DBGroupInfo> getClusters() {
         return groups;
     }
 
+    /**
+     * 查找group。
+     *
+     * @param groupName group name参数。
+     * @return 处理结果。
+     */
     synchronized public DBGroupInfo findGroup(String groupName) {
 
         if (groups != null && groups.containsKey(groupName))
@@ -44,6 +73,11 @@ public class DBInfoManager implements Serializable {
         return null;
     }
 
+    /**
+     * 添加or update instance。
+     *
+     * @param dbinfo dbinfo参数。
+     */
     synchronized public void addOrUpdateInstance(DBInstanceInfo dbinfo) {
         DBGroupInfo cls = this.findGroup(dbinfo.getDbGroupName());
 
@@ -56,6 +90,13 @@ public class DBInfoManager implements Serializable {
         cls.addOrUpdateInstance(dbinfo);
     }
 
+    /**
+     * 查找db。
+     *
+     * @param groupName group name参数。
+     * @param hostname  hostname参数。
+     * @return 处理结果。
+     */
     synchronized public DBInstanceInfo findDB(String groupName, String hostname) {
         DBGroupInfo cls = this.findGroup(groupName);
 
@@ -70,6 +111,13 @@ public class DBInfoManager implements Serializable {
         return null;
     }
 
+    /**
+     * 移除dbhost。
+     *
+     * @param groupName group name参数。
+     * @param hostname  hostname参数。
+     * @return 是否满足条件。
+     */
     synchronized public boolean removeDBHost(String groupName, String hostname) {
         DBGroupInfo cls = this.findGroup(groupName);
 
@@ -88,6 +136,11 @@ public class DBInfoManager implements Serializable {
         return false;
     }
 
+    /**
+     * 移除group。
+     *
+     * @param groupName group name参数。
+     */
     synchronized public void removeGroup(String groupName) {
         DBGroupInfo cls = this.findGroup(groupName);
 
@@ -98,6 +151,11 @@ public class DBInfoManager implements Serializable {
         this.projectDb.removeDbGroup(groupName);
     }
 
+    /**
+     * 执行list group names操作。
+     *
+     * @return 处理结果。
+     */
     synchronized public List<String> listGroupNames() {
         ArrayList<String> clist = new ArrayList<>(this.groups.size());
 
@@ -107,6 +165,12 @@ public class DBInfoManager implements Serializable {
         return clist;
     }
 
+    /**
+     * 执行init操作。
+     *
+     * @param metricsDb metrics db参数。
+     * @return 是否满足条件。
+     */
     synchronized public boolean init(MetricsDbBase metricsDb) {
         this.groups.clear();
         this.mydbs.clear();
@@ -114,6 +178,11 @@ public class DBInfoManager implements Serializable {
         return init();
     }
 
+    /**
+     * 执行init操作。
+     *
+     * @return 是否满足条件。
+     */
     synchronized public boolean init() {
         log.info("Loading stored db info");
         mydbs.clear();//refill
@@ -142,14 +211,31 @@ public class DBInfoManager implements Serializable {
         return false;
     }
 
+    /**
+     * 获取meta db。
+     *
+     * @return 处理结果。
+     */
     public MetaDB getMetaDb() {
         return projectDb;
     }
 
+    /**
+     * 设置meta db。
+     *
+     * @param projectDb project db参数。
+     */
     public void setMetaDb(MetaDB projectDb) {
         this.projectDb = projectDb;
     }
 
+    /**
+     * 获取my databases。
+     *
+     * @param owner      owner参数。
+     * @param restricted restricted参数。
+     * @return 处理结果。
+     */
     public MyDatabases getMyDatabases(String owner, boolean restricted) {
         MyDatabases mydb = null;
         synchronized (this.mydbs) {
@@ -190,12 +276,26 @@ public class DBInfoManager implements Serializable {
         return alldb;
     }
 
+    /**
+     * 更新last scan time。
+     *
+     * @param dbgroup dbgroup参数。
+     * @param dbhost  dbhost参数。
+     * @param dt      dt参数。
+     */
     public void updateLastScanTime(String dbgroup, String dbhost, Date dt) {
         synchronized (this.lastScanTime) {
             this.lastScanTime.put(dbgroup + ":" + dbhost, dt);
         }
     }
 
+    /**
+     * 获取last access date。
+     *
+     * @param dbgroup dbgroup参数。
+     * @param dbhost  dbhost参数。
+     * @return 处理结果。
+     */
     public Date getLastAccessDate(String dbgroup, String dbhost) {
         synchronized (this.lastScanTime) {
             return this.lastScanTime.get(dbgroup + ":" + dbhost);
@@ -203,6 +303,13 @@ public class DBInfoManager implements Serializable {
 
     }
 
+    /**
+     * 执行retrieve dbinfo操作。
+     *
+     * @param dbGroupName db group name参数。
+     * @param hostName    host name参数。
+     * @return 处理结果。
+     */
     public DBInstanceInfo retrieveDBInfo(String dbGroupName, String hostName) {
 
         if (this.metricsDb != null)
@@ -211,6 +318,11 @@ public class DBInfoManager implements Serializable {
         return null;
     }
 
+    /**
+     * 执行upsert dbinfo操作。
+     *
+     * @param dbinfo dbinfo参数。
+     */
     public void upsertDBInfo(DBInstanceInfo dbinfo) {
 
         if (this.metricsDb != null)
@@ -219,6 +331,14 @@ public class DBInfoManager implements Serializable {
             throw new RuntimeException("There is no metricsdb defined yet.");
     }
 
+    /**
+     * 移除db group。
+     *
+     * @param dbGroupName db group name参数。
+     * @param owner       owner参数。
+     * @param force       force参数。
+     * @return 是否满足条件。
+     */
     public boolean removeDbGroup(String dbGroupName, String owner, boolean force) {
 
         if (this.metricsDb != null)
@@ -227,6 +347,15 @@ public class DBInfoManager implements Serializable {
         return false;
     }
 
+    /**
+     * 移除dbinfo。
+     *
+     * @param dbGroupName db group name参数。
+     * @param hostName    host name参数。
+     * @param owner       owner参数。
+     * @param force       force参数。
+     * @return 是否满足条件。
+     */
     public boolean removeDBInfo(String dbGroupName, String hostName, String owner, boolean force) {
 
         if (this.metricsDb != null)
@@ -235,6 +364,12 @@ public class DBInfoManager implements Serializable {
         return false;
     }
 
+    /**
+     * 执行search db info操作。
+     *
+     * @param keyword keyword参数。
+     * @return 处理结果。
+     */
     public List<DBInstanceInfo> SearchDbInfo(String keyword) {
 
         if (this.metricsDb != null)
@@ -244,6 +379,16 @@ public class DBInfoManager implements Serializable {
 
     }
 
+    /**
+     * 执行enable snmp操作。
+     *
+     * @param dbGroup  db group参数。
+     * @param hostname hostname参数。
+     * @param enabled  enabled参数。
+     * @param owner    owner参数。
+     * @param force    force参数。
+     * @return 是否满足条件。
+     */
     public boolean enableSnmp(String dbGroup, String hostname, boolean enabled, String owner, boolean force) {
 
         if (this.metricsDb != null)
@@ -252,6 +397,16 @@ public class DBInfoManager implements Serializable {
         return false;
     }
 
+    /**
+     * 执行enable metrics操作。
+     *
+     * @param dbGroup  db group参数。
+     * @param hostname hostname参数。
+     * @param enabled  enabled参数。
+     * @param owner    owner参数。
+     * @param force    force参数。
+     * @return 是否满足条件。
+     */
     public boolean enableMetrics(String dbGroup, String hostname, boolean enabled, String owner, boolean force) {
 
         if (this.metricsDb != null)
@@ -260,6 +415,12 @@ public class DBInfoManager implements Serializable {
         return false;
     }
 
+    /**
+     * 执行rename db group操作。
+     *
+     * @param oldname oldname参数。
+     * @param newName new name参数。
+     */
     synchronized public void renameDbGroup(String oldname, String newName) {
         //nothing to do
         if (!this.groups.containsKey(oldname.toLowerCase()) || newName == null || newName.isEmpty())
@@ -282,6 +443,14 @@ public class DBInfoManager implements Serializable {
 
     }
 
+    /**
+     * 更新restricteduser acl。
+     *
+     * @param username    username参数。
+     * @param dbgroupname dbgroupname参数。
+     * @param visible     visible参数。
+     * @return 是否满足条件。
+     */
     public boolean updateRestricteduserAcl(String username, String dbgroupname, boolean visible) {
 
         if (this.projectDb.updateUserAcl(username, dbgroupname, visible)) {

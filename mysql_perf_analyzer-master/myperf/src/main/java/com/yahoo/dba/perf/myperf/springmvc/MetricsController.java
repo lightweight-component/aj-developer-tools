@@ -5,9 +5,8 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
@@ -64,7 +63,7 @@ public class MetricsController extends MyPerfBaseController {
     }
 
     /**
-     * Retrieve DBInstanceInfo from path. Return null if none found
+     * Retrieve DBInstanceInfo from a path. Return null if none found
      *
      * @param pathParameters
      * @return
@@ -90,6 +89,12 @@ public class MetricsController extends MyPerfBaseController {
     }
 
 
+    /**
+     * 执行prefix metric group name操作。
+     *
+     * @param mg mg参数。
+     * @param rs rs参数。
+     */
     private void prefixMetricGroupName(String mg, ResultList rs) {
 
         if (mg == null || "globalstatus".equals(mg) || mg.isEmpty() || rs == null)
@@ -107,6 +112,14 @@ public class MetricsController extends MyPerfBaseController {
         }
     }
 
+    /**
+     * 获取metrics。
+     *
+     * @param pathParameters path parameters参数。
+     * @param req            req参数。
+     * @param resp           resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView getMetrics(Map<String, String> pathParameters, HttpServletRequest req,
                                     HttpServletResponse resp) throws Exception {
         int status = Constants.STATUS_OK;
@@ -177,7 +190,7 @@ public class MetricsController extends MyPerfBaseController {
                                 .getUDMByName(mg.substring(mg.indexOf('_') + 1)).getMetricsGroup();
                     } catch (Exception ex) {
                     }
-                 else
+                else
                     mGroup = this.frameworkContext.getMetricsDef().getGroupByName(mg);
 
                 if (mGroup == null) {
@@ -205,7 +218,7 @@ public class MetricsController extends MyPerfBaseController {
 
                     if (mGroup != null && mGroup.isStoreInCommonTable())
                         tmpList = retrieveGenericMetrics(subGroups.get(subGrpName).toArray(new String[0]), mGroup, dbinfo, dateRange[0], dateRange[1]);
-                     else if (mGroup != null && mGroup.getKeyColumn() != null && !mGroup.getKeyColumn().isEmpty())
+                    else if (mGroup != null && mGroup.getKeyColumn() != null && !mGroup.getKeyColumn().isEmpty())
                         tmpList = retrieveMetricsWithKey(subGroups.get(subGrpName).toArray(new String[0]), mg, subGrpName, dbinfo, dateRange[0], dateRange[1], true);
                     else
                         tmpList = retrieveMetrics(subGroups.get(subGrpName).toArray(new String[0]), mg, subGrpName, dbinfo, dateRange[0], dateRange[1]);
@@ -293,6 +306,13 @@ public class MetricsController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req,
                                              HttpServletResponse resp) throws Exception {
@@ -366,6 +386,17 @@ public class MetricsController extends MyPerfBaseController {
         return rList;
     }
 
+    /**
+     * 执行retrieve metrics操作。
+     *
+     * @param metrics     metrics参数。
+     * @param metricgroup metricgroup参数。
+     * @param subGroup    sub group参数。
+     * @param dbinfo      dbinfo参数。
+     * @param startDate   start date参数。
+     * @param endDate     end date参数。
+     * @return 处理结果。
+     */
     private ResultList retrieveMetrics(String[] metrics, String metricgroup, String subGroup, DBInstanceInfo dbinfo, String startDate, String endDate) {
         ResultList rList = null;
         try {
@@ -409,6 +440,16 @@ public class MetricsController extends MyPerfBaseController {
         return rList;
     }
 
+    /**
+     * 执行retrieve generic metrics操作。
+     *
+     * @param metrics   metrics参数。
+     * @param mg        mg参数。
+     * @param dbinfo    dbinfo参数。
+     * @param startDate start date参数。
+     * @param endDate   end date参数。
+     * @return 处理结果。
+     */
     private ResultList retrieveGenericMetrics(String[] metrics, MetricsGroup mg, DBInstanceInfo dbinfo, String startDate, String endDate) {
         ResultList rList = null;
 
@@ -444,6 +485,13 @@ public class MetricsController extends MyPerfBaseController {
         return rList;
     }
 
+    /**
+     * 合并result list。
+     *
+     * @param rList1 r list1参数。
+     * @param rList2 r list2参数。
+     * @return 处理结果。
+     */
     private ResultList mergeResultList(ResultList rList1, ResultList rList2) {
 
         ResultList rList = new ResultList();

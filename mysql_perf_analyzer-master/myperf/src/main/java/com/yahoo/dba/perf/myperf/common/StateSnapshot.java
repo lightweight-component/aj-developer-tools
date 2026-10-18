@@ -8,77 +8,149 @@ package com.yahoo.dba.perf.myperf.common;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.Serializable;
 
+/**
+ * 表示state snapshot相关的类型。
+ */
 public class StateSnapshot implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 保存timestamp信息。
+     */
     @Getter
     @Setter
     private long timestamp = -1L;//snap timestamp, -1L means no data yet
     //metrics, -1 is NA - not available
+    /**
+     * 保存usercputime信息。
+     */
     @Getter
     @Setter
     private long usercputime = -1L;
+    /**
+     * 保存syscputime信息。
+     */
     @Getter
     @Setter
     private long syscputime = -1L;
+    /**
+     * 保存softirqtime信息。
+     */
     @Getter
     @Setter
     private long softirqtime = -1L;
+    /**
+     * 保存iotime信息。
+     */
     @Getter
     @Setter
     private long iotime = -1L;
+    /**
+     * 保存available mem信息。
+     */
     @Getter
     @Setter
     private long availableMem = -1L;
+    /**
+     * 保存load average信息。
+     */
     @Getter
     @Setter
     private float loadAverage = -1.0f;
+    /**
+     * 保存threads信息。
+     */
     @Getter
     @Setter
     private int threads = 1; //total threads
+    /**
+     * 保存active threads信息。
+     */
     @Getter
     @Setter
     private int activeThreads = 1; //active threads
+    /**
+     * 保存connections信息。
+     */
     @Getter
     @Setter
     private long connections = -1L;
+    /**
+     * 保存aborted connects clients信息。
+     */
     @Getter
     @Setter
     private long abortedConnectsClients = -1L;//sum of aborted_connects and aborted_clients
+    /**
+     * 保存slow query count信息。
+     */
     @Getter
     @Setter
     private long slowQueryCount = -1L;
+    /**
+     * 保存totalcputime信息。
+     */
     @Getter
     @Setter
     private long totalcputime = -1L;//cpu time, wait time plus idle time
+    /**
+     * 保存repl lag信息。
+     */
     @Getter
     @Setter
     private int replLag = 0;//replication lag in seconds
+    /**
+     * 保存repl io信息。
+     */
     @Getter
     @Setter
     private int replIo = 1;//replication io thread status, default to running
+    /**
+     * 保存repl sql信息。
+     */
     @Getter
     @Setter
     private int replSql = 1; //replication sql thread status, default to running
+    /**
+     * 保存queries信息。
+     */
     @Getter
     @Setter
     private long queries = 0L;
+    /**
+     * 保存questions信息。
+     */
     @Getter
     @Setter
     private long questions = 0L;
+    /**
+     * 保存deadlocks信息。
+     */
     @Getter
     @Setter
     private long deadlocks = 0L;
+    /**
+     * 保存swapout信息。
+     */
     @Getter
     @Setter
     private long swapout = -1L; //memory swap out, use ssRawSwapOut
+    /**
+     * 保存max conn error信息。
+     */
     @Getter
     @Setter
     private long max_conn_error = -1L;//-1 means not recorded yet
 
+    /**
+     * 保存uptime信息。
+     */
     @Getter
     @Setter
     private long uptime = 0L;//need it to calculate diff if restart
@@ -86,9 +158,15 @@ public class StateSnapshot implements Serializable {
     //NOTE: when add new fields, make sure to update function copy()
 
     //for user defined alertsk, name is the alertName
+    /**
+     * 保存metrics map集合。
+     */
     @Getter
     private Map<String, Float> metricsMap;
 
+    /**
+     * 创建StateSnapshot对象。
+     */
     public StateSnapshot() {
         metricsMap = new HashMap<>();
     }
@@ -130,6 +208,12 @@ public class StateSnapshot implements Serializable {
         return ss;
     }
 
+    /**
+     * 添加metric。
+     *
+     * @param name name参数。
+     * @param val  val参数。
+     */
     public void addMetric(String name, Float val) {
 
         if (this.metricsMap == null)
@@ -189,6 +273,11 @@ public class StateSnapshot implements Serializable {
         setMax_conn_error(CommonUtils.getMapValueLong(kvPairs, "CONNECTION_ERRORS_MAX_CONNECTIONS", 0L));
     }
 
+    /**
+     * 执行record repl操作。
+     *
+     * @param resMap res map参数。
+     */
     public void recordRepl(Map<String, String> resMap) {
         try {
             setReplLag(Integer.parseInt(resMap.get("Seconds_Behind_Master")));

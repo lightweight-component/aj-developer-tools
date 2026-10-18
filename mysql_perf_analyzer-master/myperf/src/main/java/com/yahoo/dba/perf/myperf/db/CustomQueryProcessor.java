@@ -10,9 +10,12 @@ import com.yahoo.dba.perf.myperf.common.MyPerfContext;
 import com.yahoo.dba.perf.myperf.common.QueryParameters;
 import com.yahoo.dba.perf.myperf.common.ResultList;
 
-import java.util.Map;
 import java.sql.SQLException;
+import java.util.Map;
 
+/**
+ * 表示custom query processor相关的类型。
+ */
 public interface CustomQueryProcessor {
     /**
      * @param context

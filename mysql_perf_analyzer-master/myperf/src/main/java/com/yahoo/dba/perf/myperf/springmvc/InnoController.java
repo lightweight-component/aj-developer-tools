@@ -5,14 +5,15 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.db.DBConnectionWrapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -21,12 +22,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.io.BufferedReader;
-import java.io.StringReader;
 
+/**
+ * 表示inno controller相关的类型。
+ */
 @Slf4j
 public class InnoController extends MyPerfBaseController {
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         int status = Constants.STATUS_OK;
@@ -72,12 +81,11 @@ public class InnoController extends MyPerfBaseController {
                 //check if the connection is still good
                 if (!DBUtils.checkConnection(connWrapper.getConnection()))
                     WebAppUtil.closeDBConnection(req, connWrapper, true, false);
-                 else
+                else
                     WebAppUtil.closeDBConnection(req, connWrapper, true, false);
 
-            } else
-                if (connWrapper != null)
-                    WebAppUtil.closeDBConnection(req, connWrapper, false, this.getFrameworkContext().getMyperfConfig().isReuseMonUserConnction());
+            } else if (connWrapper != null)
+                WebAppUtil.closeDBConnection(req, connWrapper, false, this.getFrameworkContext().getMyperfConfig().isReuseMonUserConnction());
 
             status = Constants.STATUS_BAD;
             message = "Exception: " + th.getMessage();
@@ -96,6 +104,12 @@ public class InnoController extends MyPerfBaseController {
     }
 
 
+    /**
+     * 执行parse操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     private LinkedHashMap<String, ResultList> parse(String str) {
         final int BEFORE_STARTLINE = -1;
         final int STARTLINE = 0;
@@ -139,9 +153,8 @@ public class InnoController extends MyPerfBaseController {
 
                         if (line.startsWith("-"))
                             state = SECTION_HEADER_STARTLINE;
-                        else
-                            if (line.startsWith("Per second averages"))
-                                valMap.put("Duration", line.substring(line.indexOf("last") + 5).trim());
+                        else if (line.startsWith("Per second averages"))
+                            valMap.put("Duration", line.substring(line.indexOf("last") + 5).trim());
 
 
                         break;
@@ -149,7 +162,7 @@ public class InnoController extends MyPerfBaseController {
 
                         if (line.startsWith("-"))
                             state = SECTION_HEADER_ENDLINE;
-                         else
+                        else
                             currentSection = line.trim();
 
                         break;
@@ -211,13 +224,13 @@ public class InnoController extends MyPerfBaseController {
 
                         } else if ("LATEST DETECTED DEADLOCK".equalsIgnoreCase(currentSection))
                             deadLockInfo.add(line);
-                         else if ("FILE I/O".equalsIgnoreCase(currentSection))
+                        else if ("FILE I/O".equalsIgnoreCase(currentSection))
                             this.parseFileIO(valMap, line);
-                         else if ("BUFFER POOL AND MEMORY".equalsIgnoreCase(currentSection))
+                        else if ("BUFFER POOL AND MEMORY".equalsIgnoreCase(currentSection))
                             this.parseBufferPool(valMap, line);
-                         else if ("ROW OPERATIONS".equalsIgnoreCase(currentSection))
+                        else if ("ROW OPERATIONS".equalsIgnoreCase(currentSection))
                             this.parseRowOperation(valMap, line);
-                         else if ("SEMAPHORES".equalsIgnoreCase(currentSection)) {
+                        else if ("SEMAPHORES".equalsIgnoreCase(currentSection)) {
                             boolean parsed = false;
 
                             if (line != null && line.startsWith("--Thread ")) {
@@ -234,9 +247,9 @@ public class InnoController extends MyPerfBaseController {
 
                         } else if ("LOG".equalsIgnoreCase(currentSection))
                             this.parseLog(valMap, line);
-                         else if ("INSERT BUFFER AND ADAPTIVE HASH INDEX".equalsIgnoreCase(currentSection))
+                        else if ("INSERT BUFFER AND ADAPTIVE HASH INDEX".equalsIgnoreCase(currentSection))
                             this.parseIBuf(valMap, line);
-                         else if ("TRANSACTIONS".equalsIgnoreCase(currentSection)) {
+                        else if ("TRANSACTIONS".equalsIgnoreCase(currentSection)) {
                             //TODO skip summary portion
                             if (curTx == null && !line.startsWith("---TRANSACTION"))
                                 break;
@@ -263,6 +276,12 @@ public class InnoController extends MyPerfBaseController {
         return listMap;
     }
 
+    /**
+     * 构建semap list。
+     *
+     * @param semapList semap list参数。
+     * @return 处理结果。
+     */
     private ResultList buildSemapList(List<SemaphoreEntry> semapList) {
         ResultList rList = new ResultList();
         ColumnDescriptor desc = new ColumnDescriptor();
@@ -303,6 +322,12 @@ public class InnoController extends MyPerfBaseController {
         return rList;
     }
 
+    /**
+     * 创建header。
+     *
+     * @param valMap val map参数。
+     * @return 处理结果。
+     */
     private ResultList createHeader(Map<String, String> valMap) {
         ResultList rList = new ResultList();
         ColumnDescriptor desc = new ColumnDescriptor();
@@ -323,6 +348,12 @@ public class InnoController extends MyPerfBaseController {
         return rList;
     }
 
+    /**
+     * 解析file io。
+     *
+     * @param valMap val map参数。
+     * @param str    str参数。
+     */
     private void parseFileIO(Map<String, String> valMap, String str) {
         try {
 
@@ -370,6 +401,12 @@ public class InnoController extends MyPerfBaseController {
         }
     }
 
+    /**
+     * 解析row operation。
+     *
+     * @param valMap val map参数。
+     * @param str    str参数。
+     */
     private void parseRowOperation(Map<String, String> valMap, String str) {
         try {
 
@@ -443,6 +480,12 @@ public class InnoController extends MyPerfBaseController {
         }
     }
 
+    /**
+     * 解析semaphore。
+     *
+     * @param valMap val map参数。
+     * @param str    str参数。
+     */
     private void parseSemaphore(Map<String, String> valMap, String str) {
         try {
 
@@ -570,6 +613,12 @@ public class InnoController extends MyPerfBaseController {
         return null;
     }
 
+    /**
+     * 执行split space delemit value name pair操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     private String[] splitSpaceDelemitValueNamePair(String str) {
 
         if (str == null || str.isEmpty())
@@ -605,6 +654,12 @@ public class InnoController extends MyPerfBaseController {
         return null;
     }
 
+    /**
+     * 解析log。
+     *
+     * @param valMap val map参数。
+     * @param str    str参数。
+     */
     private void parseLog(Map<String, String> valMap, String str) {
         try {
 
@@ -636,6 +691,12 @@ public class InnoController extends MyPerfBaseController {
         }
     }
 
+    /**
+     * 解析ibuf。
+     *
+     * @param valMap val map参数。
+     * @param str    str参数。
+     */
     private void parseIBuf(Map<String, String> valMap, String str) {
         try {
 
@@ -694,8 +755,17 @@ public class InnoController extends MyPerfBaseController {
         }
     }
 
+    /**
+     * 保存buffer internals信息。
+     */
     private static String[] BUFFER_INTERNALS = new String[]{"Adaptive hash index", "Page hash", "Dictionary cache", "File system", "Lock system", "Recovery system"};
 
+    /**
+     * 解析buffer pool。
+     *
+     * @param valMap val map参数。
+     * @param str    str参数。
+     */
     private void parseBufferPool(Map<String, String> valMap, String str) {
         try {
 
@@ -782,7 +852,7 @@ public class InnoController extends MyPerfBaseController {
 
                     } else if (v.startsWith("Buffer pool hit rate"))
                         valMap.put("Buffer pool hit rate", v.substring(21));
-                     else if (v.startsWith("young-making rate")) {
+                    else if (v.startsWith("young-making rate")) {
                         int idx = v.lastIndexOf("not");
                         valMap.put("young-making rate", v.substring(18, idx));
 
@@ -807,6 +877,12 @@ public class InnoController extends MyPerfBaseController {
         }
     }
 
+    /**
+     * 构建transaction list。
+     *
+     * @param txs txs参数。
+     * @return 处理结果。
+     */
     private static ResultList buildTransactionList(List<Transaction> txs) {
         ResultList rList = new ResultList();
         ColumnDescriptor desc = new ColumnDescriptor();
@@ -859,6 +935,12 @@ public class InnoController extends MyPerfBaseController {
         return rList;
     }
 
+    /**
+     * 构建deadlock list。
+     *
+     * @param infoList info list参数。
+     * @return 处理结果。
+     */
     private static ResultList buildDeadlockList(List<String> infoList) {
         ResultList rList = new ResultList();
         ColumnDescriptor desc = new ColumnDescriptor();
@@ -885,34 +967,111 @@ public class InnoController extends MyPerfBaseController {
      * @author xrao
      */
     private static class Transaction {
+        /**
+         * 保存id信息。
+         */
         String id;//TX ID
+        /**
+         * 保存state信息。
+         */
         String state;//transaction status: ACTIVE or not started
+        /**
+         * 保存tx time信息。
+         */
         String txTime;
+        /**
+         * 保存process number信息。
+         */
         String processNumber;
+        /**
+         * 保存action信息。
+         */
         String action;
+        /**
+         * 保存lock structs信息。
+         */
         String lockStructs;//number of lock structs
+        /**
+         * 保存lock structs status信息。
+         */
         String lockStructsStatus;//number of lock structs
+        /**
+         * 保存undo log entries信息。
+         */
         String undoLogEntries;
+        /**
+         * 保存heap size信息。
+         */
         String heapSize;
+        /**
+         * 保存thread id信息。
+         */
         String threadId;
+        /**
+         * 保存query id信息。
+         */
         String queryId;
+        /**
+         * 保存host信息。
+         */
         String host;
+        /**
+         * 保存user信息。
+         */
         String user;
+        /**
+         * 保存cmd信息。
+         */
         String cmd;
+        /**
+         * 保存sql信息。
+         */
         String sql;
+        /**
+         * 保存comments信息。
+         */
         String comments;
 
+        /**
+         * 定义tx before常量。
+         */
         static final int TX_BEFORE = -1;
+        /**
+         * 定义tx start常量。
+         */
         static final int TX_START = 0;
+        /**
+         * 定义tx action常量。
+         */
         static final int TX_ACTION = 1;
+        /**
+         * 定义tx thread常量。
+         */
         static final int TX_THREAD = 2;
+        /**
+         * 定义tx sql start常量。
+         */
         static final int TX_SQL_START = 3;
+        /**
+         * 定义tx comment常量。
+         */
         static final int TX_COMMENT = 4;
+        /**
+         * 保存txstate信息。
+         */
         private int txstate = -1;
 
+        /**
+         * 创建Transaction对象。
+         */
         Transaction() {
         }
 
+        /**
+         * 解析line。
+         *
+         * @param str str参数。
+         */
         void parseLine(String str) {
 
             if ((str.startsWith("------") && str.contains("TRX"))
@@ -961,14 +1120,13 @@ public class InnoController extends MyPerfBaseController {
                                     }
                                 }
 
-                            } else
-                                if (str2.indexOf(',') >= 0) {
-                                    state = str2.substring(0, str2.indexOf(',')).trim();
-                                    str2.substring(str2.indexOf(',') + 1).trim();
-                                } else {
-                                    state = str2;
-                                    str2 = null;
-                                }
+                            } else if (str2.indexOf(',') >= 0) {
+                                state = str2.substring(0, str2.indexOf(',')).trim();
+                                str2.substring(str2.indexOf(',') + 1).trim();
+                            } else {
+                                state = str2;
+                                str2 = null;
+                            }
 
                             if (str2 != null)
                                 if (str2.startsWith("process ")) {
@@ -1054,27 +1212,84 @@ public class InnoController extends MyPerfBaseController {
         }
     }
 
+    /**
+     * 表示semaphore entry相关的类型。
+     */
     public static class SemaphoreEntry {
+        /**
+         * 保存thread id信息。
+         */
         String thread_id;
+        /**
+         * 保存waited at信息。
+         */
         String waited_at;
+        /**
+         * 保存waited time信息。
+         */
         String waited_time;
+        /**
+         * 保存request mode信息。
+         */
         String request_mode;
+        /**
+         * 保存lock type信息。
+         */
         String lock_type;
+        /**
+         * 保存lock name信息。
+         */
         String lock_name;
+        /**
+         * 保存lock loc信息。
+         */
         String lock_loc;
+        /**
+         * 保存lock holder信息。
+         */
         String lock_holder;
+        /**
+         * 保存hold mode信息。
+         */
         String hold_mode;
+        /**
+         * 保存lock var信息。
+         */
         String lock_var;
+        /**
+         * 保存lock word信息。
+         */
         String lock_word;
+        /**
+         * 保存readers信息。
+         */
         String readers;
+        /**
+         * 保存waiters flag信息。
+         */
         String waiters_flag;
+        /**
+         * 保存last read locked信息。
+         */
         String last_read_locked;
+        /**
+         * 保存last write locked信息。
+         */
         String last_write_locked;
 
+        /**
+         * 创建SemaphoreEntry对象。
+         */
         public SemaphoreEntry() {
 
         }
 
+        /**
+         * 执行parse操作。
+         *
+         * @param line line参数。
+         * @return 是否满足条件。
+         */
         public boolean parse(String line) {
             //--Thread 140455387199232 has waited at btr/btr0cur.c line 501 for 0.0000 seconds the semaphore:
             if (line == null || line.isEmpty())

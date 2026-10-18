@@ -2,15 +2,14 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.HttpURLConnection;
-import java.net.UnknownHostException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 
 /**
  * Add Hipchat integration. So far it is only for alert notification purpose.
@@ -21,20 +20,40 @@ import java.net.URL;
 @Slf4j
 public class HipchatIntegration {
 
+    /**
+     * 保存hipchat url信息。
+     */
     @Getter
     @Setter
     private String hipchatURL; //must be in the format like https://xxx.hipchat.com/v2/room/{roomnumber}/notification?
+    /**
+     * 保存auth token信息。
+     */
     @Getter
     @Setter
     private String authToken; //we will append authToken to construct the full url
+    /**
+     * 保存hostname信息。
+     */
     private String hostname;
+    /**
+     * 标记enabled状态。
+     */
     @Getter
     private boolean enabled = false;
 
+    /**
+     * 创建HipchatIntegration对象。
+     */
     public HipchatIntegration() {
 
     }
 
+    /**
+     * 执行init操作。
+     *
+     * @param ctx ctx参数。
+     */
     public void init(MyPerfContext ctx) {
         this.enabled = false;
         try {
@@ -99,6 +118,12 @@ public class HipchatIntegration {
         return false;
     }
 
+    /**
+     * 执行construct json message操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     private String constructJsonMessage(String str) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"color\":\"green\",\"message\":\"");

@@ -5,25 +5,23 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.AppUser;
 import com.yahoo.dba.perf.myperf.common.Constants;
 import com.yahoo.dba.perf.myperf.common.MyPerfContext;
 import com.yahoo.dba.perf.myperf.common.ResultListUtil;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 import org.springframework.web.servlet.view.RedirectView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
-import java.text.SimpleDateFormat;
 
 /**
  * Base controller, includes some common functions, for example, to report
@@ -33,22 +31,44 @@ import java.text.SimpleDateFormat;
 public abstract class MyPerfBaseController extends AbstractController {
 
     //We use protected to allow subclass to access them directly
+    /**
+     * 保存framework context信息。
+     */
     @Getter
     @Setter
     protected MyPerfContext frameworkContext;//configuration and resources
+    /**
+     * 保存nosess view信息。
+     */
     @Getter
     @Setter
     protected String nosessView;//no session view
+    /**
+     * 保存form view信息。
+     */
     @Getter
     @Setter
     protected String formView;//if it is going to display a form, form view
+    /**
+     * 保存json view信息。
+     */
     @Getter
     @Setter
     protected String jsonView;//if a result will be sent back in json format
+    /**
+     * 标记require login状态。
+     */
     @Getter
     @Setter
     private boolean requireLogin = true;//by default, we need login
 
+    /**
+     * 执行handle request internal操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestInternal(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         setupDebug(req);
@@ -76,17 +96,42 @@ public abstract class MyPerfBaseController extends AbstractController {
     }
 
     //Create an MV to ack failure
+
+    /**
+     * 执行respond failure操作。
+     *
+     * @param message message参数。
+     * @param req     req参数。
+     * @return 处理结果。
+     */
     protected ModelAndView respondFailure(String message, HttpServletRequest req) {
         return respondWithStatus(Constants.STATUS_BAD, message, req);
 
     }
 
     //create a simple response MV to ack success
+
+    /**
+     * 执行respond success操作。
+     *
+     * @param message message参数。
+     * @param req     req参数。
+     * @return 处理结果。
+     */
     protected ModelAndView respondSuccess(String message, HttpServletRequest req) {
         return respondWithStatus(Constants.STATUS_OK, message, req);
     }
 
     //create a simple response MV to ack with provided status and message
+
+    /**
+     * 执行respond with status操作。
+     *
+     * @param status  status参数。
+     * @param message message参数。
+     * @param req     req参数。
+     * @return 处理结果。
+     */
     protected ModelAndView respondWithStatus(int status, String message, HttpServletRequest req) {
         ModelAndView mv = new ModelAndView(this.getJsonView());
         mv.addObject("json_result", "{\"resp\":{\"status\": " + status + ", \"message\": \""
@@ -95,6 +140,14 @@ public abstract class MyPerfBaseController extends AbstractController {
     }
 
     //all subclasss need to implement this method
+
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     protected abstract ModelAndView handleRequestImpl(HttpServletRequest req, HttpServletResponse resp) throws Exception;
 
     /**
@@ -121,6 +174,11 @@ public abstract class MyPerfBaseController extends AbstractController {
         return false;
     }
 
+    /**
+     * 设置up debug。
+     *
+     * @param req req参数。
+     */
     private void setupDebug(HttpServletRequest req) {
         String paramString = req.getQueryString();
 
@@ -131,11 +189,23 @@ public abstract class MyPerfBaseController extends AbstractController {
 
     }
 
+    /**
+     * 执行retrieve app user操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     static protected AppUser retrieveAppUser(HttpServletRequest req) {
         return AppUser.class.cast(req.getSession().getAttribute(AppUser.SESSION_ATTRIBUTE));
 
     }
 
+    /**
+     * 查找user from request。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     public static String findUserFromRequest(HttpServletRequest req) {
 
         if (req.getUserPrincipal() != null)

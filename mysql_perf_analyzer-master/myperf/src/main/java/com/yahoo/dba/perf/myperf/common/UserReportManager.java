@@ -7,17 +7,16 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.util.List;
-import java.util.Map;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -28,42 +27,92 @@ import java.util.LinkedHashMap;
 @Slf4j
 public class UserReportManager {
 
+    /**
+     * 表示user report相关的类型。
+     */
     public static class UserReport {
+        /**
+         * 定义field separator常量。
+         */
         public static final char fieldSeparator = '\u0001';
+        /**
+         * 定义pair separator常量。
+         */
         public static final char pairSeparator = '\u0002';
+        /**
+         * 定义kv separator常量。
+         */
         public static final char kvSeparator = '\u0003';
 
+        /**
+         * 保存id信息。
+         */
         @Getter
         @Setter
         private int id;//report id, user specific
+        /**
+         * 保存type信息。
+         */
         @Getter
         @Setter
         private String type;//report type
+        /**
+         * 保存dbname信息。
+         */
         @Getter
         @Setter
         private String dbname;//db/cluster name
+        /**
+         * 保存dbhost信息。
+         */
         @Getter
         @Setter
         private String dbhost;//db hostname, default to all
+        /**
+         * 保存created timestamp信息。
+         */
         @Getter
         @Setter
         private String created_timestamp;//yyyyMMddHHmmssSSS in java
+        /**
+         * 保存completed timestamp信息。
+         */
         @Getter
         @Setter
         private String completed_timestamp;//yyyyMMddHHmmssSSS in java
+        /**
+         * 保存format信息。
+         */
         @Getter
         @Setter
         private String format;//html or text
+        /**
+         * 保存filename信息。
+         */
         @Getter
         @Setter
         private String filename;//file name will be type dependent
+        /**
+         * 保存parameters信息。
+         */
         @Getter
         private LinkedHashMap<String, String> parameters = new LinkedHashMap<>();
 
+        /**
+         * 添加parameter。
+         *
+         * @param name  name参数。
+         * @param value value参数。
+         */
         public void addParameter(String name, String value) {
             this.parameters.put(name, value);
         }
 
+        /**
+         * 执行encode line操作。
+         *
+         * @return 处理结果。
+         */
         public String encodeLine() {
             StringBuilder sb = new StringBuilder();
             sb.append(this.id).append(fieldSeparator);
@@ -89,6 +138,12 @@ public class UserReportManager {
             return sb.toString();
         }
 
+        /**
+         * 执行decode line操作。
+         *
+         * @param line line参数。
+         * @return 处理结果。
+         */
         public static UserReport decodeLine(String line) {
 
             if (line == null || line.trim().length() == 0)
@@ -131,24 +186,51 @@ public class UserReportManager {
 
     }
 
+    /**
+     * 定义line separator常量。
+     */
     public static final char lineSeparator = '\n';
 
+    /**
+     * 保存rootpath信息。
+     */
     @Getter
     @Setter
     private String rootpath = "myperf_reports";//root path to store reports, default to reports under current directory
+    /**
+     * 保存idxfile信息。
+     */
     @Getter
     @Setter
     private String idxfile = "rep.idx";//index file name
+    /**
+     * 保存username信息。
+     */
     @Getter
     @Setter
     private String username;
 
+    /**
+     * 标记initiated状态。
+     */
     private volatile boolean initiated = false;
 
+    /**
+     * 保存userroot信息。
+     */
     private File userroot;
 
+    /**
+     * 保存max id信息。
+     */
     volatile int maxId = 0;
 
+    /**
+     * 创建UserReportManager对象。
+     *
+     * @param username username参数。
+     * @param rootpath rootpath参数。
+     */
     public UserReportManager(String username, String rootpath) {
         this.username = username;
 
@@ -157,6 +239,9 @@ public class UserReportManager {
         //else use default
     }
 
+    /**
+     * 执行init操作。
+     */
     public void init() {
 
         if (!initiated) {
@@ -174,6 +259,11 @@ public class UserReportManager {
         }
     }
 
+    /**
+     * 添加report entry。
+     *
+     * @param urp urp参数。
+     */
     synchronized public void addReportEntry(UserReport urp) {
         File idxFile = new File(userroot, idxfile);
 
@@ -191,6 +281,11 @@ public class UserReportManager {
         }
     }
 
+    /**
+     * 执行list操作。
+     *
+     * @return 处理结果。
+     */
     synchronized public List<UserReport> list() {
         List<UserReport> repList = new ArrayList<>();
         File idxFile = new File(userroot, idxfile);
@@ -217,6 +312,11 @@ public class UserReportManager {
         return repList;
     }
 
+    /**
+     * 执行list result list操作。
+     *
+     * @return 处理结果。
+     */
     public ResultList listResultList() {
         List<UserReport> repList = list();
 
@@ -276,6 +376,12 @@ public class UserReportManager {
 
     }
 
+    /**
+     * 获取file for download。
+     *
+     * @param fname fname参数。
+     * @return 处理结果。
+     */
     public File getFileForDownload(String fname)//retrieve file for download
     {
         File f = new File(new File(new File(getRootpath()), getUsername()), fname);
@@ -286,6 +392,13 @@ public class UserReportManager {
         return f;
     }
 
+    /**
+     * 删除file。
+     *
+     * @param fname fname参数。
+     * @param id    id参数。
+     * @return 是否满足条件。
+     */
     public boolean deleteFile(String fname, String id) {
 
         if (fname == null && id == null)

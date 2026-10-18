@@ -8,9 +8,9 @@ package com.yahoo.dba.perf.myperf.common;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Information about a group of DB, such as a DB cluster
@@ -18,16 +18,34 @@ import java.util.ArrayList;
  * @author xrao
  */
 public class DBGroupInfo implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 保存instances集合。
+     */
     @Getter
     private List<DBInstanceInfo> instances = new ArrayList<>();
+    /**
+     * 保存group name信息。
+     */
     @Getter
     @Setter
     private String groupName;
 
+    /**
+     * 创建DBGroupInfo对象。
+     */
     public DBGroupInfo() {
     }
 
+    /**
+     * 获取instance。
+     *
+     * @param instanceNumber instance number参数。
+     * @return 处理结果。
+     */
     public DBInstanceInfo getInstance(int instanceNumber) {
 
         for (DBInstanceInfo inst : instances)
@@ -51,6 +69,12 @@ public class DBGroupInfo implements Serializable {
         return true;
     }
 
+    /**
+     * 查找instance by host。
+     *
+     * @param hostname hostname参数。
+     * @return 处理结果。
+     */
     public DBInstanceInfo findInstanceByHost(String hostname) {
 
         for (DBInstanceInfo dbinfo : this.instances)
@@ -60,6 +84,11 @@ public class DBGroupInfo implements Serializable {
         return null;
     }
 
+    /**
+     * 添加or update instance。
+     *
+     * @param dbinfo dbinfo参数。
+     */
     public void addOrUpdateInstance(DBInstanceInfo dbinfo) {
         DBInstanceInfo db = findInstanceByHost(dbinfo.getHostName());
 

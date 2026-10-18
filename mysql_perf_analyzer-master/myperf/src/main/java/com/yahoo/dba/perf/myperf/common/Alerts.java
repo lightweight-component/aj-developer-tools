@@ -5,9 +5,9 @@
  */
 package com.yahoo.dba.perf.myperf.common;
 
-import java.util.List;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * For now, it holds alerts for web notification purpose.
@@ -15,11 +15,23 @@ import java.util.ArrayList;
  * @author xrao
  */
 public class Alerts implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 定义alert capacity常量。
+     */
     public static final int ALERT_CAPACITY = 100;//hold 100 alerts
 
+    /**
+     * 保存entries集合。
+     */
     private List<AlertEntry> entries = null;
 
+    /**
+     * 创建Alerts对象。
+     */
     public Alerts() {
         this.entries = new ArrayList<>(ALERT_CAPACITY);
     }

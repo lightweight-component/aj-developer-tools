@@ -7,9 +7,7 @@ package com.yahoo.dba.perf.myperf.springmvc;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -24,21 +22,40 @@ import java.util.Map;
  */
 @Slf4j
 public class PerfController extends MyPerfBaseController {
+    /**
+     * 保存hours信息。
+     */
     private static String HOURS[] = {"00", "01", "02", "03", "04", "05", "06", "07", "08", "09",
             "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
             "20", "21", "22", "23"};
+    /**
+     * 保存default view信息。
+     */
     @Getter
     @Setter
     private String defaultView;//if no page is supplied, display default, should not require session
     //private String sessExpireView;//for page requires session
+    /**
+     * 保存page map集合。
+     */
     @Getter
     @Setter
     private Map<String, String> pageMap;//page requires session, key in lower case
+    /**
+     * 保存no session page map集合。
+     */
     @Getter
     @Setter
     private Map<String, String> noSessionPageMap;//pages not require session, key in lower case
     //private MyPerfContext frameworkContext;
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param request  request参数。
+     * @param response response参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest request,
                                              HttpServletResponse response) throws Exception {
@@ -52,9 +69,9 @@ public class PerfController extends MyPerfBaseController {
             tgtPage = this.defaultView;
         else if (pageMap.containsKey(tgtPage) && !WebAppUtil.hasValidSession(request))
             return new ModelAndView(new RedirectView(this.getNosessView()));
-         else if (pageMap.containsKey(tgtPage))
+        else if (pageMap.containsKey(tgtPage))
             tgtPage = pageMap.get(tgtPage);
-         else
+        else
             tgtPage = noSessionPageMap.get(tgtPage);
 
         ModelAndView mv = new ModelAndView(tgtPage);

@@ -5,24 +5,22 @@
  */
 package com.yahoo.dba.perf.myperf.metrics;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.process.MetricsRetentionTask;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.sql.*;
-import java.util.*;
-import java.util.Date;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -34,10 +32,26 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class MetricsDbBase implements Runnable {
 
     //wrap the metrics data for future extenstion
+
+    /**
+     * 表示metrics data相关的类型。
+     */
     static class MetricsData {
+        /**
+         * 保存data key信息。
+         */
         String dataKey;//can be null
+        /**
+         * 保存data信息。
+         */
         ByteBuffer data;
 
+        /**
+         * 创建MetricsData对象。
+         *
+         * @param dataKey data key参数。
+         * @param data    data参数。
+         */
         MetricsData(String dataKey, ByteBuffer data) {
             this.dataKey = dataKey;
             this.data = data;
@@ -45,75 +59,129 @@ public abstract class MetricsDbBase implements Runnable {
     }
 
     /**
-    * Access other system info
-    *
-    * @return
-    */
+     * Access other system info
+     *
+     * @return
+     */
     @Getter
     @Setter
     private MyPerfContext frameworkContext; //system context
 
     //database access information
     /**
-    * JDBC connection string
-    *
-    * @return
-    */
+     * JDBC connection string
+     *
+     * @return
+     */
     @Getter
     @Setter
     private String connectionString = "jdbc:derby:metricsdb";//JDBC URL
     /**
-    * Database user name
-    *
-    * @return
-    */
+     * Database user name
+     *
+     * @return
+     */
     @Getter
     @Setter
     private String username;
     /**
-    * Database password
-    *
-    * @return
-    */
+     * Database password
+     *
+     * @return
+     */
     @Getter
     @Setter
     private String password = "metricsdb";
+    /**
+     * 保存schema name信息。
+     */
     @Getter
     @Setter
     private String schemaName = "METRICSDB";//default to METRICSDB
     //move db info to metrics db
+    /**
+     * 定义dbinfo tablename常量。
+     */
     protected static final String DBINFO_TABLENAME = "DBINFOS";
+    /**
+     * 定义alertsetting tablename常量。
+     */
     protected static final String ALERTSETTING_TABLENAME = "ALERTSETTINGS";
+    /**
+     * 定义alert subscript常量。
+     */
     protected static final String ALERT_SUBSCRIPT = "ALERT_SUBSCRIPT";
+    /**
+     * 定义alert notification常量。
+     */
     protected static final String ALERT_NOTIFICATION = "ALERT_NOTIFICATION";
 
+    /**
+     * 定义metrics subscript常量。
+     */
     protected static final String METRICS_SUBSCRIPT = "METRICS_SUBSCRIPT";
 
     //data to store
+    /**
+     * 保存data queues集合。
+     */
     protected Map<String, ArrayBlockingQueue<MetricsData>> dataQueues = new HashMap<>();
+    /**
+     * 保存flush queue信息。
+     */
     protected LinkedBlockingQueue<Integer> flushQueue = new LinkedBlockingQueue<>();//job controller
+    /**
+     * 标记stopped状态。
+     */
     @Getter
     @Setter
     protected volatile boolean stopped = false;
 
 
+    /**
+     * 保存insert sql集合。
+     */
     protected Map<String, String> insertSQL = new HashMap<>();
 
     //the key will be dbtype+"_"+metric name
     //metrics definition
+    /**
+     * 保存metrics groups集合。
+     */
     @Getter
     protected Map<String, MetricsGroup> metricsGroups = new HashMap<>();
+    /**
+     * 保存metrics def lock信息。
+     */
     protected Object metricsDefLock = new Object();
     //generic metric code
+    /**
+     * 保存metric code map信息。
+     */
     private ConcurrentHashMap<String, Integer> metricCodeMap = new ConcurrentHashMap<>();
 
 
+    /**
+     * 保存df信息。
+     */
     protected DecimalFormat df = new DecimalFormat("#.###");
+    /**
+     * 保存sdf信息。
+     */
     protected SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
 
+    /**
+     * 保存store connection信息。
+     */
     private transient Connection storeConnection = null;
+    /**
+     * 保存last conn time信息。
+     */
     private long lastConnTime = -1L;
 
+    /**
+     * 保存code lock信息。
+     */
     private Object codeLock = new Object();//sync new code
 
     /**
@@ -181,6 +249,12 @@ public abstract class MetricsDbBase implements Runnable {
     }
 
 
+    /**
+     * 添加new udm。
+     *
+     * @param udm udm参数。
+     * @return 是否满足条件。
+     */
     public boolean addNewUDM(UserDefinedMetrics udm) {
 
         if (udm == null)
@@ -205,6 +279,12 @@ public abstract class MetricsDbBase implements Runnable {
         return true;
     }
 
+    /**
+     * 移除udm。
+     *
+     * @param udm udm参数。
+     * @return 是否满足条件。
+     */
     public boolean removeUDM(UserDefinedMetrics udm) {
 
         if (udm == null)
@@ -292,30 +372,97 @@ public abstract class MetricsDbBase implements Runnable {
     }
 
     //derbydb does not support limit
+
+    /**
+     * 判断limit support。
+     *
+     * @return 是否满足条件。
+     */
     abstract protected boolean isLimitSupport();
 
+    /**
+     * 构建host ddl。
+     *
+     * @return 处理结果。
+     */
     abstract protected String[] buildHostDDL();
 
+    /**
+     * 构建alert setting ddl。
+     *
+     * @return 处理结果。
+     */
     abstract protected String[] buildAlertSettingDDL();
 
+    /**
+     * 构建metric code ddl。
+     *
+     * @return 处理结果。
+     */
     abstract protected String buildMetricCodeDDL();
 
+    /**
+     * 构建metric code index ddl。
+     *
+     * @return 处理结果。
+     */
     abstract protected String buildMetricCodeIndexDDL();
 
+    /**
+     * 构建generic metric ddl。
+     *
+     * @return 处理结果。
+     */
     abstract protected String[] buildGenericMetricDDL();
 
+    /**
+     * 构建alert ddl。
+     *
+     * @return 处理结果。
+     */
     abstract protected String buildAlertDDL();
 
+    /**
+     * 构建alert index ddl。
+     *
+     * @return 处理结果。
+     */
     abstract protected String buildAlertIndexDDL();
 
+    /**
+     * 构建snapshot ddl。
+     *
+     * @return 处理结果。
+     */
     abstract protected String[] buildSnapshotDDL();//create metrics snapshot table
 
+    /**
+     * 构建alert sub scription ddl。
+     *
+     * @return 处理结果。
+     */
     abstract protected String[] buildAlertSubScriptionDDL();//create alert subscription table
 
+    /**
+     * 构建metrics subscrption ddl。
+     *
+     * @return 处理结果。
+     */
     abstract protected String[] buildMetricsSubscrptionDDL();//create metrics subscription table for UDM and on demand metrics
 
+    /**
+     * 构建alert notification ddl。
+     *
+     * @return 处理结果。
+     */
     abstract protected String[] buildAlertNotificationDDL();//create alert notification table
 
+    /**
+     * 构建ddl。
+     *
+     * @param mg mg参数。
+     * @return 处理结果。
+     */
     protected String buildDDL(MetricsGroup mg) {
         StringBuilder sb = new StringBuilder();
         String tblName = mg.getSinkTableName();
@@ -357,6 +504,12 @@ public abstract class MetricsDbBase implements Runnable {
         return sb.toString();
     }
 
+    /**
+     * 创建metrics table。
+     *
+     * @param mg mg参数。
+     * @return 是否满足条件。
+     */
     private boolean createMetricsTable(MetricsGroup mg) {
         try (Connection conn = this.createConnection(false)) {
             createMetricsTable(mg, conn);
@@ -367,6 +520,12 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 创建metrics table。
+     *
+     * @param mg   mg参数。
+     * @param conn conn参数。
+     */
     private void createMetricsTable(MetricsGroup mg, Connection conn) throws SQLException {
         String tblName = mg.getSinkTableName();
 
@@ -380,6 +539,9 @@ public abstract class MetricsDbBase implements Runnable {
         }
     }
 
+    /**
+     * 创建tables。
+     */
     private void createTables() {
         try (Connection conn = this.createConnection(false)) {
 
@@ -537,7 +699,7 @@ public abstract class MetricsDbBase implements Runnable {
                 else
                     return this.removeDBInfo(conn, dbInfo.getDbGroupName(), dbInfo.getHostName());
 
-             else
+            else
                 return this.upsertDBInfo(conn, dbInfo, "new".equals(action));
 
         } catch (Exception ex) {
@@ -555,10 +717,20 @@ public abstract class MetricsDbBase implements Runnable {
      */
     abstract protected Connection createConnection(boolean autocommit);
 
+    /**
+     * 执行flush操作。
+     */
     public void flush() {
         this.flushQueue.add(new Integer(1));
     }
 
+    /**
+     * 执行put data操作。
+     *
+     * @param mg  mg参数。
+     * @param key key参数。
+     * @param buf buf参数。
+     */
     public void putData(MetricsGroup mg, String key, ByteBuffer buf) {
         String tblName = mg.getSinkTableName();
         ArrayBlockingQueue<MetricsData> q = this.dataQueues.get(tblName);
@@ -568,10 +740,13 @@ public abstract class MetricsDbBase implements Runnable {
                 q.put(new MetricsData(key, buf));
             } catch (Exception ignored) {
             }
-         else
+        else
             log.info("Warning: cannot find sink queue " + mg.getGroupName() + ", table " + tblName);
     }
 
+    /**
+     * 执行run操作。
+     */
     public void run() {
         Thread.currentThread().setName("MetricsDB");
         while (!stopped) {
@@ -593,6 +768,9 @@ public abstract class MetricsDbBase implements Runnable {
         log.info("metrics db stopped");
     }
 
+    /**
+     * 执行store操作。
+     */
     protected void store() {
         try {
 
@@ -604,7 +782,7 @@ public abstract class MetricsDbBase implements Runnable {
                     MetricsData bufData = q.poll();
 
                     if (//if nothing there, go to next queue.
-                    bufData == null)
+                            bufData == null)
                         break;
                     //accumulate all data from the same queue
                     q2.add(bufData);
@@ -766,7 +944,7 @@ public abstract class MetricsDbBase implements Runnable {
             //for loop
             if (cnt > 0)
                 stmt.executeBatch();
-                //conn.commit();
+            //conn.commit();
 
         }
     }
@@ -882,6 +1060,15 @@ public abstract class MetricsDbBase implements Runnable {
         new Thread(purgeTask).start();
     }
 
+    /**
+     * 执行retrieve metrics操作。
+     *
+     * @param metricGroupName metric group name参数。
+     * @param dbid            dbid参数。
+     * @param startDate       start date参数。
+     * @param endDate         end date参数。
+     * @return 处理结果。
+     */
     public ResultList retrieveMetrics(String metricGroupName, int dbid, long startDate, long endDate) {
         int[] snaps = this.getSnapshostRange(startDate, endDate);
         //no data
@@ -893,7 +1080,7 @@ public abstract class MetricsDbBase implements Runnable {
         //String sql = "select * from "+metricGroupName+" where dbid=?";
         log.debug("To retrieve metrics " + metricGroupName + " for db " + dbid + " with time range (" + startDate + ", " + endDate + "), snap (" + snaps[0] + ", " + snaps[1] + ")");
         try (Connection conn = createConnection(true);
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setFetchSize(1000);
             //stmt.setMaxRows(5000);
             stmt.setInt(1, dbid);
@@ -908,6 +1095,17 @@ public abstract class MetricsDbBase implements Runnable {
         return rList;
     }
 
+    /**
+     * 执行retrieve metrics操作。
+     *
+     * @param metricGroupName metric group name参数。
+     * @param metrics         metrics参数。
+     * @param hasKeyColumn    has key column参数。
+     * @param dbid            dbid参数。
+     * @param startDate       start date参数。
+     * @param endDate         end date参数。
+     * @return 处理结果。
+     */
     public ResultList retrieveMetrics(String metricGroupName, String[] metrics, boolean hasKeyColumn, int dbid, long startDate, long endDate) {
         int[] snaps = this.getSnapshostRange(startDate, endDate);
         //no data
@@ -915,7 +1113,7 @@ public abstract class MetricsDbBase implements Runnable {
             return null;
 
         if (//not specify the metrics? Get all
-        metrics == null || metrics.length == 0)
+                metrics == null || metrics.length == 0)
             return retrieveMetrics(metricGroupName, dbid, startDate, endDate);
         //later, connection pooling
         ResultList rList = null;
@@ -937,7 +1135,7 @@ public abstract class MetricsDbBase implements Runnable {
         //String sql = "select * from "+metricGroupName+" where dbid=?";
         log.info("To retrieve metrics " + metricGroupName + ", metrics (" + sb.toString() + ") for db " + dbid + " with time range (" + startDate + ", " + endDate + "), snap (" + snaps[0] + ", " + snaps[1] + ")");
         try (Connection conn = createConnection(true);
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setFetchSize(1000);
             //stmt.setMaxRows(5000);
             stmt.setInt(1, dbid);
@@ -952,6 +1150,18 @@ public abstract class MetricsDbBase implements Runnable {
         return rList;
     }
 
+    /**
+     * 执行retrieve metrics操作。
+     *
+     * @param metricGroupName metric group name参数。
+     * @param metrics         metrics参数。
+     * @param hasKeyColumn    has key column参数。
+     * @param dbid            dbid参数。
+     * @param startDate       start date参数。
+     * @param endDate         end date参数。
+     * @param agg             agg参数。
+     * @return 处理结果。
+     */
     public ResultList retrieveMetrics(String metricGroupName, Metric[] metrics, boolean hasKeyColumn, int dbid, long startDate, long endDate, boolean agg) {
         String[] ms = new String[metrics.length];
 
@@ -967,7 +1177,7 @@ public abstract class MetricsDbBase implements Runnable {
             return null;
 
         if (//not specify the metrics? Get all
-        metrics == null || metrics.length == 0)
+                metrics == null || metrics.length == 0)
             return retrieveMetrics(metricGroupName, dbid, startDate, endDate);
         //later, connection pooling
         ResultList rList = null;
@@ -992,7 +1202,7 @@ public abstract class MetricsDbBase implements Runnable {
         //String sql = "select * from "+metricGroupName+" where dbid=?";
         log.info("To retrieve metrics " + metricGroupName + ", metrics (" + sb.toString() + ") for db " + dbid + " with time range (" + startDate + ", " + endDate + "), snap (" + snaps[0] + ", " + snaps[1] + ")");
         try (Connection conn = createConnection(true);
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setFetchSize(1000);
             //stmt.setMaxRows(5000);
             stmt.setInt(1, dbid);
@@ -1027,7 +1237,7 @@ public abstract class MetricsDbBase implements Runnable {
 
         if (this.metricCodeMap.containsKey(metric))
             code = this.metricCodeMap.get(metric);
-         else {
+        else {
             log.warn("Failed to find metrics code for " + metric + ", " + this.metricCodeMap);
             return null;
         }
@@ -1036,7 +1246,7 @@ public abstract class MetricsDbBase implements Runnable {
         //String sql = "select * from "+metricGroupName+" where dbid=?";
         log.info("To retrieve " + metric + ", " + code + " on db " + dbid + " with time range (" + startDate + ", " + endDate + "), using " + sql);
         try (Connection conn = createConnection(true);
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setFetchSize(1000);
             //stmt.setMaxRows(5000);
             stmt.setInt(1, dbid);
@@ -1080,6 +1290,15 @@ public abstract class MetricsDbBase implements Runnable {
         return rList;
     }
 
+    /**
+     * 执行retrieve metrics status操作。
+     *
+     * @param metricGroupName metric group name参数。
+     * @param dbid            dbid参数。
+     * @param startDate       start date参数。
+     * @param endDate         end date参数。
+     * @return 处理结果。
+     */
     public ResultList retrieveMetricsStatus(String metricGroupName, int dbid, long startDate, long endDate) {
         int[] snaps = this.getSnapshostRange(startDate, endDate);
         //no data
@@ -1091,7 +1310,7 @@ public abstract class MetricsDbBase implements Runnable {
         //String sql = "select * from "+metricGroupName+" where dbid=?";
         log.debug("Retrieve metrics status from " + metricGroupName + " for db " + dbid + " with time range (" + startDate + ", " + endDate + ")");
         try (Connection conn = createConnection(true);
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, dbid);
             stmt.setInt(2, snaps[0]);
             stmt.setInt(3, snaps[1]);
@@ -1105,11 +1324,14 @@ public abstract class MetricsDbBase implements Runnable {
     }
 
 
+    /**
+     * 加载metric code。
+     */
     private void loadMetricCode() {
         String sql = "select CODE_ID, NAME from METRIC_CODE";
         try (Connection conn = createConnection(true);
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs != null && rs.next()) {
                 this.metricCodeMap.put(rs.getString("NAME"), rs.getInt("CODE_ID"));
             }
@@ -1128,7 +1350,7 @@ public abstract class MetricsDbBase implements Runnable {
         //if(this.metricCodeMap.containsKey(name.toLowerCase()))
         //	  return this.metricCodeMap.get(name.toLowerCase());
         if (//make it case sensitive, as the user input
-        this.metricCodeMap.containsKey(name))
+                this.metricCodeMap.containsKey(name))
             return this.metricCodeMap.get(name);
         else //add one
         {
@@ -1163,11 +1385,20 @@ public abstract class MetricsDbBase implements Runnable {
         return -1;
     }
 
+    /**
+     * 添加new alert。
+     *
+     * @param ts           ts参数。
+     * @param dbid         dbid参数。
+     * @param alert_type   alert type参数。
+     * @param alert_reason alert reason参数。
+     * @return 是否满足条件。
+     */
     public boolean addNewAlert(long ts, int dbid, String alert_type, String alert_reason) {
         log.info("ALERT INSERT: (" + dbid + ", " + ts + ", " + alert_type + ", " + alert_reason + ")");
         String sql = "insert into ALERT (DBID, TS, ALERT_TYPE, ALERT_REASON) values (?,?,?,?)";
         try (Connection conn = createConnection(true);
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, dbid);
             stmt.setLong(2, ts);
             stmt.setString(3, alert_type);
@@ -1180,12 +1411,20 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 执行mark alert end操作。
+     *
+     * @param ts     ts参数。
+     * @param dbid   dbid参数。
+     * @param end_ts end ts参数。
+     * @return 是否满足条件。
+     */
     public boolean markAlertEnd(long ts, int dbid, long end_ts) {
         log.info("ALERT UPDATE: (" + dbid + ", " + ts + ", " + end_ts + ")");
         //mark all alerts for the same db within the same day end
         String sql = "update ALERT set end_ts=? where dbid=? and ts<=? and ts >= ? - 240000";
         try (Connection conn = createConnection(true);
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, end_ts);
             stmt.setInt(2, dbid);
             stmt.setLong(3, ts);
@@ -1198,12 +1437,21 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 执行mark alert end操作。
+     *
+     * @param ts        ts参数。
+     * @param dbid      dbid参数。
+     * @param end_ts    end ts参数。
+     * @param alertName alert name参数。
+     * @return 是否满足条件。
+     */
     public boolean markAlertEnd(long ts, int dbid, long end_ts, String alertName) {
         log.info("ALERT UPDATE: (" + dbid + ", " + ts + ", " + end_ts + ")");
         //mark all alerts for the same db within the same day end
         String sql = "update ALERT set end_ts=? where dbid=? and ts<=? and ts >= ? - 240000 and ALERT_TYPE=?";
         try (Connection conn = createConnection(true);
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, end_ts);
             stmt.setInt(2, dbid);
             stmt.setLong(3, ts);
@@ -1270,7 +1518,7 @@ public abstract class MetricsDbBase implements Runnable {
         try (Connection conn = createConnection(true)) {
             sumMap = this.retrieve7DaysAlertsSummary(conn, filteredDbs);
             try (Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
+                 ResultSet rs = stmt.executeQuery(sql)) {
                 //DBID, TS, END_TS, ALERT_TYPE, ALERT_REASON
                 while (rs != null && rs.next()) {
                     int dbid = rs.getInt("DBID");
@@ -1308,23 +1556,66 @@ public abstract class MetricsDbBase implements Runnable {
         return rList;
     }
 
+    /**
+     * 表示alert summary相关的类型。
+     */
     public static class AlertSummary {
+        /**
+         * 保存dbid信息。
+         */
         int dbid;
+        /**
+         * 保存cpu alerts信息。
+         */
         int cpuAlerts = 0;
+        /**
+         * 保存load avg alerts信息。
+         */
         int LoadAvgAlerts = 0;
+        /**
+         * 保存io alerts信息。
+         */
         int ioAlerts = 0;
+        /**
+         * 保存thread alerts信息。
+         */
         int threadAlerts = 0;
+        /**
+         * 保存repl alerts信息。
+         */
         int replAlerts = 0;
+        /**
+         * 保存slow alerts信息。
+         */
         int slowAlerts = 0;
+        /**
+         * 保存connect failuer alerts信息。
+         */
         int connectFailuerAlerts = 0;
+        /**
+         * 保存repl down信息。
+         */
         int replDown = 0;
+        /**
+         * 保存deadlocks信息。
+         */
         int deadlocks = 0;
 
+        /**
+         * 创建AlertSummary对象。
+         */
         AlertSummary() {
 
         }
     }
 
+    /**
+     * 执行retrieve7 days alerts summary操作。
+     *
+     * @param conn        conn参数。
+     * @param filteredDbs filtered dbs参数。
+     * @return 处理结果。
+     */
     private Map<Integer, AlertSummary> retrieve7DaysAlertsSummary(Connection conn, List<Integer> filteredDbs) {
         Map<Integer, AlertSummary> resMap = new HashMap<>();
         //metricsDB TS column format
@@ -1357,7 +1648,7 @@ public abstract class MetricsDbBase implements Runnable {
         String sql = sb.toString();
         log.info("Retrieve alerts summary: " + sql);
         try (Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)) {
+             ResultSet rs = stmt.executeQuery(sql)) {
             //DBID, TS, END_TS, ALERT_TYPE, ALERT_REASON
             while (rs != null && rs.next()) {
                 int dbid = rs.getInt("DBID");
@@ -1398,6 +1689,12 @@ public abstract class MetricsDbBase implements Runnable {
         return resMap;
     }
 
+    /**
+     * 格式化datetime。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     private String formatDatetime(String str) {
         try {
 
@@ -1423,6 +1720,13 @@ public abstract class MetricsDbBase implements Runnable {
         return "";
     }
 
+    /**
+     * 移除dbinfo by id。
+     *
+     * @param conn conn参数。
+     * @param dbid dbid参数。
+     * @return 是否满足条件。
+     */
     private boolean removeDBInfoById(Connection conn, int dbid) {
         String sql = "delete from " + DBINFO_TABLENAME + " where dbid=?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -1436,6 +1740,14 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 移除dbinfo。
+     *
+     * @param conn        conn参数。
+     * @param dbGroupName db group name参数。
+     * @param hostName    host name参数。
+     * @return 是否满足条件。
+     */
     private boolean removeDBInfo(Connection conn, String dbGroupName, String hostName) {
         String sql = "delete from " + DBINFO_TABLENAME + " where dbgroupname=? and hostname=?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -1450,6 +1762,13 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 移除db group。
+     *
+     * @param conn        conn参数。
+     * @param dbGroupName db group name参数。
+     * @return 是否满足条件。
+     */
     public boolean removeDbGroup(Connection conn, String dbGroupName) {
         String sql = "delete from " + DBINFO_TABLENAME + " where dbgroupname=?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -1521,8 +1840,14 @@ public abstract class MetricsDbBase implements Runnable {
         }
     }
 
+    /**
+     * 执行rename db group操作。
+     *
+     * @param oldName old name参数。
+     * @param newName new name参数。
+     */
     public void renameDbGroup(String oldName, String newName) {
-        String[] renameDbinfoSql = new String[] { "update " + DBINFO_TABLENAME + " set dbgroupname=? where dbgroupname=?", "update " + ALERTSETTING_TABLENAME + " set dbgroupname=? where dbgroupname=?", "update ALERT_SUBSCRIPT set DBGROUP=? where DBGROUP=?", "update METRICS_SUBSCRIPT set DBGROUP=? where DBGROUP=?" };
+        String[] renameDbinfoSql = new String[]{"update " + DBINFO_TABLENAME + " set dbgroupname=? where dbgroupname=?", "update " + ALERTSETTING_TABLENAME + " set dbgroupname=? where dbgroupname=?", "update ALERT_SUBSCRIPT set DBGROUP=? where DBGROUP=?", "update METRICS_SUBSCRIPT set DBGROUP=? where DBGROUP=?"};
         try (Connection conn = this.createConnection(true)) {
 
             for (int i = 0; i < renameDbinfoSql.length; i++) {
@@ -1540,11 +1865,17 @@ public abstract class MetricsDbBase implements Runnable {
         }
     }
 
+    /**
+     * 加载db info。
+     *
+     * @param conn conn参数。
+     * @return 处理结果。
+     */
     public Map<Integer, DBInstanceInfo> loadDbInfo(Connection conn) {
         String sql = "select * from " + DBINFO_TABLENAME;
         Map<Integer, DBInstanceInfo> dbMap = new HashMap<>();
         try (Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)) {
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs != null && rs.next()) {
                 DBInstanceInfo dbinfo = new DBInstanceInfo();
                 dbinfo.setDbid(rs.getInt("DBID"));
@@ -1570,47 +1901,59 @@ public abstract class MetricsDbBase implements Runnable {
         return dbMap;
     }
 
+    /**
+     * 表示meta host syncer相关的类型。
+     */
     class MetaHostSyncer implements Runnable {
+        /**
+         * 保存db list集合。
+         */
         @Setter
         private List<DBInstanceInfo> dbList;
 
+        /**
+         * 创建MetaHostSyncer对象。
+         */
         MetaHostSyncer() {
 
         }
 
+        /**
+         * 执行run操作。
+         */
         @Override
         public void run() {
-        Map<Integer, DBInstanceInfo> metaHosts = new HashMap<>(dbList.size());
+            Map<Integer, DBInstanceInfo> metaHosts = new HashMap<>(dbList.size());
 
-        for (DBInstanceInfo info : dbList)
-            metaHosts.put(info.getDbid(), info);
+            for (DBInstanceInfo info : dbList)
+                metaHosts.put(info.getDbid(), info);
 
-        try {
-            log.info("Start to sync meta DB host info with metrics DB host info");
-            try (Connection conn = createConnection(true)) {
-                Map<Integer, DBInstanceInfo> metricsHosts = loadDbInfo(conn);
+            try {
+                log.info("Start to sync meta DB host info with metrics DB host info");
+                try (Connection conn = createConnection(true)) {
+                    Map<Integer, DBInstanceInfo> metricsHosts = loadDbInfo(conn);
 
-                for (DBInstanceInfo info : dbList) {
-                    int dbid = info.getDbid();
+                    for (DBInstanceInfo info : dbList) {
+                        int dbid = info.getDbid();
 
-                    if (!metricsHosts.containsKey(dbid))
-                        upsertDBInfo(conn, info, true);
-                     else {
-                        DBInstanceInfo info2 = metricsHosts.get(dbid);
-                        try {
+                        if (!metricsHosts.containsKey(dbid))
+                            upsertDBInfo(conn, info, true);
+                        else {
+                            DBInstanceInfo info2 = metricsHosts.get(dbid);
+                            try {
 
-                            if (!info2.getDbGroupName().equals(info.getDbGroupName()) || !info2.getHostName().equals(info.getHostName()))
-                                upsertDBInfo(conn, info, false);
+                                if (!info2.getDbGroupName().equals(info.getDbGroupName()) || !info2.getHostName().equals(info.getHostName()))
+                                    upsertDBInfo(conn, info, false);
 
-                        } catch (Exception ex) {
+                            } catch (Exception ex) {
+                            }
                         }
                     }
                 }
+            } catch (Exception ex) {
             }
-        } catch (Exception ex) {
+            log.info("Ended: sync meta DB host info with metrics DB host info");
         }
-        log.info("Ended: sync meta DB host info with metrics DB host info");
-    }
 
     }
 
@@ -1636,6 +1979,16 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 移除dbinfo。
+     *
+     * @param conn        conn参数。
+     * @param dbGroupName db group name参数。
+     * @param hostName    host name参数。
+     * @param owner       owner参数。
+     * @param force       force参数。
+     * @return 是否满足条件。
+     */
     private boolean removeDBInfo(Connection conn, String dbGroupName, String hostName, String owner, boolean force) {
         String sql = "delete from " + DBINFO_TABLENAME + " where dbgroupname=? and hostname=?";
 
@@ -1658,6 +2011,13 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 移除alert setting。
+     *
+     * @param dbGroupName db group name参数。
+     * @param hostName    host name参数。
+     * @return 是否满足条件。
+     */
     public boolean removeAlertSetting(String dbGroupName, String hostName) {
         try (Connection conn = this.createConnection(true)) {
             return removeAlertSetting(conn, dbGroupName, hostName);
@@ -1667,6 +2027,14 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 移除alert setting。
+     *
+     * @param conn        conn参数。
+     * @param dbGroupName db group name参数。
+     * @param hostName    host name参数。
+     * @return 是否满足条件。
+     */
     private boolean removeAlertSetting(Connection conn, String dbGroupName, String hostName) {
         String sql = "delete from " + ALERTSETTING_TABLENAME + " where dbgroupname=? and hostname=?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -1696,6 +2064,15 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 移除db group。
+     *
+     * @param conn        conn参数。
+     * @param dbGroupName db group name参数。
+     * @param owner       owner参数。
+     * @param force       force参数。
+     * @return 是否满足条件。
+     */
     public boolean removeDbGroup(Connection conn, String dbGroupName, String owner, boolean force) {
         String sql = "delete from " + DBINFO_TABLENAME + " where dbgroupname=?";
 
@@ -1733,6 +2110,14 @@ public abstract class MetricsDbBase implements Runnable {
         return null;
     }
 
+    /**
+     * 执行retrieve dbinfo操作。
+     *
+     * @param conn        conn参数。
+     * @param dbGroupName db group name参数。
+     * @param hostName    host name参数。
+     * @return 处理结果。
+     */
     private DBInstanceInfo retrieveDBInfo(Connection conn, String dbGroupName, String hostName) {
         String sql = "select * from " + DBINFO_TABLENAME + " where dbgroupname=? and hostname=?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -1864,6 +2249,15 @@ public abstract class MetricsDbBase implements Runnable {
         }
     }
 
+    /**
+     * 执行upsert alert setting操作。
+     *
+     * @param dbgroup   dbgroup参数。
+     * @param dbhost    dbhost参数。
+     * @param alertType alert type参数。
+     * @param threshold threshold参数。
+     * @param comments  comments参数。
+     */
     public void upsertAlertSetting(String dbgroup, String dbhost, String alertType, float threshold, String comments) {
         String sql2 = "update " + ALERTSETTING_TABLENAME + " set ALERT_TYPE=?,THRESHOLD=?, RESERVED=? where DBGROUPNAME=? and HOSTNAME=?";
         String sql3 = "insert into " + ALERTSETTING_TABLENAME + " (DBGROUPNAME,HOSTNAME,ALERT_TYPE,THRESHOLD, RESERVED) values(?,?,?,?,?)";
@@ -1932,6 +2326,13 @@ public abstract class MetricsDbBase implements Runnable {
         }
     }
 
+    /**
+     * 执行upsert alert notification操作。
+     *
+     * @param dbgroup dbgroup参数。
+     * @param dbhost  dbhost参数。
+     * @param emails  emails参数。
+     */
     public void upsertAlertNotification(String dbgroup, String dbhost, String emails) {
         String sql2 = "update " + ALERT_NOTIFICATION + " set EMAILS=? where DBGROUP=? and HOSTNAME=?";
         String sql3 = "insert into " + ALERT_NOTIFICATION + " (DBGROUP,HOSTNAME,EMAILS) values(?,?,?)";
@@ -1987,11 +2388,16 @@ public abstract class MetricsDbBase implements Runnable {
     }
 
 
+    /**
+     * 加载alert setting。
+     *
+     * @param alertSettings alert settings参数。
+     */
     public void loadAlertSetting(AlertSettings alertSettings) {
         log.info("Loadalert settings from db");
         int count = 0;
         try (Connection conn = this.createConnection(true);
-            Statement pstmt = conn.createStatement()) {
+             Statement pstmt = conn.createStatement()) {
             try (ResultSet rs = pstmt.executeQuery("select DBGROUPNAME, HOSTNAME, ALERT_TYPE, THRESHOLD from " + ALERTSETTING_TABLENAME)) {
                 while (rs != null && rs.next()) {
                     String dbgroup = rs.getString("DBGROUPNAME");
@@ -2062,6 +2468,16 @@ public abstract class MetricsDbBase implements Runnable {
         }
     }
 
+    /**
+     * 执行enable metrics操作。
+     *
+     * @param dbGroup  db group参数。
+     * @param hostname hostname参数。
+     * @param enabled  enabled参数。
+     * @param owner    owner参数。
+     * @param force    force参数。
+     * @return 是否满足条件。
+     */
     public boolean enableMetrics(String dbGroup, String hostname, boolean enabled, String owner, boolean force) {
         String sql2 = "update " + DBINFO_TABLENAME + " set METRICS_ENABLED=? where DBGROUPNAME=? and HOSTNAME=?";
 
@@ -2098,6 +2514,16 @@ public abstract class MetricsDbBase implements Runnable {
         }
     }
 
+    /**
+     * 执行enable alerts操作。
+     *
+     * @param dbGroup  db group参数。
+     * @param hostname hostname参数。
+     * @param enabled  enabled参数。
+     * @param owner    owner参数。
+     * @param force    force参数。
+     * @return 是否满足条件。
+     */
     public boolean enableAlerts(String dbGroup, String hostname, boolean enabled, String owner, boolean force) {
         String sql2 = "update " + DBINFO_TABLENAME + " set ALERT_ENABLED=? where DBGROUPNAME=? and HOSTNAME=?";
 
@@ -2155,8 +2581,8 @@ public abstract class MetricsDbBase implements Runnable {
         log.info("Excute: " + sql);
         ArrayList<DBInstanceInfo> dbList = new ArrayList<>();
         try (Connection conn = this.createConnection(true);
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs != null && rs.next()) {
                 DBInstanceInfo dbinfo = new DBInstanceInfo();
                 dbinfo.setDbid(rs.getInt("DBID"));
@@ -2221,13 +2647,13 @@ public abstract class MetricsDbBase implements Runnable {
     public int[] getSnapshostRange(long startTs, long endTs) {
         String retrieveSQL = "select min(SNAP_ID) min_snap_id, max(snap_id) max_snap_id from SNAPSHOTS where START_TS between ? and ?";
         try (Connection conn = this.createConnection(true);
-            PreparedStatement stmt = conn.prepareStatement(retrieveSQL)) {
+             PreparedStatement stmt = conn.prepareStatement(retrieveSQL)) {
             stmt.setLong(1, startTs);
             stmt.setLong(2, endTs);
             try (ResultSet rs = stmt.executeQuery()) {
 
                 if (rs != null && rs.next())
-                    return new int[] { rs.getInt(1), rs.getInt(2) };
+                    return new int[]{rs.getInt(1), rs.getInt(2)};
 
             }
         } catch (Exception ex) {
@@ -2245,7 +2671,7 @@ public abstract class MetricsDbBase implements Runnable {
     public void updateSnapCompleteTime(int snap_id, long ts) {
         String sql = "update SNAPSHOTS set END_TS=? where SNAP_ID=?";
         try (Connection conn = this.createConnection(true);
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, ts);
             stmt.setInt(1, snap_id);
             stmt.execute();
@@ -2253,12 +2679,17 @@ public abstract class MetricsDbBase implements Runnable {
         }
     }
 
+    /**
+     * 加载alert subscriptions。
+     *
+     * @return 处理结果。
+     */
     public List<AlertSubscribers.Subscription> loadAlertSubscriptions() throws SQLException {
         List<AlertSubscribers.Subscription> subscribers = new ArrayList<>();
         String sql = "select * from ALERT_SUBSCRIPT";
         try (Connection conn = this.createConnection(true);
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs != null && rs.next()) {
                 AlertSubscribers.Subscription sub = new AlertSubscribers.Subscription();
                 sub.group = rs.getString("DBGROUP");
@@ -2271,6 +2702,12 @@ public abstract class MetricsDbBase implements Runnable {
         return subscribers;
     }
 
+    /**
+     * 执行upsert alert subscription操作。
+     *
+     * @param sub sub参数。
+     * @return 是否满足条件。
+     */
     public boolean upsertAlertSubscription(AlertSubscribers.Subscription sub) {
         String sql2 = "update " + ALERT_SUBSCRIPT + " set PARAMS=? where DBGROUP=? and HOSTNAME=? AND ALERT_NAME=?";
         String sql3 = "insert into " + ALERT_SUBSCRIPT + " (DBGROUP,HOSTNAME,ALERT_NAME,PARAMS) values(?,?,?,?)";
@@ -2313,7 +2750,7 @@ public abstract class MetricsDbBase implements Runnable {
                         pstmt.setString(4, sub.alertName);
                         pstmt.execute();
                     }
-                 else
+                else
                     try (PreparedStatement pstmt = conn.prepareStatement(sql3)) {
                         pstmt.setString(1, sub.group);
 
@@ -2351,6 +2788,12 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 删除alert subscription。
+     *
+     * @param sub sub参数。
+     * @return 是否满足条件。
+     */
     public boolean deleteAlertSubscription(AlertSubscribers.Subscription sub) {
         String sql2 = "delete from " + ALERT_SUBSCRIPT + " where DBGROUP=? and HOSTNAME=? AND ALERT_NAME=?";
         log.info("Delete alert sub " + sub.alertName + "for db " + sub.group + ", " + sub.host);
@@ -2383,12 +2826,17 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 加载metrics subscriptions。
+     *
+     * @return 处理结果。
+     */
     public List<MetricsSubscribers.Subscription> loadMetricsSubscriptions() throws SQLException {
         List<MetricsSubscribers.Subscription> subscribers = new ArrayList<>();
         String sql = "select * from " + METRICS_SUBSCRIPT;
         try (Connection conn = this.createConnection(true);
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs != null && rs.next()) {
                 MetricsSubscribers.Subscription sub = new MetricsSubscribers.Subscription();
                 sub.group = rs.getString("DBGROUP");
@@ -2401,6 +2849,12 @@ public abstract class MetricsDbBase implements Runnable {
         return subscribers;
     }
 
+    /**
+     * 添加metrics subscription。
+     *
+     * @param sub sub参数。
+     * @return 是否满足条件。
+     */
     public boolean addMetricsSubscription(MetricsSubscribers.Subscription sub) {
         String sql3 = "insert into " + METRICS_SUBSCRIPT + " (DBGROUP,HOSTNAME,MGROUP,MSUBGROUP) values(?,?,?,?)";
         log.info("Store metricst sub " + sub.mGroup + ", " + sub.mSubGroup + " for db " + sub.group + ", " + sub.host);
@@ -2470,6 +2924,12 @@ public abstract class MetricsDbBase implements Runnable {
         return false;
     }
 
+    /**
+     * 删除metrics subscription。
+     *
+     * @param sub sub参数。
+     * @return 是否满足条件。
+     */
     public boolean deleteMetricsSubscription(MetricsSubscribers.Subscription sub) {
         String sql2 = "delete from " + METRICS_SUBSCRIPT + " where DBGROUP=? and HOSTNAME=? AND MGROUP=? AND MSUBGROUP=?";
         log.info("Delete metrics sub " + sub.mGroup + ", " + sub.mSubGroup + " for db " + sub.group + ", " + sub.host);

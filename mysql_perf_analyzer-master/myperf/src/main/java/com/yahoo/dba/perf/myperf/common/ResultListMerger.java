@@ -7,14 +7,27 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 
+/**
+ * 表示result list merger相关的类型。
+ */
 @Slf4j
 public class ResultListMerger {
 
+    /**
+     * 合并by key。
+     *
+     * @param sqlA     sql a参数。
+     * @param sqlB     sql b参数。
+     * @param listA    list a参数。
+     * @param listB    list b参数。
+     * @param diffOnly diff only参数。
+     * @return 处理结果。
+     */
     public static ResultList mergeByKey(Sql sqlA, Sql sqlB, ResultList listA, ResultList listB, boolean diffOnly) {
         log.info("Merge diffonly: " + diffOnly);
 

@@ -10,14 +10,24 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ArrayList;
 
+/**
+ * 表示dbsearch controller相关的类型。
+ */
 public class DbsearchController extends MyPerfBaseController {
     //private String jsonView;
     //private MyPerfContext frameworkContext;
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req,
                                              HttpServletResponse resp) throws Exception {

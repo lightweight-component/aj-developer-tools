@@ -5,12 +5,11 @@
  */
 package com.yahoo.dba.perf.myperf.snmp;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.db.CustomQueryProcessor;
 import com.yahoo.dba.perf.myperf.db.DBConnectionWrapper;
 import com.yahoo.dba.perf.myperf.snmp.SNMPClient.SNMPTriple;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -27,12 +26,32 @@ import java.util.Map;
  */
 @Slf4j
 public class SNMPQueryProcessor implements CustomQueryProcessor {
+    /**
+     * 查询multiple。
+     *
+     * @param context     context参数。
+     * @param dbinfo      dbinfo参数。
+     * @param appUser     app user参数。
+     * @param connWrapper conn wrapper参数。
+     * @param qps         qps参数。
+     * @param rListMap    r list map参数。
+     */
     @Override
     public void queryMultiple(MyPerfContext context, DBInstanceInfo dbinfo, String appUser, DBConnectionWrapper connWrapper, QueryParameters qps, Map<String, ResultList> rListMap)
             throws SQLException {
         throw new RuntimeException("Not implmented");
     }
 
+    /**
+     * 查询single。
+     *
+     * @param context     context参数。
+     * @param dbinfo      dbinfo参数。
+     * @param appUser     app user参数。
+     * @param connWrapper conn wrapper参数。
+     * @param qps         qps参数。
+     * @return 处理结果。
+     */
     @Override
     public ResultList querySingle(MyPerfContext context, DBInstanceInfo dbinfo, String appUser, DBConnectionWrapper connWrapper, QueryParameters qps) throws SQLException {
         String cat = "sys";
@@ -49,19 +68,19 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
 
             if ("disk".equalsIgnoreCase(cat))
                 return queryDisk(client, qps);
-             else if ("network".equalsIgnoreCase(cat))
+            else if ("network".equalsIgnoreCase(cat))
                 return queryNetwork(client, qps);
-             else if ("storage".equalsIgnoreCase(cat))
+            else if ("storage".equalsIgnoreCase(cat))
                 return this.queryStorage(client, qps);
-             else if ("sys".equalsIgnoreCase(cat))
+            else if ("sys".equalsIgnoreCase(cat))
                 return querySystemData(client, qps);
-             else if ("mysqld".equalsIgnoreCase(cat))
+            else if ("mysqld".equalsIgnoreCase(cat))
                 return queryMysqldData(client, qps);
-             else if ("single".equalsIgnoreCase(cat))
+            else if ("single".equalsIgnoreCase(cat))
                 return this.querySingleSNMP(client, qps);
-             else if ("table".equalsIgnoreCase(cat))
+            else if ("table".equalsIgnoreCase(cat))
                 return this.queryTableSNMP(client, qps);
-             else if ("unknown".equalsIgnoreCase(cat)) {
+            else if ("unknown".equalsIgnoreCase(cat)) {
                 ResultList res = this.querySingleSNMP(client, qps);
 
                 if (res == null || res.getRows().size() == 0
@@ -185,6 +204,13 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
         return rList;
     }
 
+    /**
+     * 查询network。
+     *
+     * @param client client参数。
+     * @param qps    qps参数。
+     * @return 处理结果。
+     */
     private ResultList queryNetwork(SNMPClient client, QueryParameters qps) throws Exception {
         boolean diff = "1".equalsIgnoreCase(qps.getSqlParams().get("p_2"));
         Map<String, List<SNMPTriple>> snmpData = client.getNetIfData(null);
@@ -225,6 +251,13 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
         return rList;
     }
 
+    /**
+     * 查询storage。
+     *
+     * @param client client参数。
+     * @param qps    qps参数。
+     * @return 处理结果。
+     */
     private ResultList queryStorage(SNMPClient client, QueryParameters qps) throws Exception {
         boolean diff = "1".equalsIgnoreCase(qps.getSqlParams().get("p_2"));
         Map<String, List<SNMPTriple>> snmpData = client.getStorageData(null);
@@ -264,6 +297,13 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
         return rList;
     }
 
+    /**
+     * 查询system data。
+     *
+     * @param client client参数。
+     * @param qps    qps参数。
+     * @return 处理结果。
+     */
     private ResultList querySystemData(SNMPClient client, QueryParameters qps) throws Exception {
         boolean diff = "1".equalsIgnoreCase(qps.getSqlParams().get("p_2"));
         List<SNMPTriple> snmpData = client.querySysData3();
@@ -299,6 +339,13 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
         return rList;
     }
 
+    /**
+     * 查询mysqld data。
+     *
+     * @param client client参数。
+     * @param qps    qps参数。
+     * @return 处理结果。
+     */
     private ResultList queryMysqldData(SNMPClient client, QueryParameters qps) throws Exception {
         boolean diff = "1".equalsIgnoreCase(qps.getSqlParams().get("p_2"));
         List<SNMPTriple> snmpData = null;
@@ -338,6 +385,13 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
         return rList;
     }
 
+    /**
+     * 查询single snmp。
+     *
+     * @param client client参数。
+     * @param qps    qps参数。
+     * @return 处理结果。
+     */
     private ResultList querySingleSNMP(SNMPClient client, QueryParameters qps) throws Exception {
         //p2 will be oid
         String oid = qps.getSqlParams().get("p_2");
@@ -366,6 +420,13 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
         return rList;
     }
 
+    /**
+     * 查询table snmp。
+     *
+     * @param client client参数。
+     * @param qps    qps参数。
+     * @return 处理结果。
+     */
     private ResultList queryTableSNMP(SNMPClient client, QueryParameters qps) throws Exception {
         //p2 will be oid
         String oid = qps.getSqlParams().get("p_2");
@@ -394,11 +455,21 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
         return rList;
     }
 
+    /**
+     * 判断multiple。
+     *
+     * @return 是否满足条件。
+     */
     @Override
     public boolean isMultiple() {
         return false;
     }
 
+    /**
+     * 执行require dbconnection操作。
+     *
+     * @return 是否满足条件。
+     */
     @Override
     public boolean requireDBConnection() {
         return false;

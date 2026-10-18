@@ -5,6 +5,9 @@
  */
 package com.yahoo.dba.perf.myperf.common;
 
+/**
+ * 表示query input validator相关的类型。
+ */
 public class QueryInputValidator {
 
     /**
@@ -30,6 +33,13 @@ public class QueryInputValidator {
         }
     }
 
+    /**
+     * 校验diff sqls。
+     *
+     * @param sqlManager sql manager参数。
+     * @param qpsA       qps a参数。
+     * @param qpsB       qps b参数。
+     */
     public static void validateDiffSqls(SqlManager sqlManager, QueryParameters qpsA, QueryParameters qpsB) {
         Sql sqlA = sqlManager.getSql(qpsA.getSql());
 

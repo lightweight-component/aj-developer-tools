@@ -18,22 +18,49 @@ import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * 表示global variable change scan task相关的类型。
+ */
 @Slf4j
 public class GlobalVariableChangeScanTask implements Runnable {
+    /**
+     * 保存context信息。
+     */
     private final MyPerfContext context;
+    /**
+     * 定义storage dir常量。
+     */
     private static final String STORAGE_DIR = "autoscan";
 
+    /**
+     * 保存app user信息。
+     */
     @Setter
     @Getter
     private AppUser appUser;
+    /**
+     * 保存conns信息。
+     */
     private UserDBConnections conns;
+    /**
+     * 保存sdf信息。
+     */
     SimpleDateFormat sdf;
 
+    /**
+     * 创建GlobalVariableChangeScanTask对象。
+     *
+     * @param context context参数。
+     * @param user    user参数。
+     */
     public GlobalVariableChangeScanTask(MyPerfContext context, AppUser user) {
         this.context = context;
         this.appUser = user;
     }
 
+    /**
+     * 执行run操作。
+     */
     @Override
     public void run() {
         Thread.currentThread().setName("GlobalVariableChangeScanTask");
@@ -62,6 +89,12 @@ public class GlobalVariableChangeScanTask implements Runnable {
         }
     }
 
+    /**
+     * 更新config block。
+     *
+     * @param db db参数。
+     * @param cb cb参数。
+     */
     private void updateConfigBlock(DBInstanceInfo db, ConfigBlock cb) {
         File root = new File(new File(this.context.getFileReposirtoryPath()), STORAGE_DIR);
         ConfigHistory ch = ConfigHistory.load(root, db);
@@ -73,6 +106,12 @@ public class GlobalVariableChangeScanTask implements Runnable {
             ch.store(root, db);
     }
 
+    /**
+     * 执行scan host操作。
+     *
+     * @param dbinfo dbinfo参数。
+     * @return 处理结果。
+     */
     private ConfigBlock scanHost(DBInstanceInfo dbinfo) {
         DBCredential cred = DBUtils.findDBCredential(context, dbinfo.getDbGroupName(), appUser);
 

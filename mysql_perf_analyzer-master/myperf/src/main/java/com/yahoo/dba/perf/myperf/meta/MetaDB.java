@@ -5,40 +5,74 @@
  */
 package com.yahoo.dba.perf.myperf.meta;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.AppUser;
 import com.yahoo.dba.perf.myperf.common.DBCredential;
 import com.yahoo.dba.perf.myperf.common.DBUtils;
 import com.yahoo.dba.perf.myperf.common.MD5Util;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.Serializable;
 import java.sql.*;
 import java.util.*;
-import java.io.Serializable;
 
+/**
+ * 表示meta db相关的类型。
+ */
 @Slf4j
 public class MetaDB implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 定义db name常量。
+     */
     private static final String DB_NAME = "metaDB";
+    /**
+     * 定义schema name常量。
+     */
     private static final String SCHEMA_NAME = "METADB";
+    /**
+     * 定义cred tablename常量。
+     */
     private static final String CRED_TABLENAME = "DBCREDENTIALS";
+    /**
+     * 定义appuser tablename常量。
+     */
     private static final String APPUSER_TABLENAME = "APPUSERS";
+    /**
+     * 定义useracl tablename常量。
+     */
     private static final String USERACL_TABLENAME = "USERACLS"; //user, db group access control
 
+    /**
+     * 保存key tool信息。
+     */
     private KeyTool.DesEncrypter keyTool = new KeyTool.DesEncrypter();
+    /**
+     * 保存dbkey信息。
+     */
     @Getter
     @Setter
     private String dbkey;
 
     //store  credentials so we no need to go to db everytime
     //the key is owner||dbname
+    /**
+     * 保存cred cache集合。
+     */
     private Map<String, DBCredential> credCache = Collections.synchronizedMap(new HashMap<>());
 
+    /**
+     * 定义default user常量。
+     */
     public static final String DEFAULT_USER = "myperf";
 
+    /**
+     * 创建MetaDB对象。
+     */
     public MetaDB() {
         try {
             //load embedded db driver
@@ -48,10 +82,22 @@ public class MetaDB implements Serializable {
     }
 
 
+    /**
+     * 执行enc操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     public String enc(String str) {
         return keyTool.encrypt(str);
     }
 
+    /**
+     * 执行dec操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     public String dec(String str) {
         return keyTool.decrypt(str);
     }
@@ -88,11 +134,14 @@ public class MetaDB implements Serializable {
         return null;
     }
 
+    /**
+     * 检查and create schema。
+     */
     private void checkAndCreateSchema() throws SQLException {
         Properties props = new Properties();
         boolean findSchema = false;
         try (Connection conn = DriverManager.getConnection("jdbc:derby:" + DB_NAME + ";create=true", props);
-            ResultSet rs = conn.getMetaData().getSchemas()) {
+             ResultSet rs = conn.getMetaData().getSchemas()) {
             while (rs.next()) {
 
                 if (SCHEMA_NAME.equalsIgnoreCase(rs.getString("TABLE_SCHEM"))) {
@@ -111,6 +160,9 @@ public class MetaDB implements Serializable {
         }
     }
 
+    /**
+     * 检查and create tables。
+     */
     private void checkAndCreateTables() throws SQLException {
         try (Connection conn = getConnection()) {
             checkAndCreateAppUserTable(conn);
@@ -119,6 +171,11 @@ public class MetaDB implements Serializable {
         }
     }
 
+    /**
+     * 检查and create app user table。
+     *
+     * @param conn conn参数。
+     */
     private void checkAndCreateAppUserTable(Connection conn) throws SQLException {
 
         if (!DBUtils.hasTable(conn, SCHEMA_NAME, APPUSER_TABLENAME)) {
@@ -174,6 +231,11 @@ public class MetaDB implements Serializable {
     }
 
 
+    /**
+     * 检查and create dbcredential table。
+     *
+     * @param conn conn参数。
+     */
     private void checkAndCreateDBCredentialTable(Connection conn) throws SQLException {
 
         if (!DBUtils.hasTable(conn, SCHEMA_NAME, CRED_TABLENAME))
@@ -184,7 +246,7 @@ public class MetaDB implements Serializable {
                 sql = "create unique index UK_" + CRED_TABLENAME + " on " + CRED_TABLENAME + " (OWNER, DBGROUPNAME)";
                 stmt.execute(sql);
             }
-         else
+        else
             try (Statement stmt = conn.createStatement()) {
                 //because of an earlier bug, we forgot to create uniq index/PK on this table
                 String ukSQL = "SELECT * FROM " + " SYS.SYSCONGLOMERATES WHERE " + " CONGLOMERATENAME = 'UK_" + CRED_TABLENAME + "'";
@@ -232,6 +294,11 @@ public class MetaDB implements Serializable {
 
     }
 
+    /**
+     * 检查and create user acl table。
+     *
+     * @param conn conn参数。
+     */
     private void checkAndCreateUserAclTable(Connection conn) throws SQLException {
 
         if (!DBUtils.hasTable(conn, SCHEMA_NAME, USERACL_TABLENAME))
@@ -273,6 +340,13 @@ public class MetaDB implements Serializable {
         return null;
     }
 
+    /**
+     * 执行retrieve user info操作。
+     *
+     * @param conn     conn参数。
+     * @param username username参数。
+     * @return 处理结果。
+     */
     private AppUser retrieveUserInfo(Connection conn, String username) {
         String sql = "select * from " + APPUSER_TABLENAME + " where username=?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -381,6 +455,13 @@ public class MetaDB implements Serializable {
         }
     }
 
+    /**
+     * 执行confirm user操作。
+     *
+     * @param user      user参数。
+     * @param confirmed confirmed参数。
+     * @return 是否满足条件。
+     */
     public boolean confirmUser(String user, boolean confirmed) {
 
         if (user == null)
@@ -509,12 +590,18 @@ public class MetaDB implements Serializable {
         }
     }
 
+    /**
+     * 删除user。
+     *
+     * @param user user参数。
+     * @return 是否满足条件。
+     */
     public boolean deleteUser(String user) {
 
         if (user == null || DEFAULT_USER.equals(user))
             return false;
 
-        String[] sql = new String[] { "delete from " + APPUSER_TABLENAME + " where USERNAME=?", "delete from " + CRED_TABLENAME + " where owner=?", "delete from " + USERACL_TABLENAME + " where username=?" };
+        String[] sql = new String[]{"delete from " + APPUSER_TABLENAME + " where USERNAME=?", "delete from " + CRED_TABLENAME + " where owner=?", "delete from " + USERACL_TABLENAME + " where username=?"};
         try (Connection conn = getConnection()) {
             try {
 
@@ -552,8 +639,8 @@ public class MetaDB implements Serializable {
         String sql = "select * from " + APPUSER_TABLENAME + " order by username";
         ArrayList<AppUser> userList = new ArrayList<>();
         try (Connection conn = getConnection();
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs != null && rs.next()) {
                 AppUser user = new AppUser();
                 user.setName(rs.getString("USERNAME"));
@@ -588,7 +675,7 @@ public class MetaDB implements Serializable {
             DBCredential saved = this.credCache.get(owner + "||" + dbGroupName);
 
             if (//return a decrypted copy
-            saved != null) {
+                    saved != null) {
                 saved = saved.copy();
                 saved.decryptPassword(keyTool);
             }
@@ -600,6 +687,14 @@ public class MetaDB implements Serializable {
         return null;
     }
 
+    /**
+     * 执行retrieve dbcredential操作。
+     *
+     * @param conn        conn参数。
+     * @param owner       owner参数。
+     * @param dbGroupName db group name参数。
+     * @return 处理结果。
+     */
     private DBCredential retrieveDBCredential(Connection conn, String owner, String dbGroupName) {
         String sql = (owner != null && owner.trim().length() > 0) ? "select * from " + CRED_TABLENAME + " where dbgroupname=?  and owner=?" : "select * from " + CRED_TABLENAME + " where dbgroupname=? and owner is null";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -640,6 +735,12 @@ public class MetaDB implements Serializable {
         return null;
     }
 
+    /**
+     * 执行rename db group name操作。
+     *
+     * @param oldName old name参数。
+     * @param newName new name参数。
+     */
     public void renameDbGroupName(String oldName, String newName) {
         //nothing to change
         if (newName == null || newName.equalsIgnoreCase(oldName))
@@ -724,8 +825,13 @@ public class MetaDB implements Serializable {
         }
     }
 
+    /**
+     * 移除db group。
+     *
+     * @param grpName grp name参数。
+     */
     public void removeDbGroup(String grpName) {
-        String[] sql = new String[] { "delete from " + CRED_TABLENAME + " where dbgroupname=?", "delete from " + USERACL_TABLENAME + " where dbgroupname=?" };
+        String[] sql = new String[]{"delete from " + CRED_TABLENAME + " where dbgroupname=?", "delete from " + USERACL_TABLENAME + " where dbgroupname=?"};
         try (Connection conn = getConnection()) {
 
             for (int i = 0; i < sql.length; i++)
@@ -862,6 +968,14 @@ public class MetaDB implements Serializable {
         }
     }
 
+    /**
+     * 执行list my dbs操作。
+     *
+     * @param conn       conn参数。
+     * @param owner      owner参数。
+     * @param restricted restricted参数。
+     * @return 处理结果。
+     */
     private List<String> listMyDBs(Connection conn, String owner, boolean restricted) {
         String sql = "select dbgroupname from " + CRED_TABLENAME + " where owner=? order by dbgroupname";
 
@@ -914,7 +1028,7 @@ public class MetaDB implements Serializable {
                         pstmt.execute();
                         conn.commit();
                     }
-                 else
+                else
                     try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                         pstmt.setString(1, cred.getAppUser());
                         pstmt.setString(2, cred.getDbGroupName().toLowerCase());
@@ -939,6 +1053,12 @@ public class MetaDB implements Serializable {
         }
     }
 
+    /**
+     * 移除dbcredential。
+     *
+     * @param owner       owner参数。
+     * @param dbGroupName db group name参数。
+     */
     public void removeDBCredential(String owner, String dbGroupName) {
 
         if (owner == null || owner.isEmpty())
@@ -972,6 +1092,11 @@ public class MetaDB implements Serializable {
         }
     }
 
+    /**
+     * 更新dbcredential internal。
+     *
+     * @param cred cred参数。
+     */
     private void updateDBCredentialInternal(DBCredential cred) {
 
         if (cred == null)

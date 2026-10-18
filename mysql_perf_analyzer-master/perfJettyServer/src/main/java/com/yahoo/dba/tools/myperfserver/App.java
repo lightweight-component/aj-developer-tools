@@ -36,44 +36,92 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.Properties;
 
+/**
+ * 表示app相关的类型。
+ */
 public class App {
+    /**
+     * 保存pid file信息。
+     */
     public static String PID_FILE = "framework.pid";
+    /**
+     * 保存pid信息。
+     */
     private static int pid = -1;
 
+    /**
+     * 保存config file path信息。
+     */
     @Getter
     @Setter
     private String configFilePath;
+    /**
+     * 保存port信息。
+     */
     @Getter
     @Setter
     private int port = 9090;
+    /**
+     * 保存context path信息。
+     */
     @Getter
     @Setter
     private String contextPath = "/";
+    /**
+     * 保存log directory path信息。
+     */
     @Getter
     @Setter
     private String logDirectoryPath = "logs";
+    /**
+     * 保存war file信息。
+     */
     @Getter
     @Setter
-    private String warFile;
+    private String warFile = "myperf.war";
+    /**
+     * 保存work directory path信息。
+     */
     @Getter
     @Setter
     private String workDirectoryPath = "work";
+    /**
+     * 保存jetty home信息。
+     */
     @Getter
     @Setter
     private String jettyHome; // it should have directory webapps which has our
     // warFile
+    /**
+     * 标记use https状态。
+     */
     @Getter
     @Setter
     private boolean useHttps = false;
+    /**
+     * 保存cert key store path信息。
+     */
     @Getter
     @Setter
     private String certKeyStorePath;
+    /**
+     * 保存cert key store password信息。
+     */
     @Getter
     @Setter
     private String certKeyStorePassword;
 
+    /**
+     * 保存jetty server信息。
+     */
     private Server jettyServer; // jetty server
+    /**
+     * 保存server uri信息。
+     */
     private URI serverURI;
+    /**
+     * 保存shutdown file信息。
+     */
     private String shutdownFile = "myserver.shutdown";
 
     /* -p --port 9090
@@ -94,6 +142,10 @@ public class App {
      *     certKeyStorePath
      *     certKeyStorePassword
      */
+    /**
+     * 执行main操作。
+     * @param args args参数。
+     */
     public static void main(String[] args) throws Exception {
         App myServer = new App();
         CommandLineParser parser = new GnuParser();
@@ -103,13 +155,20 @@ public class App {
                 + "-p port -c webcontextroot -k workingDir -l logpath -w war_file");
         readOptionsFromCommandLine(args, parser, options, myServer);
         System.setProperty("logPath", myServer.getLogDirectoryPath());
-        PID_FILE = myServer.getWarFile().substring(0, myServer.getWarFile().indexOf('.')) + ".pid";
+        String warFileName = new File(myServer.getWarFile()).getName();
+        int extensionIndex = warFileName.lastIndexOf('.');
+        String pidFileName = extensionIndex > 0 ? warFileName.substring(0, extensionIndex) : warFileName;
+        PID_FILE = pidFileName + ".pid";
         checksRunningOfAnotherServerInstance();
         //for https, we have to use https for jQuery
         System.setProperty("url_protocl", myServer.useHttps ? "https" : "http");
         runServer(myServer);
     }
 
+    /**
+     * 运行server。
+     * @param myServer my server参数。
+     */
     private static void runServer(App myServer) throws Exception{
 
         if (myServer.startServer()) {
@@ -121,6 +180,9 @@ public class App {
             System.out.println("Server not started.");
     }
 
+    /**
+     * 检查s running of another server instance。
+     */
     private static void checksRunningOfAnotherServerInstance() {
         int historyPid = getHistoryPid();
 
@@ -138,6 +200,13 @@ public class App {
         }
     }
 
+    /**
+     * 读取options from command line。
+     * @param args args参数。
+     * @param parser parser参数。
+     * @param options options参数。
+     * @param myServer my server参数。
+     */
     private static void readOptionsFromCommandLine(String[] args,
                                                    CommandLineParser parser, Options options, App myServer) {
         try {
@@ -148,6 +217,11 @@ public class App {
         }
     }
 
+    /**
+     * 检查command line contain avaliable options。
+     * @param myServer my server参数。
+     * @param line line参数。
+     */
     private static void checkCommandLineContainAvaliableOptions(App myServer,
                                                                 CommandLine line) {
 
@@ -204,10 +278,19 @@ public class App {
         }
     }
 
+    /**
+     * 判断option argument valid。
+     * @param argument argument参数。
+     * @return 是否满足条件。
+     */
     private static boolean isOptionArgumentValid(String argument) {
         return (argument != null) && !(argument.isEmpty());
     }
 
+    /**
+     * 获取avaliable command line options。
+     * @return 处理结果。
+     */
     private static Options getAvaliableCommandLineOptions() {
         Options options = new Options();
         options.addOption("f", "config", true, "Configuration file path, no default.");
@@ -229,11 +312,17 @@ public class App {
         return options;
     }
 
+    /**
+     * 创建App对象。
+     */
     public App() {
         this.jettyHome = System.getProperty("jetty.home", "."); // set default jetty.home
     }
 
     // This should be invoked before using command line options
+    /**
+     * 解析configuration file。
+     */
     public void parseConfigurationFile() throws RuntimeException {
         String path = this.getConfigFilePath();
 
@@ -303,6 +392,10 @@ public class App {
         }
     }
 
+    /**
+     * 启动server。
+     * @return 是否满足条件。
+     */
     public boolean startServer() throws Exception {
         removeShutdownFile();
         File workDirectory = new File(this.getWorkDirectoryPath());
@@ -332,6 +425,12 @@ public class App {
         return true;
     }
 
+    /**
+     * 创建deployed application instance。
+     * @param workDirectory work directory参数。
+     * @param deployedApplicationPath deployed application path参数。
+     * @return 处理结果。
+     */
     private WebAppContext createDeployedApplicationInstance(File workDirectory,
                                                             String deployedApplicationPath) {
         WebAppContext deployedApplication = new WebAppContext();
@@ -355,6 +454,13 @@ public class App {
         return deployedApplication;
     }
 
+    /**
+     * 判断meeting requirements to run server。
+     * @param workDirectory work directory参数。
+     * @param logDirectory log directory参数。
+     * @param deployedApplicationPath deployed application path参数。
+     * @return 是否满足条件。
+     */
     private boolean isMeetingRequirementsToRunServer(File workDirectory,
                                                      File logDirectory, String deployedApplicationPath) {
 
@@ -381,6 +487,11 @@ public class App {
         return true;
     }
 
+    /**
+     * 创建valid log directory。
+     * @param logDirectory log directory参数。
+     * @return 是否满足条件。
+     */
     private boolean createValidLogDirectory(File logDirectory) {
 
         if (!logDirectory.exists()) {
@@ -400,6 +511,11 @@ public class App {
         return true;
     }
 
+    /**
+     * 创建valid work directory。
+     * @param workDirectory work directory参数。
+     * @return 是否满足条件。
+     */
     private boolean createValidWorkDirectory(File workDirectory) {
 
         if (!workDirectory.exists()) {
@@ -419,6 +535,10 @@ public class App {
         return true;
     }
 
+    /**
+     * 连接or。
+     * @return 处理结果。
+     */
     private ServerConnector connector() {
         ServerConnector connector = new ServerConnector(jettyServer);
         connector.setPort(port);
@@ -453,6 +573,11 @@ public class App {
         return connector;
     }
 
+    /**
+     * 获取server uri。
+     * @param connector connector参数。
+     * @return 处理结果。
+     */
     private URI getServerUri(ServerConnector connector)
             throws URISyntaxException {
         String scheme = "http";
@@ -480,6 +605,9 @@ public class App {
         return serverURI;
     }
 
+    /**
+     * 执行stop操作。
+     */
     public void stop() throws Exception {
 
         if (jettyServer != null)
@@ -503,6 +631,9 @@ public class App {
         return -1;// no valid number
     }
 
+    /**
+     * 写入pid。
+     */
     private static void writePid() {
 
         if (pid < 0)
@@ -517,6 +648,10 @@ public class App {
         }
     }
 
+    /**
+     * 获取history pid。
+     * @return 处理结果。
+     */
     private static int getHistoryPid() {
         try {
             try (BufferedReader fr = new BufferedReader(new FileReader(PID_FILE))) {
@@ -529,6 +664,9 @@ public class App {
         return -1;
     }
 
+    /**
+     * 移除pid。
+     */
     private static void removePid() {
         try {
             new File(PID_FILE).delete();
@@ -537,6 +675,9 @@ public class App {
         }
     }
 
+    /**
+     * 移除shutdown file。
+     */
     private void removeShutdownFile() {
         try {
             new File(this.shutdownFile).delete();
@@ -545,6 +686,10 @@ public class App {
         }
     }
 
+    /**
+     * 执行jsp initializers操作。
+     * @return 处理结果。
+     */
     private List<ContainerInitializer> jspInitializers() {
         JettyJasperInitializer sci = new JettyJasperInitializer();
         ContainerInitializer initializer = new ContainerInitializer(
@@ -554,6 +699,10 @@ public class App {
         return initializers;
     }
 
+    /**
+     * 执行jsp servlet holder操作。
+     * @return 处理结果。
+     */
     private ServletHolder jspServletHolder() {
         ServletHolder holderJsp = new ServletHolder("jsp",
                 JettyJspServlet.class);
@@ -567,6 +716,9 @@ public class App {
         return holderJsp;
     }
 
+    /**
+     * 执行wait for interrupt操作。
+     */
     public void waitForInterrupt() throws InterruptedException {
         waitToShutdownSignal();
         shutdown();
@@ -579,6 +731,9 @@ public class App {
         System.out.println(new Date() + " Shutdown is completed.");
     }
 
+    /**
+     * 执行wait to shutdown signal操作。
+     */
     private void waitToShutdownSignal() {
         while (true) {
             // sleep 5 seconds, then check shutdown file
@@ -598,6 +753,9 @@ public class App {
         }
     }
 
+    /**
+     * 执行shutdown操作。
+     */
     private void shutdown() {
         try { // shutdown
             System.out.println(new Date() + " Shutdown server");

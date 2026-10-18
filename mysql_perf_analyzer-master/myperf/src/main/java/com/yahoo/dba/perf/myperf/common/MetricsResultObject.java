@@ -7,21 +7,41 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 表示metrics result object相关的类型。
+ */
 public class MetricsResultObject implements CustomResultObject {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 保存metrics集合。
+     */
     @Getter
     @Setter
     private List<Metric> metrics;
 
+    /**
+     * 获取name。
+     *
+     * @return 处理结果。
+     */
     @Override
     public String getName() {
         return "metrics";//fixed the name
     }
 
+    /**
+     * 获取value json string。
+     *
+     * @return 处理结果。
+     */
     @Override
     public String getValueJsonString() {
         StringBuilder sb = new StringBuilder();
@@ -64,6 +84,13 @@ public class MetricsResultObject implements CustomResultObject {
     }
 
     //will prefix metricsGroupname
+
+    /**
+     * 设置metrics。
+     *
+     * @param metrics          metrics参数。
+     * @param metricsGroupName metrics group name参数。
+     */
     public void setMetrics(List<Metric> metrics, String metricsGroupName) {
 
         if (metrics != null && metricsGroupName != null && !metricsGroupName.isEmpty() && !"globalstatus".equals(metricsGroupName))
@@ -71,10 +98,14 @@ public class MetricsResultObject implements CustomResultObject {
                 m.setName(metricsGroupName + "." + m.getName());
 
 
-
         this.metrics = metrics;
     }
 
+    /**
+     * 添加metric。
+     *
+     * @param m m参数。
+     */
     public void addMetric(Metric m) {
 
         if (this.metrics == null)

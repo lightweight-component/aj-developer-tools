@@ -5,23 +5,31 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.db.*;
+import com.yahoo.dba.perf.myperf.snmp.SNMPQueryProcessor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.sql.SQLException;
 import java.util.*;
-import com.yahoo.dba.perf.myperf.snmp.SNMPQueryProcessor;
 
+/**
+ * 表示query controller相关的类型。
+ */
 @Slf4j
 public class QueryController extends MyPerfBaseController {
+    /**
+     * 保存customer processor集合。
+     */
     private static Map<String, CustomQueryProcessor> CUSTOMER_PROCESSOR
             = new HashMap<>();
 
+    /**
+     * 保存post processor集合。
+     */
     private static Map<String, PostQueryResultProcessor> POST_PROCESSOR
             = new HashMap<>();
 
@@ -36,6 +44,13 @@ public class QueryController extends MyPerfBaseController {
         POST_PROCESSOR.put("mysql_innodb_mutex", new InnoDbMutexPostProccessor());
     }
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req,
                                              HttpServletResponse resp) throws Exception {
@@ -125,7 +140,7 @@ public class QueryController extends MyPerfBaseController {
                     //check if the connection is still good
                     if (!DBUtils.checkConnection(connWrapper.getConnection()))
                         WebAppUtil.closeDBConnection(req, connWrapper, true, false);
-                     else
+                    else
                         WebAppUtil.closeDBConnection(req, connWrapper, true, false);
 
                 } else

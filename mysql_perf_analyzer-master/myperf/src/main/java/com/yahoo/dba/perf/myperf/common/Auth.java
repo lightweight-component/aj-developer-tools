@@ -5,10 +5,9 @@
  */
 package com.yahoo.dba.perf.myperf.common;
 
+import com.yahoo.dba.perf.myperf.springmvc.WebAppUtil;
 import lombok.Getter;
 import lombok.Setter;
-
-import com.yahoo.dba.perf.myperf.springmvc.WebAppUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -20,13 +19,24 @@ import javax.servlet.http.HttpSession;
  * @author xrao
  */
 public class Auth {
+    /**
+     * 保存context信息。
+     */
     @Getter
     @Setter
     private MyPerfContext context;
 
+    /**
+     * 创建Auth对象。
+     */
     public Auth() {
     }
 
+    /**
+     * 创建Auth对象。
+     *
+     * @param ctx ctx参数。
+     */
     public Auth(MyPerfContext ctx) {
         this.context = ctx;
     }
@@ -58,6 +68,13 @@ public class Auth {
         return appUser;
     }
 
+    /**
+     * 记录in。
+     *
+     * @param appUser app user参数。
+     * @param request request参数。
+     * @return 是否满足条件。
+     */
     public boolean login(AppUser appUser, HttpServletRequest request) {
 
         if (appUser == null)

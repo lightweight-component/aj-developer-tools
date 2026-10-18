@@ -5,18 +5,27 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Set;
 
+/**
+ * 表示cred controller相关的类型。
+ */
 @Slf4j
 public class CredController extends MyPerfBaseController {
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param request request参数。
+     * @param resp    resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest request,
                                              HttpServletResponse resp) throws Exception {
@@ -71,7 +80,7 @@ public class CredController extends MyPerfBaseController {
 
                 if (testResult == null)
                     break;
-                 else {
+                else {
                     //TODO catch the case the first server is offline
                     return this.respondFailure(testResult, request);
                 }

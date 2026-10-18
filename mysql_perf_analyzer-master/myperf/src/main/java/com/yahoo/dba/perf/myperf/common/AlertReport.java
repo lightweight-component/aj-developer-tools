@@ -11,62 +11,100 @@ import lombok.Setter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
-import java.util.LinkedHashMap;
+import java.util.*;
 
+/**
+ * 表示alert report相关的类型。
+ */
 public class AlertReport implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 保存db group name信息。
+     */
     @Getter
     @Setter
     private String dbGroupName;
+    /**
+     * 保存db host name信息。
+     */
     @Getter
     @Setter
     private String dbHostName;
+    /**
+     * 保存timestamp信息。
+     */
     @Getter
     @Setter
     private long timestamp;//in yyyymmddhhmmss
+    /**
+     * 保存alert reason信息。
+     */
     @Getter
     @Setter
     private String alertReason;
+    /**
+     * 保存alert value信息。
+     */
     @Getter
     @Setter
     private String alertValue;
 
+    /**
+     * 保存process list summary信息。
+     */
     @Getter
     @Setter
     private ProcessListSummary processListSummary;
+    /**
+     * 保存replication summary信息。
+     */
     @Getter
     @Setter
     private LinkedHashMap<String, String> replicationSummary;
     //user defined alerts, the key is alert name
+    /**
+     * 保存user defined alert data信息。
+     */
     @Getter
     @Setter
     private ResultList userDefinedAlertData;
 
+    /**
+     * 保存report timestamp信息。
+     */
     @Getter
     @Setter
     private long reportTimestamp;
 
+    /**
+     * 保存root path信息。
+     */
     @Getter
     @Setter
     private File rootPath;
 
+    /**
+     * 创建AlertReport对象。
+     */
     public AlertReport() {
 
     }
 
+    /**
+     * 保存as text。
+     */
     public void saveAsText() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         sdf2.setTimeZone(TimeZone.getTimeZone("UTC"));
-        File dest ;
+        File dest;
         try {
             String ts = sdf.format(new Date(this.timestamp));
             File dir = new File(this.rootPath, sdf2.format(new Date(this.timestamp)));
@@ -111,6 +149,12 @@ public class AlertReport implements Serializable {
 
     }
 
+    /**
+     * 输出list。
+     *
+     * @param pw    pw参数。
+     * @param rList r list参数。
+     */
     public static void printList(PrintWriter pw, ResultList rList) {
         int colcnt = rList.getColumnDescriptor().getColumns().size();
         int[] colsize = new int[colcnt];

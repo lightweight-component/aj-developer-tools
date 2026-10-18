@@ -5,10 +5,10 @@
  */
 package com.yahoo.dba.perf.myperf.common;
 
+import com.yahoo.dba.perf.myperf.meta.KeyTool;
 import lombok.Getter;
 import lombok.Setter;
 
-import com.yahoo.dba.perf.myperf.meta.KeyTool;
 import java.io.Serializable;
 
 /**
@@ -18,25 +18,46 @@ import java.io.Serializable;
  */
 public class DBCredential implements Serializable {
 
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 保存app user信息。
+     */
     @Getter
     @Setter
     private String appUser;//the user stores this db username/password pair
+    /**
+     * 保存username信息。
+     */
     @Getter
     @Setter
     private String username;//db username
+    /**
+     * 保存password信息。
+     */
     @Getter
     @Setter
     private String password;//db password
+    /**
+     * 保存db group name信息。
+     */
     @Getter
     @Setter
     private String dbGroupName;//the name of the database group
 
+    /**
+     * 保存encrypted信息。
+     */
     @Getter
     @Setter
     private String encrypted; //encypted password
 
+    /**
+     * 创建DBCredential对象。
+     */
     public DBCredential() {
     }
 

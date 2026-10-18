@@ -15,17 +15,42 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 表示alert scanner runner相关的类型。
+ */
 @Slf4j
 public class AlertScannerRunner implements Runnable {
+    /**
+     * 保存framework context信息。
+     */
     private final MyPerfContext frameworkContext;
 
     //note those objects are shared, so we need handle synchronization here
+    /**
+     * 保存dbqueue信息。
+     */
     private final LinkedBlockingQueue<DBInstanceInfo> dbqueue;//distribute job
+    /**
+     * 保存app user信息。
+     */
     private final AppUser appUser;
+    /**
+     * 保存conns信息。
+     */
     private UserDBConnections conns;
 
+    /**
+     * 保存sdf信息。
+     */
     protected SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
 
+    /**
+     * 创建AlertScannerRunner对象。
+     *
+     * @param frameworkContext framework context参数。
+     * @param dbqueue          dbqueue参数。
+     * @param appUser          app user参数。
+     */
     public AlertScannerRunner(MyPerfContext frameworkContext, LinkedBlockingQueue<DBInstanceInfo> dbqueue, AppUser appUser) {
         this.frameworkContext = frameworkContext;
         this.dbqueue = dbqueue;
@@ -33,10 +58,16 @@ public class AlertScannerRunner implements Runnable {
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
+    /**
+     * 执行run操作。
+     */
     public void run() {
         scan();
     }
 
+    /**
+     * 执行scan操作。
+     */
     private void scan() {
         conns = new UserDBConnections();
         conns.setAppUser(appUser.getName());
@@ -63,6 +94,12 @@ public class AlertScannerRunner implements Runnable {
     }
 
 
+    /**
+     * 获取alert threshold。
+     *
+     * @param dbinfo dbinfo参数。
+     * @return 处理结果。
+     */
     private Map<String, Float> getAlertThreshold(DBInstanceInfo dbinfo) {
         Map<String, Float> thresholds = new HashMap<>(AlertSettings.COMMON_ALERTS.length);
 
@@ -74,6 +111,12 @@ public class AlertScannerRunner implements Runnable {
         return thresholds;
     }
 
+    /**
+     * 执行try connect操作。
+     *
+     * @param scanData scan data参数。
+     * @return 是否满足条件。
+     */
     private boolean tryConnect(ScanData scanData) {
         DBCredential cred = DBUtils.findDBCredential(frameworkContext, scanData.dbinfo.getDbGroupName(), appUser);
 
@@ -106,6 +149,12 @@ public class AlertScannerRunner implements Runnable {
 
     }
 
+    /**
+     * 执行scan host操作。
+     *
+     * @param dbinfo dbinfo参数。
+     * @return 是否满足条件。
+     */
     private boolean scanHost(DBInstanceInfo dbinfo) {
         boolean status = false;
         ScanData scanData = new ScanData();
@@ -139,6 +188,12 @@ public class AlertScannerRunner implements Runnable {
         return status;
     }
 
+    /**
+     * 执行scan alert操作。
+     *
+     * @param scanData  scan data参数。
+     * @param subscript subscript参数。
+     */
     private void scanAlert(ScanData scanData, AlertSubscribers.Subscription subscript) {
         AlertDefinition def = this.frameworkContext.getMetricsDef().getUdmManager().getAlertByName(subscript.alertName);
 
@@ -188,9 +243,8 @@ public class AlertScannerRunner implements Runnable {
                 }
 
                 hasAlert = true;
-            } else
-                if (ist != null && ist.getLastAlertType() != null && ist.getLastAlertType().equals(def.getName()))
-                    this.frameworkContext.getMetricDb().markAlertEnd(Long.parseLong(sdf.format(startTime)) - 100, scanData.dbinfo.getDbid(), System.currentTimeMillis(), subscript.alertName);
+            } else if (ist != null && ist.getLastAlertType() != null && ist.getLastAlertType().equals(def.getName()))
+                this.frameworkContext.getMetricDb().markAlertEnd(Long.parseLong(sdf.format(startTime)) - 100, scanData.dbinfo.getDbid(), System.currentTimeMillis(), subscript.alertName);
 
 
             log.info("AlertScan done on " + scanData.dbinfo + ", alert " + def.getName() + ", has alert: " + hasAlert);

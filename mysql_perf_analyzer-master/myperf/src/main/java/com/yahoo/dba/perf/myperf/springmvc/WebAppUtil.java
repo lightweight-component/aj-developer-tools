@@ -5,21 +5,35 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.db.DBConnectionWrapper;
 import com.yahoo.dba.perf.myperf.db.UserDBConnections;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.util.Enumeration;
 
+/**
+ * 表示web app util相关的类型。
+ */
 @Slf4j
 public class WebAppUtil {
+    /**
+     * 定义dbgroup常量。
+     */
     public static final String DBGROUP = "group";
+    /**
+     * 定义dbhost常量。
+     */
     public static final String DBHOST = "host";
 
+    /**
+     * 解析request parameter。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     public static QueryParameters parseRequestParameter(HttpServletRequest req) {
         QueryParameters qps = new QueryParameters();
         //identify target db
@@ -44,24 +58,26 @@ public class WebAppUtil {
         return qps;
     }
 
+    /**
+     * 执行store last db info request操作。
+     *
+     * @param dbgroup dbgroup参数。
+     * @param host    host参数。
+     * @param req     req参数。
+     */
     public static void storeLastDbInfoRequest(String dbgroup, String host, HttpServletRequest req) {
 
-        if (req.getSession() != null)
-            try {
+        if (req.getSession() != null) {
+            if (dbgroup == null)
+                req.getSession().removeAttribute(DBGROUP);
+            else
+                req.getSession().setAttribute(DBGROUP, dbgroup);
 
-                if (dbgroup == null)
-                    req.getSession().removeAttribute(DBGROUP);
-                else
-                    req.getSession().setAttribute(DBGROUP, dbgroup);
-
-                if (host == null)
-                    req.getSession().removeAttribute(DBHOST);
-                else
-                    req.getSession().setAttribute(DBHOST, host);
-
-            } catch (Exception ex) {
-            }
-
+            if (host == null)
+                req.getSession().removeAttribute(DBHOST);
+            else
+                req.getSession().setAttribute(DBHOST, host);
+        }
     }
 
     /**
@@ -84,6 +100,12 @@ public class WebAppUtil {
         return null;
     }
 
+    /**
+     * 执行retrieve user from request操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     public static AppUser retrieveUserFromRequest(HttpServletRequest req) {
 
         if (req.getSession() != null)
@@ -95,11 +117,25 @@ public class WebAppUtil {
         return null;
     }
 
+    /**
+     * 判断是否包含valid session。
+     *
+     * @param req req参数。
+     * @return 是否满足条件。
+     */
     public static boolean hasValidSession(HttpServletRequest req) {
         AppUser appUser = retrieveUserFromRequest(req);
         return appUser != null && appUser.isVerified();
     }
 
+    /**
+     * 查找dbcredential。
+     *
+     * @param ctx     ctx参数。
+     * @param dbid    dbid参数。
+     * @param appUser app user参数。
+     * @return 处理结果。
+     */
     public static DBCredential findDBCredential(MyPerfContext ctx, String dbid, AppUser appUser) {
         DBCredential cred = null;
 
@@ -119,6 +155,14 @@ public class WebAppUtil {
     }
 
 
+    /**
+     * 获取dbconnection。
+     *
+     * @param req    req参数。
+     * @param ctx    ctx参数。
+     * @param dbinfo dbinfo参数。
+     * @return 处理结果。
+     */
     public static DBConnectionWrapper getDBConnection(HttpServletRequest req, MyPerfContext ctx, DBInstanceInfo dbinfo) {
         try {
             //get session
@@ -186,6 +230,14 @@ public class WebAppUtil {
     }
 
 
+    /**
+     * 关闭dbconnection。
+     *
+     * @param req      req参数。
+     * @param conn     conn参数。
+     * @param hasError has error参数。
+     * @param reuse    reuse参数。
+     */
     public static void closeDBConnection(HttpServletRequest req, DBConnectionWrapper conn, boolean hasError, boolean reuse) {
         try {
             //get session
@@ -196,11 +248,10 @@ public class WebAppUtil {
             if (conns == null) {
                 //something wrong.
                 log.info("Cannot find connection manager");
-            } else
-                if (hasError)
-                    conns.checkinConnectionOnError(conn);
-                else if (reuse) conns.checkinConnection(conn);
-                else conns.checkinConnectionAndClose(conn);
+            } else if (hasError)
+                conns.checkinConnectionOnError(conn);
+            else if (reuse) conns.checkinConnection(conn);
+            else conns.checkinConnectionAndClose(conn);
 
         } catch (Throwable th) {
 

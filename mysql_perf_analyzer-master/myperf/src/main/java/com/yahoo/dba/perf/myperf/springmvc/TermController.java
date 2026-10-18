@@ -17,6 +17,13 @@ import javax.servlet.http.HttpServletResponse;
  * @author xrao
  */
 public class TermController extends MyPerfBaseController {
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req,
                                              HttpServletResponse resp) throws Exception {

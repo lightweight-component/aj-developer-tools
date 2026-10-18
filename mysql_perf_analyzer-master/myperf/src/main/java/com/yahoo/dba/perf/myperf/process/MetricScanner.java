@@ -14,30 +14,57 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/**
+ * 表示metric scanner相关的类型。
+ */
 @Slf4j
 public class MetricScanner {
+    /**
+     * 保存framework context信息。
+     */
     @Getter
     @Setter
     private MyPerfContext frameworkContext;
+    /**
+     * 保存app user信息。
+     */
     @Getter
     @Setter
     private AppUser appUser;//run as user
+    /**
+     * 保存thread count信息。
+     */
     @Getter
     private int threadCount = 4;
+    /**
+     * 保存record count信息。
+     */
     @Getter
     @Setter
     private int recordCount = 840;
+    /**
+     * 保存buffer信息。
+     */
     @Getter
     @Setter
     private HashMap<String, Map<String, MetricsBuffer>> buffer;
+    /**
+     * 保存sdf信息。
+     */
     protected SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
 
     //private Map<String, List<MetricsGroup>> builtinMetrics = new HashMap<String, List<MetricsGroup>>();
 
+    /**
+     * 创建MetricScanner对象。
+     */
     public MetricScanner() {
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
+    /**
+     * 执行scan auto操作。
+     */
     public void scanAuto() {
         log.info(new Date() + ": Starting auto metrics scan ...");
         Date startDate = null;
@@ -64,6 +91,12 @@ public class MetricScanner {
     }
 
     //setup metrics buffer if need
+
+    /**
+     * 检查and setup metrics buffer。
+     *
+     * @param dbinfo dbinfo参数。
+     */
     private void checkAndSetupMetricsBuffer(DBInstanceInfo dbinfo) {
         //will set up UDM buffer when need
         if (!buffer.containsKey(dbinfo.getDbGroupName() + ":" + dbinfo.getHostName())) {
@@ -110,8 +143,16 @@ public class MetricScanner {
         }
     }
 
+    /**
+     * 保存metrics scanner runners信息。
+     */
     private MetricScannerRunner[] metricsScannerRunners = null;
 
+    /**
+     * 执行scan操作。
+     *
+     * @param snap_id snap id参数。
+     */
     public void scan(int snap_id) {
         Set<String> clusternames = frameworkContext.getDbInfoManager().getMyDatabases(appUser.getName(), false).getMyDbList();
         log.info("Start scan metrics");
@@ -175,6 +216,9 @@ public class MetricScanner {
         this.frameworkContext.getAutoScanner().getMetricDb().flush();//notify persistent store
     }
 
+    /**
+     * 执行shutdown操作。
+     */
     public void shutdown() {
 
         if (this.metricsScannerRunners != null)
@@ -185,6 +229,11 @@ public class MetricScanner {
 
     }
 
+    /**
+     * 设置thread count。
+     *
+     * @param threadCount thread count参数。
+     */
     public void setThreadCount(int threadCount) {
 
         if (threadCount <= 0)

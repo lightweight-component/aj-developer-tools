@@ -5,35 +5,50 @@
  */
 package com.yahoo.dba.perf.myperf.db;
 
+import com.yahoo.dba.perf.myperf.common.*;
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
-import com.yahoo.dba.perf.myperf.common.*;
-
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.sql.ResultSetMetaData;
 
+/**
+ * 表示query executor相关的类型。
+ */
 @Slf4j
 public class QueryExecutor {
     //Oracle specific
+    /**
+     * 定义awr snap id sql常量。
+     */
     public static final String AWR_SNAP_ID_SQL = "select min(snap_id) min_snap_id, max(snap_id) max_snap_id from dba_hist_snapshot where begin_interval_time between TO_TIMESTAMP(?,'yyyy-mm-dd hh24:mi:ss') and TO_TIMESTAMP(?,'yyyy-mm-dd hh24:mi:ss')";
+    /**
+     * 定义awr db id sql常量。
+     */
     public static final String AWR_DB_ID_SQL = "select dbid from dba_hist_snapshot where snap_id between ? and ?  and instance_number=? and rownum=1";
+    /**
+     * 定义awr db id sql 2常量。
+     */
     public static final String AWR_DB_ID_SQL_2 = "select dbid from dba_hist_snapshot where instance_number=? and rownum=1";
 
+    /**
+     * 保存sql manager信息。
+     */
     @Getter
     @Setter
     private SqlManager sqlManager;
+    /**
+     * 保存framework context信息。
+     */
     @Getter
     @Setter
     private MyPerfContext frameworkContext;
 
+    /**
+     * 创建QueryExecutor对象。
+     */
     public QueryExecutor() {
     }
 
@@ -119,6 +134,14 @@ public class QueryExecutor {
     }
 
 
+    /**
+     * 执行query with multi row metrics collapsed。
+     *
+     * @param qps  qps参数。
+     * @param conn conn参数。
+     * @param buf  buf参数。
+     * @return 处理结果。
+     */
     public Map<String, String> executeQueryWithMultiRowMetricsCollapsed(QueryParameters qps, DBConnectionWrapper conn, MetricsBuffer buf) throws SQLException {
         String actualSql = null;
         long startTimestamp = System.currentTimeMillis();
@@ -251,16 +274,15 @@ public class QueryExecutor {
 
                             metrics.put(key, rs.getString(valueColumn.toLowerCase()));
                         }
-                     else
-                        if (rs != null) {
-                            ResultSetMetaData meta = rs.getMetaData();
-                            int cnt = meta.getColumnCount();
+                    else if (rs != null) {
+                        ResultSetMetaData meta = rs.getMetaData();
+                        int cnt = meta.getColumnCount();
 
-                            if (rs.next())
-                                for (int i = 1; i <= cnt; i++)
-                                    metrics.put(meta.getColumnLabel(i).toLowerCase(), rs.getString(i));
+                        if (rs.next())
+                            for (int i = 1; i <= cnt; i++)
+                                metrics.put(meta.getColumnLabel(i).toLowerCase(), rs.getString(i));
 
-                        }
+                    }
 
                     //log.info("Retrieved: "+metrics.size()+", sql: "+actualSql);
                     return metrics;
@@ -374,7 +396,7 @@ public class QueryExecutor {
         int slaveIoRunning = 1;
         int slaveSqlRunning = 1;
         try (Statement stmt = conn.getConnection().createStatement();
-            ResultSet rs = stmt.executeQuery("show slave status")) {
+             ResultSet rs = stmt.executeQuery("show slave status")) {
             while (rs != null && rs.next()) {
                 int sec = rs.getInt("Seconds_Behind_Master");
 
@@ -400,6 +422,14 @@ public class QueryExecutor {
         return resMap;
     }
 
+    /**
+     * 执行query。
+     *
+     * @param qps      qps参数。
+     * @param conn     conn参数。
+     * @param maxCount max count参数。
+     * @return 处理结果。
+     */
     public ResultList executeQuery(QueryParameters qps, DBConnectionWrapper conn, int maxCount) throws SQLException {
         //validate the sql first
         //QueryInputValidator.validateSql(this.sqlManager, qps);
@@ -421,14 +451,13 @@ public class QueryExecutor {
             if (sqlText == null)
                 sqlText = sql.getSqlText(conn.getVersion());
 
-            boolean usePreparedStatement = sql != null && sql.getParamCount() > 0 && !sql.isReplace();
+            boolean usePreparedStatement = sql.getParamCount() > 0 && !sql.isReplace();
             actualSql = sqlText;
 
-            if (sql != null && sql.getParamCount() > 0)
+            if (sql.getParamCount() > 0)
                 for (int i = 1; i <= sql.getParamCount(); i++)
                     actualSql = actualSql.replace("&p_" + i, usePreparedStatement
                             ? "?" : escapeSingleQuote(sql.getSqlParameter(i - 1), qps.getSqlParams().get("p_" + i)));
-
 
             try (Statement stmt = usePreparedStatement
                     ? conn.getConnection().prepareStatement(actualSql)
@@ -442,7 +471,6 @@ public class QueryExecutor {
 
                     for (int i = 1; i <= sql.getParamCount(); i++)
                         pstmt.setString(i, qps.getSqlParams().get("p_" + i));
-
                 }
 
                 try (ResultSet rs = usePreparedStatement
@@ -458,6 +486,15 @@ public class QueryExecutor {
         }
     }
 
+    /**
+     * 执行query。
+     *
+     * @param conn     conn参数。
+     * @param sql      sql参数。
+     * @param params   params参数。
+     * @param maxCount max count参数。
+     * @return 处理结果。
+     */
     public ResultList executeQuery(DBConnectionWrapper conn, String sql, Map<String, String> params, int maxCount) throws SQLException {
         String actualSql = null;
         try {
@@ -490,6 +527,13 @@ public class QueryExecutor {
         }
     }
 
+    /**
+     * 执行escape single quote操作。
+     *
+     * @param param param参数。
+     * @param str   str参数。
+     * @return 处理结果。
+     */
     private static String escapeSingleQuote(SqlParameter param, String str) {
 
         if (str == null)

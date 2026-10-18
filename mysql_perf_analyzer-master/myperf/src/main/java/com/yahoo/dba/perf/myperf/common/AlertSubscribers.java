@@ -7,15 +7,14 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
-import java.util.*;
 import java.io.ByteArrayInputStream;
-import javax.json.Json;
+import java.util.*;
 
 
 /**
@@ -26,19 +25,46 @@ import javax.json.Json;
 @Slf4j
 public class AlertSubscribers {
 
+    /**
+     * 表示subscription相关的类型。
+     */
     public static class Subscription {
         //lazy, not getter/setter
+        /**
+         * 保存group信息。
+         */
         public String group; //server group
+        /**
+         * 保存host信息。
+         */
         public String host;// server host, can be null
+        /**
+         * 保存alert name信息。
+         */
         public String alertName; //alert name
+        /**
+         * 保存threshold信息。
+         */
         public Float threshold; //if required. Null use default
+        /**
+         * 保存params集合。
+         */
         public Map<String, String> params;
 
+        /**
+         * 创建Subscription对象。
+         */
         public Subscription() {
             params = new HashMap<>();
         }
 
         //parse and set params
+
+        /**
+         * 设置params。
+         *
+         * @param paramString param string参数。
+         */
         public void setParams(String paramString) {
 
             if (paramString == null || paramString.isEmpty())
@@ -73,6 +99,11 @@ public class AlertSubscribers {
 
         }
 
+        /**
+         * 执行param to json操作。
+         *
+         * @return 处理结果。
+         */
         public String paramToJSON() {
 
             if ((this.params == null || this.params.size() == 0) && this.threshold == null)
@@ -102,21 +133,43 @@ public class AlertSubscribers {
         }
     }
 
+    /**
+     * 表示host subscriptions相关的类型。
+     */
     public static class HostSubscriptions {
+        /**
+         * 保存subscriptions集合。
+         */
         @Getter
         private List<Subscription> subscriptions;//host level subscription
+        /**
+         * 保存subscriptions map集合。
+         */
         private Map<String, Subscription> subscriptionsMap; //internal index
 
+        /**
+         * 创建HostSubscriptions对象。
+         */
         public HostSubscriptions() {
             subscriptions = new ArrayList<>();
             subscriptionsMap = new HashMap<>();
         }
 
+        /**
+         * 添加subscription。
+         *
+         * @param sub sub参数。
+         */
         public void addSubscription(Subscription sub) {
             this.subscriptions.add(sub);
             this.subscriptionsMap.put(sub.alertName, sub);
         }
 
+        /**
+         * 删除subscription。
+         *
+         * @param sub sub参数。
+         */
         public void deleteSubscription(Subscription sub) {
 
             if (sub == null)
@@ -133,23 +186,49 @@ public class AlertSubscribers {
             }
         }
 
+        /**
+         * 获取subscription。
+         *
+         * @param alertName alert name参数。
+         * @return 处理结果。
+         */
         public Subscription getSubscription(String alertName) {
             return this.subscriptionsMap.get(alertName);
         }
 
     }
 
+    /**
+     * 表示group subscriptions相关的类型。
+     */
     public static class GroupSubscriptions {
+        /**
+         * 保存subscriptions集合。
+         */
         private List<Subscription> subscriptions;//group level subscription
+        /**
+         * 保存hosts subscriptions集合。
+         */
         private Map<String, HostSubscriptions> hostsSubscriptions;//key is the hostname
+        /**
+         * 保存subscriptions map集合。
+         */
         private Map<String, Subscription> subscriptionsMap; //internal index
 
+        /**
+         * 创建GroupSubscriptions对象。
+         */
         public GroupSubscriptions() {
             subscriptions = new ArrayList<>();
             hostsSubscriptions = new HashMap<>();
             subscriptionsMap = new HashMap<>();
         }
 
+        /**
+         * 添加subscription。
+         *
+         * @param sub sub参数。
+         */
         public void addSubscription(Subscription sub) {
 
             if (sub == null)
@@ -167,6 +246,11 @@ public class AlertSubscribers {
             }
         }
 
+        /**
+         * 删除subscription。
+         *
+         * @param sub sub参数。
+         */
         public void deleteSubscription(Subscription sub) {
 
             if (sub == null)
@@ -183,11 +267,18 @@ public class AlertSubscribers {
                     }
                 }
 
-             else if (this.hostsSubscriptions.containsKey(sub.host))
+            else if (this.hostsSubscriptions.containsKey(sub.host))
                 this.hostsSubscriptions.get(sub.host).deleteSubscription(sub);
 
         }
 
+        /**
+         * 获取subscription。
+         *
+         * @param host      host参数。
+         * @param alertName alert name参数。
+         * @return 处理结果。
+         */
         public Subscription getSubscription(String host, String alertName) {
             Subscription sub = null;
 
@@ -200,6 +291,12 @@ public class AlertSubscribers {
             return sub;
         }
 
+        /**
+         * 获取subscription。
+         *
+         * @param host host参数。
+         * @return 处理结果。
+         */
         public List<Subscription> getSubscription(String host) {
             HashSet<String> alertnames = new HashSet<>();
             List<Subscription> mysubs = new ArrayList<>();
@@ -221,11 +318,20 @@ public class AlertSubscribers {
         }
     }
 
+    /**
+     * 保存group subscriptions集合。
+     */
     private Map<String, GroupSubscriptions> groupSubscriptions;//all subscriptions, grouped by server group
+    /**
+     * 保存context信息。
+     */
     @Getter
     @Setter
     private MyPerfContext context; //framework context to access metrics db
 
+    /**
+     * 创建AlertSubscribers对象。
+     */
     public AlertSubscribers() {
         groupSubscriptions = new HashMap<>();
     }
@@ -261,6 +367,12 @@ public class AlertSubscribers {
         return false;
     }
 
+    /**
+     * 添加subscription。
+     *
+     * @param sub sub参数。
+     * @return 是否满足条件。
+     */
     public boolean addSubscription(Subscription sub) {
 
         if (sub == null || sub.group == null || sub.group.isEmpty()
@@ -283,6 +395,12 @@ public class AlertSubscribers {
         return true;
     }
 
+    /**
+     * 删除subscription。
+     *
+     * @param sub sub参数。
+     * @return 是否满足条件。
+     */
     public boolean deleteSubscription(Subscription sub) {
         boolean status = this.context.getMetricDb() != null ?
                 this.context.getMetricDb().deleteAlertSubscription(sub) : false;
@@ -317,6 +435,13 @@ public class AlertSubscribers {
         }
     }
 
+    /**
+     * 获取subscriptions。
+     *
+     * @param group group参数。
+     * @param host  host参数。
+     * @return 处理结果。
+     */
     public List<Subscription> getSubscriptions(String group, String host) {
         synchronized (this.groupSubscriptions) {
 

@@ -5,21 +5,19 @@
  */
 package com.yahoo.dba.perf.myperf.common;
 
+import com.yahoo.dba.perf.myperf.common.UserDefinedMetrics.UserDefinedMetricsException;
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
-import com.yahoo.dba.perf.myperf.common.UserDefinedMetrics.UserDefinedMetricsException;
-
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
-import java.util.HashMap;
-import java.util.Map;
 import java.io.InputStream;
 import java.io.Serializable;
-import javax.json.Json;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -29,52 +27,119 @@ import javax.json.Json;
  */
 @Slf4j
 public class AlertDefinition implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 7023147712745750436L;
 
+    /**
+     * 定义source sql常量。
+     */
     public static final String SOURCE_SQL = "SQL"; //need an sql statement or build in sql
+    /**
+     * 定义source global status常量。
+     */
     public static final String SOURCE_GLOBAL_STATUS = "GLOBAL_STATUS";//from global_status
+    /**
+     * 定义source metrics常量。
+     */
     public static final String SOURCE_METRICS = "METRICS";//from metrics def scanned
+    /**
+     * 定义source other常量。
+     */
     public static final String SOURCE_OTHER = "OTHER";//not defined yet, or future use
+    /**
+     * 定义metrics comparision greater than常量。
+     */
     public static final String METRICS_COMPARISION_GREATER_THAN = "GT"; //alert if exceed threshold
+    /**
+     * 定义metrics comparision less than常量。
+     */
     public static final String METRICS_COMPARISION_LESS_THAN = "LT";//alert of below threshold
+    /**
+     * 定义metrics value type value常量。
+     */
     public static final String METRICS_VALUE_TYPE_VALUE = "LAST_VALUE";//use value
+    /**
+     * 定义metrics value type diff avg常量。
+     */
     public static final String METRICS_VALUE_TYPE_DIFF_AVG = "DIFF_AVG";//use per second change
+    /**
+     * 定义metrics value type diff常量。
+     */
     public static final String METRICS_VALUE_TYPE_DIFF = "DIFF";//use changes, for example, just detect if something happened
 
+    /**
+     * 保存name信息。
+     */
     @Getter
     private String name; //an all upper case name, refer to table ALERT, column ALERT_TYPE
     //for length, currently defined as VARCHAR(30), Alphanumerics only
     //Cannot be an existing name, including built in ones
+    /**
+     * 保存source信息。
+     */
     @Getter
     private String source = SOURCE_SQL;
+    /**
+     * 保存sql id信息。
+     */
     @Getter
     @Setter
     private String sqlId;//if source is SQL, we need either a sqlId for builtin SQLs in sql.xml
     //or sqlText
+    /**
+     * 保存sql text信息。
+     */
     @Getter
     @Setter
     private String sqlText;
 
+    /**
+     * 保存metric name信息。
+     */
     @Getter
     @Setter
     private String metricName; //if type is metrics, the full name of the metrics, group.subgroup.metricname
+    /**
+     * 保存default threshold信息。
+     */
     @Getter
     @Setter
     private float defaultThreshold; //if type is metrics, the default threshold
+    /**
+     * 保存metric comparison信息。
+     */
     @Getter
     @Setter
     private String metricComparison = METRICS_COMPARISION_GREATER_THAN;
+    /**
+     * 保存metric value type信息。
+     */
     @Getter
     @Setter
     private String metricValueType = METRICS_VALUE_TYPE_VALUE;//use last value, or changes per second
 
+    /**
+     * 保存params集合。
+     */
     @Getter
     private Map<String, String> params = new HashMap<>();
 
+    /**
+     * 创建AlertDefinition对象。
+     *
+     * @param name name参数。
+     */
     public AlertDefinition(String name) {
         this.name = name != null ? name.trim() : null;
     }
 
+    /**
+     * 设置source。
+     *
+     * @param source source参数。
+     */
     public void setSource(String source) {
 
         if (SOURCE_SQL.equalsIgnoreCase(source))
@@ -86,10 +151,22 @@ public class AlertDefinition implements Serializable {
         else this.source = SOURCE_OTHER;
     }
 
+    /**
+     * 添加param。
+     *
+     * @param name         name参数。
+     * @param defaultValue default value参数。
+     */
     public void addParam(String name, String defaultValue) {
         this.params.put(name, defaultValue);
     }
 
+    /**
+     * 创建from json。
+     *
+     * @param in in参数。
+     * @return 处理结果。
+     */
     public static AlertDefinition createFromJson(InputStream in) {
         AlertDefinition alert = null;
         try (JsonReader jsonReader = Json.createReader(in)) {
@@ -126,6 +203,12 @@ public class AlertDefinition implements Serializable {
         return null;
     }
 
+    /**
+     * 转换为json。
+     *
+     * @param html html参数。
+     * @return 处理结果。
+     */
     public String toJSON(boolean html) {
         StringBuilder mtrStr = new StringBuilder();
         mtrStr.append("{\r\n");
@@ -168,6 +251,9 @@ public class AlertDefinition implements Serializable {
     }
 
 
+    /**
+     * 执行validate操作。
+     */
     public void validate() throws UserDefinedMetricsException {
         StringBuilder sb = new StringBuilder();
         boolean valid = true;
@@ -196,7 +282,7 @@ public class AlertDefinition implements Serializable {
                 valid = false;
                 sb.append("Alert param name ").append(e.getKey()).append(" is not valid. Please use alphanumeric and underscore.");
             }
-            //TODO value
+        //TODO value
 
 
         if (!valid)

@@ -8,8 +8,8 @@ package com.yahoo.dba.perf.myperf.common;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.sql.ResultSet;
 import java.io.Serializable;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
@@ -19,46 +19,88 @@ import java.sql.SQLException;
  */
 public class ProcessListEntry implements Serializable, Comparable<ProcessListEntry> {
 
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 保存id信息。
+     */
     @Getter
     @Setter
     private String id;
+    /**
+     * 保存user信息。
+     */
     @Getter
     @Setter
     private String user;
+    /**
+     * 保存host信息。
+     */
     @Getter
     private String host;
+    /**
+     * 保存db信息。
+     */
     @Getter
     @Setter
     private String db;
+    /**
+     * 保存command信息。
+     */
     @Getter
     @Setter
     private String command;
+    /**
+     * 保存time信息。
+     */
     @Getter
     @Setter
     private int time;
+    /**
+     * 保存state信息。
+     */
     @Getter
     @Setter
     private String state;
+    /**
+     * 保存info信息。
+     */
     @Getter
     @Setter
     private String info;
 
     //note not all MySQL servers have these metrics (percona 5.5.10 or later). For 5.6, we can use performance schema
+    /**
+     * 保存time ms信息。
+     */
     @Getter
     @Setter
     private long time_ms = -1L;
+    /**
+     * 保存rows read信息。
+     */
     @Getter
     @Setter
     private long rows_read = 0;
+    /**
+     * 保存rows examined信息。
+     */
     @Getter
     @Setter
     private long rows_examined = 0;
+    /**
+     * 保存rows sent信息。
+     */
     @Getter
     @Setter
     private long rows_sent = 0;
 
+    /**
+     * 创建ProcessListEntry对象。
+     */
     public ProcessListEntry() {
 
     }
@@ -106,6 +148,11 @@ public class ProcessListEntry implements Serializable, Comparable<ProcessListEnt
         }
     }
 
+    /**
+     * 设置host。
+     *
+     * @param host host参数。
+     */
     public void setHost(String host) {
 
         if (host == null)
@@ -119,6 +166,12 @@ public class ProcessListEntry implements Serializable, Comparable<ProcessListEnt
             this.host = host.substring(0, idx) + "";
     }
 
+    /**
+     * 比较to。
+     *
+     * @param obj obj参数。
+     * @return 处理结果。
+     */
     @Override
     public int compareTo(ProcessListEntry obj) {
 

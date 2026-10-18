@@ -7,29 +7,45 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
+/**
+ * 表示metrics buffer相关的类型。
+ */
 @Slf4j
 public class MetricsBuffer {
+    /**
+     * 保存metrics信息。
+     */
     @Getter
     private MetricsGroup metrics;//metrics to store
 
+    /**
+     * 保存record length信息。
+     */
     @Getter
     private int recordLength;//note: for each record, first 4 bytes for dbid, 4 bytes forsnap_id, 8 bytes for timestamp, 4 bytes for SQL response time in ms
 
+    /**
+     * 保存dbid信息。
+     */
     @Getter
     @Setter
     private int dbid;//database id, for data persistence purpose
 
+    /**
+     * 创建MetricsBuffer对象。
+     *
+     * @param mg mg参数。
+     */
     public MetricsBuffer(MetricsGroup mg) {
         //this.capacity = capacity;
         this.metrics = mg;
@@ -38,6 +54,15 @@ public class MetricsBuffer {
     }
 
 
+    /**
+     * 执行record one row bymetrics name2操作。
+     *
+     * @param rs        rs参数。
+     * @param snap_id   snap id参数。
+     * @param timestamp timestamp参数。
+     * @param sql_time  sql time参数。
+     * @return 处理结果。
+     */
     public ByteBuffer recordOneRowBymetricsName2(ResultSet rs, int snap_id, long timestamp, int sql_time)
             throws SQLException {
         HashMap<String, String> hs = new HashMap<>();
@@ -92,7 +117,7 @@ public class MetricsBuffer {
                         log.warn("Failed to parse " + m.getName() + " with value " + val, ex);
                         buf2.putInt(pos, (int) Long.parseLong(val));
                     }
-                 else buf2.putInt(pos, 0);
+                else buf2.putInt(pos, 0);
 
                 pos += 4;
             } else if (m.getDataType() == MetricDataType.LONG) {
@@ -122,6 +147,15 @@ public class MetricsBuffer {
         return buf2;
     }
 
+    /**
+     * 执行record one row by metrics map操作。
+     *
+     * @param rs        rs参数。
+     * @param snap_id   snap id参数。
+     * @param timestamp timestamp参数。
+     * @param sql_time  sql time参数。
+     * @return 处理结果。
+     */
     public ByteBuffer recordOneRowByMetricsMap(Map<String, String> rs, int snap_id, long timestamp, int sql_time)
             throws SQLException {
 
@@ -208,6 +242,12 @@ public class MetricsBuffer {
         return buf2;
     }
 
+    /**
+     * 执行escape json操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     public static String escapeJson(String str) {
 
         if (str == null)

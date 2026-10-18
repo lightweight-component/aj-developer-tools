@@ -5,13 +5,12 @@
  */
 package com.yahoo.dba.perf.myperf.db;
 
+import com.yahoo.dba.perf.myperf.common.*;
 import lombok.extern.slf4j.Slf4j;
 
-import com.yahoo.dba.perf.myperf.common.*;
-
 import java.sql.*;
-import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Query slave status and use master info to add master status
@@ -20,11 +19,27 @@ import java.util.LinkedHashMap;
  */
 @Slf4j
 public class ReplLagQueryProcessor implements CustomQueryProcessor {
+    /**
+     * 保存slave lag entries信息。
+     */
     private static String[] SLAVE_LAG_ENTRIES = new String[]{"Seconds_Behind_Master", "Slave_IO_Running",
             "Slave_SQL_Running", "Slave_IO_State"};
+    /**
+     * 保存slave pos entries信息。
+     */
     private static String[] SLAVE_POS_ENTRIES = new String[]{"Master_Log_File", "Read_Master_Log_Pos",
             "Relay_Master_Log_File", "Exec_Master_Log_Pos", "Relay_Log_File", "Relay_Log_Pos"};
 
+    /**
+     * 查询multiple。
+     *
+     * @param context     context参数。
+     * @param dbinfo      dbinfo参数。
+     * @param appUser     app user参数。
+     * @param connWrapper conn wrapper参数。
+     * @param qps         qps参数。
+     * @param rListMap    r list map参数。
+     */
     @Override
     public void queryMultiple(MyPerfContext context, DBInstanceInfo dbinfo, String appUser,
                               DBConnectionWrapper connWrapper, QueryParameters qps,
@@ -33,6 +48,16 @@ public class ReplLagQueryProcessor implements CustomQueryProcessor {
 
     }
 
+    /**
+     * 查询single。
+     *
+     * @param context     context参数。
+     * @param dbinfo      dbinfo参数。
+     * @param appUser     app user参数。
+     * @param connWrapper conn wrapper参数。
+     * @param qps         qps参数。
+     * @return 处理结果。
+     */
     @Override
     public ResultList querySingle(MyPerfContext context, DBInstanceInfo dbinfo, String appUser,
                                   DBConnectionWrapper connWrapper, QueryParameters qps)
@@ -80,7 +105,7 @@ public class ReplLagQueryProcessor implements CustomQueryProcessor {
 
                                     if (conn != null)
                                         try (Statement stmt = conn.createStatement();
-                                            ResultSet rs = stmt.executeQuery("show master status")) {
+                                             ResultSet rs = stmt.executeQuery("show master status")) {
                                             //TODO rearrange order
                                             ResultList rList2 = new ResultList();
                                             rList2.setColumnDescriptor(rList.getColumnDescriptor());
@@ -141,11 +166,21 @@ public class ReplLagQueryProcessor implements CustomQueryProcessor {
         return rList;
     }
 
+    /**
+     * 判断multiple。
+     *
+     * @return 是否满足条件。
+     */
     @Override
     public boolean isMultiple() {
         return false;
     }
 
+    /**
+     * 执行require dbconnection操作。
+     *
+     * @return 是否满足条件。
+     */
     @Override
     public boolean requireDBConnection() {
         return true;

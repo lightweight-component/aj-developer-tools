@@ -5,20 +5,28 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.extern.slf4j.Slf4j;
-
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.process.MyProfiler;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.LinkedHashMap;
 
+/**
+ * 表示profile controller相关的类型。
+ */
 @Slf4j
 public class ProfileController extends MyPerfBaseController {
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req,
                                              HttpServletResponse resp) throws Exception {
@@ -79,7 +87,7 @@ public class ProfileController extends MyPerfBaseController {
 
             if (useJson)
                 jsonString = profiler.runExplainPlanJson();
-             else if (explainPlan) listMap.put("plan", profiler.runExplainPlan());
+            else if (explainPlan) listMap.put("plan", profiler.runExplainPlan());
 
             if (profile)
                 listMap.put("profile", profiler.runProfile());

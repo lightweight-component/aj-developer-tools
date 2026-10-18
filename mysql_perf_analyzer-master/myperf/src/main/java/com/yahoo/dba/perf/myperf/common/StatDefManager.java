@@ -7,36 +7,60 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import java.util.Map;
-import java.util.TreeMap;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.util.Map;
+import java.util.TreeMap;
 
 
+/**
+ * 表示stat def manager相关的类型。
+ */
 @Slf4j
 public class StatDefManager implements Serializable {
 
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 9087706748220206476L;
+    /**
+     * 定义input factory常量。
+     */
     @SuppressWarnings("restriction")
     static final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+    /**
+     * 保存stat map集合。
+     */
     @Setter
     private Map<String, String> statMap = new TreeMap<>();
+    /**
+     * 保存source path信息。
+     */
     @Getter
     @Setter
     private String sourcePath = "stats.xml";
 
+    /**
+     * 创建StatDefManager对象。
+     */
     public StatDefManager() {
 
     }
 
+    /**
+     * 获取stat description。
+     *
+     * @param category category参数。
+     * @param name     name参数。
+     * @return 处理结果。
+     */
     public String getStatDescription(String category, String name) {
 
         if (category == null || category.isEmpty())
@@ -49,6 +73,12 @@ public class StatDefManager implements Serializable {
         return null;
     }
 
+    /**
+     * 获取stat description。
+     *
+     * @param name name参数。
+     * @return 处理结果。
+     */
     public String getStatDescription(String name) {
 
         if (name == null)
@@ -71,6 +101,11 @@ public class StatDefManager implements Serializable {
         return null;
     }
 
+    /**
+     * 获取stat names。
+     *
+     * @return 处理结果。
+     */
     public String[] getStatNames() {
         return this.statMap.keySet().toArray(new String[0]);
     }
@@ -117,6 +152,11 @@ public class StatDefManager implements Serializable {
         return false;
     }
 
+    /**
+     * 执行init操作。
+     *
+     * @return 是否满足条件。
+     */
     public boolean init() {
         try (InputStream in = this.getClass().getClassLoader().getResourceAsStream(this.sourcePath)) {
             this.load(in);

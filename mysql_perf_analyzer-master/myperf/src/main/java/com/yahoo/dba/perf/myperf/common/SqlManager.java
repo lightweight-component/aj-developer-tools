@@ -7,7 +7,6 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
 import javax.xml.stream.XMLInputFactory;
@@ -27,19 +26,37 @@ import java.util.TreeMap;
  */
 @Slf4j
 public class SqlManager implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 保存input factory信息。
+     */
     private XMLInputFactory inputFactory = XMLInputFactory.newInstance();//will be used only once at startup time
 
     //store all predefined sqls. the key is the handle.
+    /**
+     * 保存sql map集合。
+     */
     @Getter
     private Map<String, Sql> sqlMap = new TreeMap<>();
 
     //for now, we use default path "sql.xml" under classes
+    /**
+     * 保存sql path信息。
+     */
     @Getter
     @Setter
     private String sqlPath = "sql.xml";
 
+    /**
+     * 获取sql。
+     *
+     * @param handle handle参数。
+     * @return 处理结果。
+     */
     public Sql getSql(String handle) {
         if (this.sqlMap.containsKey(handle))
             return this.sqlMap.get(handle);
@@ -92,13 +109,13 @@ public class SqlManager implements Serializable {
                         comments = attrValue;
                     else if ("replace".equalsIgnoreCase(attrName))
                         replace = "Y".equalsIgnoreCase(attrValue) || "TRUE".equalsIgnoreCase(attrValue);
-                     else if ("useSnapId".equalsIgnoreCase(attrName))
+                    else if ("useSnapId".equalsIgnoreCase(attrName))
                         useSnapId = "Y".equalsIgnoreCase(attrValue) || "TRUE".equalsIgnoreCase(attrValue);
-                     else if ("useDbid".equalsIgnoreCase(attrName))
+                    else if ("useDbid".equalsIgnoreCase(attrName))
                         useDbid = "Y".equalsIgnoreCase(attrValue) || "TRUE".equalsIgnoreCase(attrValue);
-                     else if ("expandRow".equalsIgnoreCase(attrName))
+                    else if ("expandRow".equalsIgnoreCase(attrName))
                         expandRow = "Y".equalsIgnoreCase(attrValue) || "TRUE".equalsIgnoreCase(attrValue);
-                     else if ("errorInline".equalsIgnoreCase(attrName))
+                    else if ("errorInline".equalsIgnoreCase(attrName))
                         errorInline = "Y".equalsIgnoreCase(attrValue) || "TRUE".equalsIgnoreCase(attrValue);
 
 
@@ -165,7 +182,7 @@ public class SqlManager implements Serializable {
                                 sql.getMetrics().put(reader.getAttributeValue(null, "name").toUpperCase(), reader.getAttributeValue(null, "suffix"));
                             else sql.getMetrics().put(reader.getAttributeValue(null, "name").toUpperCase(), "");
 
-                         else if ("vsql".equalsIgnoreCase(tagName2)) {
+                        else if ("vsql".equalsIgnoreCase(tagName2)) {
                             String minVersion = reader.getAttributeValue(null, "minVersion");
                             String maxVersion = reader.getAttributeValue(null, "maxVersion");
                             String vtext = reader.getElementText();
@@ -190,6 +207,11 @@ public class SqlManager implements Serializable {
         return false;
     }
 
+    /**
+     * 执行init操作。
+     *
+     * @return 是否满足条件。
+     */
     public boolean init() {
         try (InputStream in = this.getClass().getClassLoader().getResourceAsStream(sqlPath)) {
             this.load(in);

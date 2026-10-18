@@ -7,106 +7,218 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
 import javax.json.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.Writer;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.Serializable;
 
 /**
  * Store SNMP settings for community, version, etc.
  */
 @Slf4j
 public class SNMPSettings implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 表示snmpsetting相关的类型。
+     */
     public static class SNMPSetting {
+        /**
+         * 定义default community常量。
+         */
         public static final String DEFAULT_COMMUNITY = "public";
+        /**
+         * 定义default version常量。
+         */
         public static final String DEFAULT_VERSION = "2c";
+        /**
+         * 定义community常量。
+         */
         public static final String COMMUNITY = "community";
+        /**
+         * 定义version常量。
+         */
         public static final String VERSION = "version";
+        /**
+         * 定义enableed常量。
+         */
         public static final String ENABLEED = "enabled";
+        /**
+         * 定义v3 username常量。
+         */
         public static final String V3_USERNAME = "username";
+        /**
+         * 定义v3 password常量。
+         */
         public static final String V3_PASSWORD = "password";
+        /**
+         * 定义v3 authprotocol常量。
+         */
         public static final String V3_AUTHPROTOCOL = "authprotocol";
+        /**
+         * 定义v3 privacypassphrase常量。
+         */
         public static final String V3_PRIVACYPASSPHRASE = "privacypassphrase";
+        /**
+         * 定义v3 privacyprotocol常量。
+         */
         public static final String V3_PRIVACYPROTOCOL = "privacyprotocol";
+        /**
+         * 定义v3 context常量。
+         */
         public static final String V3_CONTEXT = "context";
 
+        /**
+         * 保存community信息。
+         */
         @Getter
         @Setter
         private String community;
+        /**
+         * 保存version信息。
+         */
         @Getter
         @Setter
         private String version;
+        /**
+         * 保存username信息。
+         */
         @Getter
         @Setter
         private String username;//v3
+        /**
+         * 保存password信息。
+         */
         @Getter
         @Setter
         private String password;//v3
+        /**
+         * 保存auth protocol信息。
+         */
         @Getter
         @Setter
         private String authProtocol;//v3
+        /**
+         * 保存privacy passphrase信息。
+         */
         @Getter
         @Setter
         private String privacyPassphrase;//v3
+        /**
+         * 保存privacy protocol信息。
+         */
         @Getter
         @Setter
         private String privacyProtocol;//v3
+        /**
+         * 保存context信息。
+         */
         @Getter
         @Setter
         private String context;//v3
+        /**
+         * 保存enabled信息。
+         */
         @Getter
         @Setter
         private String enabled = "yes";
 
+        /**
+         * 创建SNMPSetting对象。
+         */
         public SNMPSetting() {
 
         }
 
+        /**
+         * 创建SNMPSetting对象。
+         *
+         * @param community community参数。
+         * @param version   version参数。
+         */
         public SNMPSetting(String community, String version) {
             this.community = community;
             this.version = version;
         }
 
+        /**
+         * 执行copy操作。
+         *
+         * @return 处理结果。
+         */
         public SNMPSetting copy() {
             return new SNMPSetting(this.community, this.version);
         }
 
     }
 
+    /**
+     * 保存site setting信息。
+     */
     @Getter
     @Setter
     private SNMPSetting siteSetting;//default site setting, if provided
     //group level setting, if any. The key is dbGroupName
+    /**
+     * 保存group settings集合。
+     */
     private Map<String, SNMPSetting> groupSettings = new HashMap<>();
     //host level settings, if any. The key is dbGroupName+"|"+hostName
+    /**
+     * 保存host settings集合。
+     */
     @Getter
     private Map<String, SNMPSetting> hostSettings = new HashMap<>();
+    /**
+     * 保存myperf snmp config path信息。
+     */
     private String myperfSnmpConfigPath;
+    /**
+     * 保存root path信息。
+     */
     @Getter
     @Setter
     private String rootPath = "myperf_config";
+    /**
+     * 保存snmppath信息。
+     */
     private String SNMPPATH = "snmp";
+    /**
+     * 保存framework context信息。
+     */
     @Getter
     @Setter
     private MyPerfContext frameworkContext;
 
+    /**
+     * 创建SNMPSettings对象。
+     */
     public SNMPSettings() {
 
     }
 
+    /**
+     * 设置group setting。
+     *
+     * @param dbGroup      db group参数。
+     * @param groupSetting group setting参数。
+     */
     public void setGroupSetting(String dbGroup, SNMPSetting groupSetting) {
         this.groupSettings.put(dbGroup, groupSetting);
     }
 
+    /**
+     * 设置host setting。
+     *
+     * @param dbGroupName db group name参数。
+     * @param hostName    host name参数。
+     * @param hostSetting host setting参数。
+     */
     public void setHostSetting(String dbGroupName, String hostName, SNMPSetting hostSetting) {
         this.hostSettings.put(dbGroupName + "|" + hostName, hostSetting);
     }
@@ -119,6 +231,12 @@ public class SNMPSettings implements Serializable {
         this.hostSettings.put(dbGroupHostName, hostSetting);
     }
 
+    /**
+     * 获取group setting。
+     *
+     * @param dbGroupName db group name参数。
+     * @return 处理结果。
+     */
     public SNMPSetting getGroupSetting(String dbGroupName) {
 
         if (this.groupSettings.containsKey(dbGroupName))
@@ -127,6 +245,13 @@ public class SNMPSettings implements Serializable {
         return this.siteSetting;
     }
 
+    /**
+     * 获取host setting。
+     *
+     * @param dbgroup dbgroup参数。
+     * @param host    host参数。
+     * @return 处理结果。
+     */
     public SNMPSetting getHostSetting(String dbgroup, String host) {
 
         if ((dbgroup == null || dbgroup.isEmpty()) && (host == null || host.isEmpty()))
@@ -138,6 +263,22 @@ public class SNMPSettings implements Serializable {
             return getGroupSetting(dbgroup);
     }
 
+    /**
+     * 更新snmp setting。
+     *
+     * @param dbgroup           dbgroup参数。
+     * @param host              host参数。
+     * @param community         community参数。
+     * @param ver               ver参数。
+     * @param username          username参数。
+     * @param password          password参数。
+     * @param authprotocol      authprotocol参数。
+     * @param privacypassphrase privacypassphrase参数。
+     * @param privacyprotocol   privacyprotocol参数。
+     * @param context           context参数。
+     * @param enabled           enabled参数。
+     * @return 是否满足条件。
+     */
     public boolean updateSnmpSetting(String dbgroup, String host, String community, String ver,
                                      String username, String password, String authprotocol, String privacypassphrase,
                                      String privacyprotocol, String context, String enabled
@@ -169,6 +310,11 @@ public class SNMPSettings implements Serializable {
         return this.store();
     }
 
+    /**
+     * 执行init操作。
+     *
+     * @param ctx ctx参数。
+     */
     public void init(MyPerfContext ctx) {
         log.info("Read customized SNMP configuration ...");
         this.frameworkContext = ctx;
@@ -181,6 +327,11 @@ public class SNMPSettings implements Serializable {
         this.readConfig();
     }
 
+    /**
+     * 执行store操作。
+     *
+     * @return 是否满足条件。
+     */
     synchronized public boolean store() {
         File cfgFile = new File(this.myperfSnmpConfigPath);
 
@@ -195,6 +346,11 @@ public class SNMPSettings implements Serializable {
         return false;
     }
 
+    /**
+     * 读取config。
+     *
+     * @return 是否满足条件。
+     */
     synchronized private boolean readConfig() {
         File cfgFile = new File(this.myperfSnmpConfigPath);
 
@@ -244,6 +400,12 @@ public class SNMPSettings implements Serializable {
         return false;
     }
 
+    /**
+     * 读取from json。
+     *
+     * @param jobj jobj参数。
+     * @return 处理结果。
+     */
     private SNMPSetting readFromJson(JsonObject jobj) {
         SNMPSetting snmp = null;
 
@@ -282,6 +444,12 @@ public class SNMPSettings implements Serializable {
         return snmp;
     }
 
+    /**
+     * 写入to json。
+     *
+     * @param writer writer参数。
+     * @return 是否满足条件。
+     */
     private boolean writeToJson(Writer writer) {
         try {
             JsonObjectBuilder settingBuilder = Json.createObjectBuilder();
@@ -318,6 +486,12 @@ public class SNMPSettings implements Serializable {
         return false;
     }
 
+    /**
+     * 转换为json。
+     *
+     * @param setting setting参数。
+     * @return 处理结果。
+     */
     private JsonObjectBuilder toJson(SNMPSettings.SNMPSetting setting) {
         JsonObjectBuilder sb = Json.createObjectBuilder();
 

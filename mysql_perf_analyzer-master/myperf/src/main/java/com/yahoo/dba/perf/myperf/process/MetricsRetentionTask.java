@@ -19,6 +19,9 @@ import java.util.*;
 @Slf4j
 @RequiredArgsConstructor
 public class MetricsRetentionTask implements Runnable {
+    /**
+     * 保存context信息。
+     */
     private final MyPerfContext context;
 
     /**
@@ -31,6 +34,9 @@ public class MetricsRetentionTask implements Runnable {
      */
     private final int[] dbidToPurge; //set as one time job, reuse code
 
+    /**
+     * 执行run操作。
+     */
     @Override
     public void run() {
         Thread.currentThread().setName("MetricsRetentionTask");
@@ -52,7 +58,7 @@ public class MetricsRetentionTask implements Runnable {
                     ids.add(i.getDbid());
             }
 
-         else
+        else
             for (int id : this.dbidToPurge)
                 ids.add(id);
 
@@ -77,7 +83,7 @@ public class MetricsRetentionTask implements Runnable {
 
             if (group.getSubGroups().size() == 0) //no subgroup, add self
                 mgs.add(group);
-             else
+            else
                 for (MetricsGroup g : group.getSubGroups())
                     mgs.add(g);
 

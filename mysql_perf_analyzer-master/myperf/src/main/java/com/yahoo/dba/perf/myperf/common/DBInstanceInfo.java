@@ -8,6 +8,7 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
+
 import java.io.Serializable;
 
 /**
@@ -16,22 +17,46 @@ import java.io.Serializable;
  * @author xrao
  */
 public class DBInstanceInfo implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 定义max 16 bit uint常量。
+     */
     private static final int MAX_16BIT_UINT = 65536;
 
+    /**
+     * 保存instance信息。
+     */
     @Getter
     @Setter
     private int instance = 0;//keep it for future to include Oracle
 
+    /**
+     * 保存db type信息。
+     */
     @Getter
     private String dbType = "mysql";//other value: Oracle
+    /**
+     * 保存host name信息。
+     */
     @Getter
     private String hostName;//db host name
+    /**
+     * 保存port信息。
+     */
     @Getter
     private String port = "3306";//tcp port
+    /**
+     * 保存database name信息。
+     */
     @Getter
     @Setter
     private String databaseName = "information_schema";//MySQL database name for default connect
+    /**
+     * 保存db group name信息。
+     */
     @Getter
     @Setter
     private String dbGroupName;//database group or cluster name
@@ -39,59 +64,112 @@ public class DBInstanceInfo implements Serializable {
     //used for the same purpose
 
 
+    /**
+     * 标记use tunneling状态。
+     */
     @Getter
     @Setter
     private boolean useTunneling;//when ssh tunneling is used
+    /**
+     * 保存local host name信息。
+     */
     @Getter
     private String localHostName = "localhost";//local hostname when use tunneling
+    /**
+     * 保存local port信息。
+     */
     @Getter
     private String localPort;//local port when use tunneling
 
+    /**
+     * 保存username信息。
+     */
     @Getter
     private String username;
+    /**
+     * 保存password信息。
+     */
     @Getter
     @Setter
     private String password;
 
+    /**
+     * 标记connection verified状态。
+     */
     @Getter
     @Setter
     private boolean connectionVerified;//if we use probe all instances, some instance might not
     //be verified for its connections,
     //especially when ssh tunneling is used
 
+    /**
+     * 标记test connection状态。
+     */
     @Getter
     @Setter
     private boolean testConnection;//used for form only
+    /**
+     * 标记probe all instance状态。
+     */
     @Getter
     @Setter
     private boolean probeAllInstance;//used for form only, keep it for Oracle
+    /**
+     * 标记store credential状态。
+     */
     @Getter
     @Setter
     private boolean storeCredential;//user for form only
 
+    /**
+     * 标记virtual host状态。
+     */
     @Getter
     @Setter
     private boolean virtualHost;//some system does not allow direct host/sid access, for Oracle
+    /**
+     * 保存owner信息。
+     */
     @Getter
     @Setter
     private String owner;//the user who creates this entry
 
+    /**
+     * 保存dbid信息。
+     */
     @Getter
     @Setter
     private int dbid; //primary key, generated. Will be used for metrics
+    /**
+     * 标记snmp enabled状态。
+     */
     @Getter
     @Setter
     private boolean snmpEnabled = true;//by default, we assume SNMP is enabled.
+    /**
+     * 标记metrics enabled状态。
+     */
     @Getter
     @Setter
     private boolean metricsEnabled = true;
+    /**
+     * 标记alert enabled状态。
+     */
     @Getter
     @Setter
     private boolean alertEnabled = true;
 
+    /**
+     * 创建DBInstanceInfo对象。
+     */
     public DBInstanceInfo() {
     }
 
+    /**
+     * 设置host name。
+     *
+     * @param hostName host name参数。
+     */
     public void setHostName(String hostName) {
 
         if (hostName != null)
@@ -99,6 +177,11 @@ public class DBInstanceInfo implements Serializable {
         else this.hostName = null;
     }
 
+    /**
+     * 设置port。
+     *
+     * @param port port参数。
+     */
     public void setPort(String port) {
 
         if (port != null)
@@ -111,9 +194,14 @@ public class DBInstanceInfo implements Serializable {
                 this.port = String.valueOf(lp);
             } catch (Exception ex) {
             }
-         else this.port = port;
+        else this.port = port;
     }
 
+    /**
+     * 获取port short。
+     *
+     * @return 处理结果。
+     */
     public short getPortShort() {
         int lp = 0;
         try {
@@ -124,6 +212,11 @@ public class DBInstanceInfo implements Serializable {
         return (short) lp;
     }
 
+    /**
+     * 设置local host name。
+     *
+     * @param localHostName local host name参数。
+     */
     public void setLocalHostName(String localHostName) {
 
         if (localHostName != null)
@@ -131,6 +224,11 @@ public class DBInstanceInfo implements Serializable {
         else this.localHostName = null;
     }
 
+    /**
+     * 设置local port。
+     *
+     * @param localPort local port参数。
+     */
     public void setLocalPort(String localPort) {
 
         if (localPort != null)
@@ -145,9 +243,14 @@ public class DBInstanceInfo implements Serializable {
             } catch (Exception ex) {
 
             }
-         else this.localPort = localPort;
+        else this.localPort = localPort;
     }
 
+    /**
+     * 获取local port short。
+     *
+     * @return 处理结果。
+     */
     public short getLocalPortShort() {
         int lp = 0;
         try {
@@ -157,6 +260,11 @@ public class DBInstanceInfo implements Serializable {
         return (short) lp;
     }
 
+    /**
+     * 设置username。
+     *
+     * @param username username参数。
+     */
     public void setUsername(String username) {
 
         if (username != null)
@@ -189,6 +297,11 @@ public class DBInstanceInfo implements Serializable {
         return db;
     }
 
+    /**
+     * 获取connection string。
+     *
+     * @return 处理结果。
+     */
     public String getConnectionString() {
         // Add allowPublicKeyRetrieval to support sha256 password
         if ("mysql".equalsIgnoreCase(this.dbType))
@@ -197,23 +310,27 @@ public class DBInstanceInfo implements Serializable {
             else
                 return "jdbc:mysql://" + this.localHostName + ":" + this.localPort + "/" + this.databaseName + "?useSSL=true&enabledTLSProtocols=TLSv1.2&verifyServerCertificate=false";
 
-         else if ("oracle".equalsIgnoreCase(this.dbType))
+        else if ("oracle".equalsIgnoreCase(this.dbType))
             if (!this.useTunneling)
                 if (!this.virtualHost)
                     return "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + hostName + ")(PORT=" + port + "))(CONNECT_DATA=(SERVER=DEDICATED)(SID=" + databaseName + ")))";
                 else
                     return "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + hostName + ")(PORT=" + port + "))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=" + databaseName + ")))";
 
-             else
-                if (!this.virtualHost)
-                    return "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + this.localHostName + ")(PORT=" + this.localPort + "))(CONNECT_DATA=(SERVER=DEDICATED)(SID=" + databaseName + ")))";
-                else
-                    return "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + this.localHostName + ")(PORT=" + this.localPort + "))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=" + databaseName + ")))";
+            else if (!this.virtualHost)
+                return "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + this.localHostName + ")(PORT=" + this.localPort + "))(CONNECT_DATA=(SERVER=DEDICATED)(SID=" + databaseName + ")))";
+            else
+                return "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + this.localHostName + ")(PORT=" + this.localPort + "))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=" + databaseName + ")))";
 
 
         return null;
     }
 
+    /**
+     * 转换为string。
+     *
+     * @return 处理结果。
+     */
     @Override
     public String toString() {
         return "[" + this.dbGroupName + "," + this.hostName + "," + this.dbid + "," + this.instance + ","
@@ -222,6 +339,11 @@ public class DBInstanceInfo implements Serializable {
                 + "," + this.username + "]";
     }
 
+    /**
+     * 设置db type。
+     *
+     * @param dbType db type参数。
+     */
     public void setDbType(String dbType) {
 
         if (dbType != null)

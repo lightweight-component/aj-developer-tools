@@ -7,16 +7,10 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
-import java.io.FilenameFilter;
-import java.io.Serializable;
 
 /**
  * Manage user defined metrics and db association
@@ -26,40 +20,82 @@ import java.io.Serializable;
 @Slf4j
 public class UDMManager implements Serializable {
 
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
 
     //UDM definition. key is the name
+    /**
+     * 保存udms集合。
+     */
     @Getter
     private Map<String, UserDefinedMetrics> udms = Collections.synchronizedSortedMap(new TreeMap<>());
+    /**
+     * 保存udm update lock信息。
+     */
     private Object udmUpdateLock = new Object();
+    /**
+     * 保存metrics subscriptions信息。
+     */
     @Getter
     private MetricsSubscribers metricsSubscriptions = new MetricsSubscribers();
 
 
     //User defined alerts
+    /**
+     * 保存alerts集合。
+     */
     @Getter
     private Map<String, AlertDefinition> alerts = Collections.synchronizedSortedMap(new TreeMap<>());
+    /**
+     * 保存alert def update lock信息。
+     */
     private Object alertDefUpdateLock = new Object();
+    /**
+     * 保存alert subscriptions信息。
+     */
     @Getter
     private AlertSubscribers alertSubscriptions = new AlertSubscribers();
 
     //udm will be stored under $rootPath/udm
     //each udm is going to have its own josn file with suffix json.
+    /**
+     * 定义udm dir常量。
+     */
     private static final String UDM_DIR = "udm";//directory to store udm def
+    /**
+     * 定义alert dir常量。
+     */
     private static final String ALERT_DIR = "alert";//directory to store alert def
+    /**
+     * 保存root path信息。
+     */
     @Getter
     @Setter
     private String rootPath = "myperf_config";
+    /**
+     * 定义udm db file常量。
+     */
     private static final String UDM_DB_FILE = "udmdb.json";//udm db subscription file
 
     //mapping to builtin metrics
     //for each builtin MetricsGroup, possibly we take advantage of the same query
+    /**
+     * 保存builtin mapping集合。
+     */
     private Map<String, List<String>> builtinMapping = Collections.synchronizedMap(new HashMap<>());
 
+    /**
+     * 创建UDMManager对象。
+     */
     public UDMManager() {
 
     }
 
+    /**
+     * 执行init操作。
+     */
     public void init() {
         File udmroot = new File(new File(rootPath), UDM_DIR);
 
@@ -76,6 +112,11 @@ public class UDMManager implements Serializable {
 
     }
 
+    /**
+     * 加载subscriptions。
+     *
+     * @param context context参数。
+     */
     public void loadSubscriptions(MyPerfContext context) {
         this.alertSubscriptions.setContext(context);
         this.metricsSubscriptions.setContext(context);
@@ -83,6 +124,12 @@ public class UDMManager implements Serializable {
         this.metricsSubscriptions.load();
     }
 
+    /**
+     * 获取udmby name。
+     *
+     * @param name name参数。
+     * @return 处理结果。
+     */
     public UserDefinedMetrics getUDMByName(String name) {
 
         if (udms.containsKey(name))
@@ -91,6 +138,12 @@ public class UDMManager implements Serializable {
             return null;
     }
 
+    /**
+     * 获取alert by name。
+     *
+     * @param name name参数。
+     * @return 处理结果。
+     */
     public AlertDefinition getAlertByName(String name) {
 
         if (alerts.containsKey(name))
@@ -99,6 +152,14 @@ public class UDMManager implements Serializable {
             return null;
     }
 
+    /**
+     * 获取udms attached to builtin metrics。
+     *
+     * @param metricsGroup metrics group参数。
+     * @param group        group参数。
+     * @param host         host参数。
+     * @return 处理结果。
+     */
     public List<String> getUDMsAttachedToBuiltinMetrics(String metricsGroup, String group, String host) {
 
         if (!this.builtinMapping.containsKey(metricsGroup))
@@ -181,6 +242,16 @@ public class UDMManager implements Serializable {
         return attachedList;
     }
 
+    /**
+     * 更新udm db subscription。
+     *
+     * @param group           group参数。
+     * @param host            host参数。
+     * @param metricsGroup    metrics group参数。
+     * @param metricsSubGroup metrics sub group参数。
+     * @param subscribe       subscribe参数。
+     * @return 是否满足条件。
+     */
     public boolean updateUdmDbSubscription(String group, String host, String metricsGroup, String metricsSubGroup, boolean subscribe) {
         MetricsSubscribers.Subscription sub = new MetricsSubscribers.Subscription();
         sub.group = group;
@@ -198,6 +269,15 @@ public class UDMManager implements Serializable {
         return status;
     }
 
+    /**
+     * 更新alert db subscription。
+     *
+     * @param group     group参数。
+     * @param host      host参数。
+     * @param alertName alert name参数。
+     * @param subscribe subscribe参数。
+     * @return 是否满足条件。
+     */
     public boolean updateAlertDbSubscription(String group, String host, String alertName, boolean subscribe) {
         AlertSubscribers.Subscription sub = new AlertSubscribers.Subscription();
         sub.group = group;
@@ -214,11 +294,23 @@ public class UDMManager implements Serializable {
         return status;
     }
 
+    /**
+     * 判断metrics group subscribed。
+     *
+     * @param group     group参数。
+     * @param host      host参数。
+     * @param mGroup    m group参数。
+     * @param mSubGroup m sub group参数。
+     * @return 是否满足条件。
+     */
     public boolean isMetricsGroupSubscribed(String group, String host, String mGroup, String mSubGroup) {
         MetricsSubscribers.Subscription subscript = this.metricsSubscriptions.getSubscription(group, host, mGroup, mSubGroup);
         return subscript != null;
     }
 
+    /**
+     * 加载udm。
+     */
     private void loadUDM() {
         File root = new File(new File(rootPath), UDM_DIR);
 
@@ -227,7 +319,16 @@ public class UDMManager implements Serializable {
             return;
         }
 
+        /**
+         * 表示相关的类型。
+         */
         File[] udmFiles = root.listFiles(new FilenameFilter() {
+            /**
+             * 执行accept操作。
+             * @param dir dir参数。
+             * @param name name参数。
+             * @return 是否满足条件。
+             */
             @Override
             public boolean accept(File dir, String name) {
 
@@ -269,6 +370,9 @@ public class UDMManager implements Serializable {
         }
     }
 
+    /**
+     * 加载alert def。
+     */
     private void loadAlertDef() {
         File root = new File(new File(rootPath), ALERT_DIR);
 
@@ -277,7 +381,16 @@ public class UDMManager implements Serializable {
             return;
         }
 
+        /**
+         * 表示相关的类型。
+         */
         File[] alertFiles = root.listFiles(new FilenameFilter() {
+            /**
+             * 执行accept操作。
+             * @param dir dir参数。
+             * @param name name参数。
+             * @return 是否满足条件。
+             */
             @Override
             public boolean accept(File dir, String name) {
 
@@ -309,6 +422,11 @@ public class UDMManager implements Serializable {
         }
     }
 
+    /**
+     * 执行store udm操作。
+     *
+     * @param udm udm参数。
+     */
     private void storeUDM(UserDefinedMetrics udm) throws UserDefinedMetrics.UserDefinedMetricsException {
         String fileName = udm.getName() + ".json";
         File root = new File(new File(rootPath), UDM_DIR);
@@ -325,6 +443,11 @@ public class UDMManager implements Serializable {
         }
     }
 
+    /**
+     * 执行store alert操作。
+     *
+     * @param alertDef alert def参数。
+     */
     private void storeAlert(AlertDefinition alertDef) throws UserDefinedMetrics.UserDefinedMetricsException {
         String fileName = alertDef.getName() + ".json";
         File root = new File(new File(rootPath), ALERT_DIR);
@@ -332,7 +455,7 @@ public class UDMManager implements Serializable {
 
         if (udmFile.exists())
             log.info("Overwrite alert def file: " + udmFile.getPath());
-            //throw new UserDefinedMetrics.UserDefinedMetricsException("ALERT file "+fileName +" already exists.");
+        //throw new UserDefinedMetrics.UserDefinedMetricsException("ALERT file "+fileName +" already exists.");
 
         try (FileWriter fw = new FileWriter(udmFile)) {
             fw.write(alertDef.toJSON(false));
@@ -374,6 +497,11 @@ public class UDMManager implements Serializable {
         }
     }
 
+    /**
+     * 添加alert definition。
+     *
+     * @param alertDef alert def参数。
+     */
     public void addAlertDefinition(AlertDefinition alertDef) throws UserDefinedMetrics.UserDefinedMetricsException {
 
         if (alertDef == null)

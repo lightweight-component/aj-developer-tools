@@ -13,7 +13,17 @@ import java.io.Serializable;
  * @author xrao
  */
 public interface CustomResultObject extends Serializable {
+    /**
+     * 获取name。
+     *
+     * @return 处理结果。
+     */
     String getName();//the name/key in json ResultList
 
+    /**
+     * 获取value json string。
+     *
+     * @return 处理结果。
+     */
     String getValueJsonString();//the value in json ResultList
 }

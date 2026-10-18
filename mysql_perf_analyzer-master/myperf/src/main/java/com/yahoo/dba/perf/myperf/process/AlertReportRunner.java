@@ -5,12 +5,11 @@
  */
 package com.yahoo.dba.perf.myperf.process;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.db.DBConnectionWrapper;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.ResultSet;
@@ -18,30 +17,60 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Collections;
 
+/**
+ * 表示alert report runner相关的类型。
+ */
 @Slf4j
 @RequiredArgsConstructor
 public class AlertReportRunner implements Runnable {
+    /**
+     * 保存context信息。
+     */
     private final MyPerfContext context;
+    /**
+     * 保存db info信息。
+     */
     private final DBInstanceInfo dbInfo;
+    /**
+     * 保存timestamp信息。
+     */
     private final long timestamp;
+    /**
+     * 保存app user信息。
+     */
     private final AppUser appUser;
 
+    /**
+     * 保存connection信息。
+     */
     @Getter
     @Setter
     private DBConnectionWrapper connection;
 
+    /**
+     * 保存alert reason信息。
+     */
     @Getter
     @Setter
     private String alertReason;
 
+    /**
+     * 保存alert value信息。
+     */
     @Getter
     @Setter
     private String alertValue;
 
+    /**
+     * 判断是否包含row info。
+     *
+     * @param rs rs参数。
+     * @return 是否满足条件。
+     */
     private boolean hasRowInfo(ResultSet rs) throws SQLException {
         ResultSetMetaData md = rs.getMetaData();
         int clSize = md.getColumnCount();
@@ -56,6 +85,12 @@ public class AlertReportRunner implements Runnable {
         return false;
     }
 
+    /**
+     * 判断是否包含rows read。
+     *
+     * @param rs rs参数。
+     * @return 是否满足条件。
+     */
     private boolean hasRowsRead(ResultSet rs) throws SQLException {
         ResultSetMetaData md = rs.getMetaData();
         int clSize = md.getColumnCount();
@@ -70,6 +105,9 @@ public class AlertReportRunner implements Runnable {
         return false;
     }
 
+    /**
+     * 执行run操作。
+     */
     @Override
     public void run() {
         AlertEntry alertEntry = new AlertEntry(timestamp, alertReason, alertValue, dbInfo.getDbGroupName(), dbInfo.getHostName());

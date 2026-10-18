@@ -5,10 +5,10 @@
  */
 package com.yahoo.dba.perf.myperf.common;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
-import java.text.SimpleDateFormat;
 
 /**
  * Some common utility functions are consolidated here for reuse purpose
@@ -16,6 +16,14 @@ import java.text.SimpleDateFormat;
  * @author xrao
  */
 public class CommonUtils {
+    /**
+     * 获取map value long。
+     *
+     * @param map map参数。
+     * @param key key参数。
+     * @param def def参数。
+     * @return 处理结果。
+     */
     public static long getMapValueLong(Map<String, String> map, String key, long def) {
 
         if (map == null)
@@ -31,6 +39,14 @@ public class CommonUtils {
         }
     }
 
+    /**
+     * 获取map value float。
+     *
+     * @param map map参数。
+     * @param key key参数。
+     * @param def def参数。
+     * @return 处理结果。
+     */
     public static float getMapValueFloat(Map<String, String> map, String key, float def) {
 
         if (map == null)
@@ -46,6 +62,12 @@ public class CommonUtils {
         }
     }
 
+    /**
+     * 执行escape json html操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     public static String escapeJsonHTML(String str) {
 
         if (str == null)
@@ -78,6 +100,12 @@ public class CommonUtils {
         return sb.toString();
     }
 
+    /**
+     * 执行escape json操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     public static String escapeJson(String str) {
 
         if (str == null)

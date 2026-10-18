@@ -7,83 +7,163 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.PrintWriter;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.io.BufferedReader;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
+/**
+ * 表示process list summary相关的类型。
+ */
 @Slf4j
 public class ProcessListSummary implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 保存user summary集合。
+     */
     @Getter
     @Setter
     private Map<String, Integer> userSummary = new HashMap<>();//group by user
+    /**
+     * 保存host summary集合。
+     */
     @Getter
     @Setter
     private Map<String, Integer> hostSummary = new HashMap<>();//group by host
+    /**
+     * 保存command summary集合。
+     */
     @Getter
     @Setter
     private Map<String, Integer> commandSummary = new HashMap<>();//group by command, including idle
+    /**
+     * 保存command host summary集合。
+     */
     @Getter
     @Setter
     private Map<String, Integer> commandHostSummary = new HashMap<>();//group by command and host, including idle
+    /**
+     * 保存state summary集合。
+     */
     @Getter
     @Setter
     private Map<String, Integer> stateSummary = new HashMap<>();//active state
 
+    /**
+     * 保存process list集合。
+     */
     @Getter
     @Setter
     private List<ProcessListEntry> processList;
 
+    /**
+     * 保存pt信息。
+     */
     private Pattern pt = Pattern.compile("LIMIT\\s+\\d+", Pattern.CASE_INSENSITIVE);
+    /**
+     * 保存pt2信息。
+     */
     private Pattern pt2 = Pattern.compile("LIMIT\\s+\\d+\\s*,\\s*\\d+", Pattern.CASE_INSENSITIVE);
 
+    /**
+     * 保存queries集合。
+     */
     @Getter
     private Map<String, ProcessListEntryAggregate> queries = new HashMap<>();
+    /**
+     * 保存queries with limit stripped集合。
+     */
     @Getter
     private Map<String, ProcessListEntryAggregate> queriesWithLimitStripped = new HashMap<>();//pagenation
 
+    /**
+     * 保存normalized queries集合。
+     */
     @Getter
     private Map<String, ProcessListEntryAggregate> normalizedQueries = new HashMap<>();
 
+    /**
+     * 保存innodb status信息。
+     */
     @Getter
     @Setter
     private String innodbStatus;
+    /**
+     * 保存total accumultaed time信息。
+     */
     private int totalAccumultaedTime = 0;
+    /**
+     * 保存lock list信息。
+     */
     @Getter
     @Setter
     private ResultList lockList;
+    /**
+     * 保存trx list信息。
+     */
     @Getter
     @Setter
     private ResultList trxList;
+    /**
+     * 保存client list信息。
+     */
     @Getter
     @Setter
     private ResultList clientList;
 
+    /**
+     * 保存app processor list集合。
+     */
     private List<ProcessListEntryProcessor> appProcessorList = new ArrayList<>();
 
+    /**
+     * 保存report timestamp信息。
+     */
     @Getter
     @Setter
     private long reportTimestamp;
 
+    /**
+     * 表示key val int pair相关的类型。
+     */
     public class KeyValIntPair implements Comparable<KeyValIntPair> {
+        /**
+         * 保存name信息。
+         */
         public String name;
+        /**
+         * 保存value信息。
+         */
         public int value;
 
+        /**
+         * 创建KeyValIntPair对象。
+         *
+         * @param name  name参数。
+         * @param value value参数。
+         */
         public KeyValIntPair(String name, int value) {
             this.name = name;
             this.value = value;
         }
 
+        /**
+         * 比较to。
+         *
+         * @param o o参数。
+         * @return 处理结果。
+         */
         @Override
         public int compareTo(KeyValIntPair o) {
 
@@ -95,10 +175,18 @@ public class ProcessListSummary implements Serializable {
 
     }
 
+    /**
+     * 添加app processor。
+     *
+     * @param pr pr参数。
+     */
     public void addAppProcessor(ProcessListEntryProcessor pr) {
         this.appProcessorList.add(pr);
     }
 
+    /**
+     * 创建ProcessListSummary对象。
+     */
     public ProcessListSummary() {
     }
     //TODO
@@ -207,6 +295,13 @@ public class ProcessListSummary implements Serializable {
     }
 
     //TODO in case there is a LIMIT in the middle
+
+    /**
+     * 执行strip limit操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     private String stripLimit(String str) {
 
         if (str == null)
@@ -320,6 +415,11 @@ public class ProcessListSummary implements Serializable {
         return str;
     }
 
+    /**
+     * 保存as text。
+     *
+     * @param pw pw参数。
+     */
     public void saveAsText(PrintWriter pw) {
         pw.println("Total Time: " + this.totalAccumultaedTime + " seconds.");
 

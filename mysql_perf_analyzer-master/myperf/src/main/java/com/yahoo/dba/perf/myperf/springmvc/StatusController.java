@@ -10,27 +10,33 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.*;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.*;
 
+/**
+ * 表示status controller相关的类型。
+ */
 public class StatusController extends MyPerfBaseController {
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
-    protected ModelAndView handleRequestImpl(HttpServletRequest req,
-                                             HttpServletResponse resp) throws Exception {
+    protected ModelAndView handleRequestImpl(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         AppUser appUser = retrieveAppUser(req);
         HashSet<String> filteredGroups = new HashSet<>();
         boolean useFilter = false;
 
         if (appUser != null && appUser.isRestrictedUser()) {
             useFilter = true;
-            Set<String> mydbs = this.frameworkContext.getDbInfoManager()
-                    .getMyDatabases(appUser.getName(), appUser.isRestrictedUser()).getMyDbList();
+            Set<String> mydbs = this.frameworkContext.getDbInfoManager().getMyDatabases(appUser.getName(), appUser.isRestrictedUser()).getMyDbList();
 
             if (mydbs != null)
-                for (String s : mydbs)
-                    filteredGroups.add(s);
-
+                filteredGroups.addAll(mydbs);
         }
 
         String dbgroup = req.getParameter("group");
@@ -42,9 +48,9 @@ public class StatusController extends MyPerfBaseController {
 
         Date now = new Date();
         //the first scan yet to complete
-        long oneinterval = (this.frameworkContext.getMyperfConfig().getScannerIntervalSeconds() + 1) * 1000;
+        long oneinterval = (this.frameworkContext.getMyperfConfig().getScannerIntervalSeconds() + 1) * 1000L;
         boolean withinOneScan = (now.getTime() - this.frameworkContext.getStartTime().getTime()) <= oneinterval;
-        long twointerval = (2 * this.frameworkContext.getMyperfConfig().getScannerIntervalSeconds() + 1) * 1000;
+        long twointerval = (2L * this.frameworkContext.getMyperfConfig().getScannerIntervalSeconds() + 1) * 1000;
 
         ResultList rList = new ResultList();
 
@@ -144,7 +150,7 @@ public class StatusController extends MyPerfBaseController {
                                 syscpu = val;
                             }
 
-                         else
+                        else
                             vals.add("0.00");
 
                         if (snaps[0].getUsercputime() >= 0L && snaps[1].getUsercputime() >= 0L)
@@ -158,7 +164,7 @@ public class StatusController extends MyPerfBaseController {
                                 usercpu = val;
                             }
 
-                         else
+                        else
                             vals.add("0.00");
 
                         if (snaps[0].getIotime() >= 0L && snaps[1].getIotime() >= 0L)
@@ -171,7 +177,7 @@ public class StatusController extends MyPerfBaseController {
                                 iowaits = val;
                             }
 
-                         else
+                        else
                             vals.add("0.00");
 
                         if (snaps[1].getLoadAverage() >= 0.0f) {

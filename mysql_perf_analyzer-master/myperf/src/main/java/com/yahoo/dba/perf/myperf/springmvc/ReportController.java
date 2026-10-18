@@ -5,12 +5,10 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
+import com.yahoo.dba.perf.myperf.common.*;
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
-
-import com.yahoo.dba.perf.myperf.common.*;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 
@@ -31,12 +29,21 @@ import java.util.Map;
  */
 @Slf4j
 public class ReportController extends AbstractController {
+    /**
+     * 保存json view信息。
+     */
     @Getter
     @Setter
     private String jsonView;
+    /**
+     * 保存nosess view信息。
+     */
     @Getter
     @Setter
     private String nosessView;
+    /**
+     * 保存framework context信息。
+     */
     @Getter
     @Setter
     private MyPerfContext frameworkContext;
@@ -104,6 +111,13 @@ public class ReportController extends AbstractController {
         return cred != null;//if we have valid credential, allow access
     }
 
+    /**
+     * 执行handle request internal操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestInternal(HttpServletRequest req,
                                                  HttpServletResponse resp) throws Exception {
@@ -123,9 +137,9 @@ public class ReportController extends AbstractController {
 
         if ("get".equalsIgnoreCase(cmd))
             return download(pathParams, req, resp);
-         else if ("list".equalsIgnoreCase(cmd))
+        else if ("list".equalsIgnoreCase(cmd))
             return list(req, resp);
-         else if ("del".equalsIgnoreCase(cmd) || "delete".equalsIgnoreCase(cmd))
+        else if ("del".equalsIgnoreCase(cmd) || "delete".equalsIgnoreCase(cmd))
             return delete(req, resp);
 
         ModelAndView mv = new ModelAndView(this.jsonView);
@@ -133,6 +147,13 @@ public class ReportController extends AbstractController {
         return mv;
     }
 
+    /**
+     * 执行delete操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView delete(HttpServletRequest req,
                                 HttpServletResponse resp) throws Exception {
         int status = 0;
@@ -162,6 +183,13 @@ public class ReportController extends AbstractController {
         return mv;
     }
 
+    /**
+     * 执行list操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView list(HttpServletRequest req,
                               HttpServletResponse resp) throws Exception {
         int status = 0;
@@ -214,6 +242,14 @@ public class ReportController extends AbstractController {
         return ts.replace(" ", "").replaceAll("-", "").replaceAll(":", "");
     }
 
+    /**
+     * 执行download操作。
+     *
+     * @param pathParams path params参数。
+     * @param req        req参数。
+     * @param resp       resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView download(Map<String, String> pathParams, HttpServletRequest req,
                                   HttpServletResponse resp) throws Exception {
         File rootPath = this.frameworkContext.getAlertRootPath();
@@ -257,6 +293,12 @@ public class ReportController extends AbstractController {
         return mv;
     }
 
+    /**
+     * 获取user report manager。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private UserReportManager getUserReportManager(HttpServletRequest req) {
 
         String appUser = WebAppUtil.findUserFromRequest(req);

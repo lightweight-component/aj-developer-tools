@@ -10,6 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 
+/**
+ * 表示mail util相关的类型。
+ */
 @Slf4j
 public class MailUtil {
 

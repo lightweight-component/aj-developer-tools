@@ -5,16 +5,15 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
+import com.yahoo.dba.perf.myperf.common.*;
 import lombok.Getter;
 import lombok.Setter;
-
-import com.yahoo.dba.perf.myperf.common.*;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Set;
 import java.util.ArrayList;
+import java.util.Set;
 
 /**
  * Used by UI to retrieve data lists
@@ -22,13 +21,26 @@ import java.util.ArrayList;
  * @author xrao
  */
 public class DatalistController extends MyPerfBaseController {
+    /**
+     * 保存xml view信息。
+     */
     @Getter
     @Setter
     private String xmlView;
+    /**
+     * 保存json view信息。
+     */
     @Getter
     @Setter
     private String jsonView;
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         String dataType = req.getParameter("t");
@@ -54,17 +66,22 @@ public class DatalistController extends MyPerfBaseController {
 
         if ("json".equalsIgnoreCase(contentType))
             mv.addObject("json_result", ResultListUtil.toJSONString(rs, null, 0, "OK"));
-         else
-            if (rs == null || rs.getRows().size() == 0)
-                mv.addObject("status", 0);
-            else {
-                mv.addObject("status", rs.getRows().size());
-                mv.addObject("results", rs);
-            }
+        else if (rs == null || rs.getRows().size() == 0)
+            mv.addObject("status", 0);
+        else {
+            mv.addObject("status", rs.getRows().size());
+            mv.addObject("results", rs);
+        }
 
         return mv;
     }
 
+    /**
+     * 执行retrieve db host list操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ResultList retrieveDbHostList(HttpServletRequest req) {
         String clusterName = req.getParameter("dbid");
         DBGroupInfo cls = this.frameworkContext.getDbInfoManager().findGroup(clusterName);
@@ -91,6 +108,12 @@ public class DatalistController extends MyPerfBaseController {
             return null;
     }
 
+    /**
+     * 执行retrieve db host info操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ResultList retrieveDbHostInfo(HttpServletRequest req) {
         String clusterName = req.getParameter("dbid");
         String hostName = req.getParameter("host");
@@ -140,6 +163,12 @@ public class DatalistController extends MyPerfBaseController {
             return null;
     }
 
+    /**
+     * 执行list restricted操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ResultList listRestricted(HttpServletRequest req) {
         String name = req.getParameter("name");
         ResultList rs = new ResultList();

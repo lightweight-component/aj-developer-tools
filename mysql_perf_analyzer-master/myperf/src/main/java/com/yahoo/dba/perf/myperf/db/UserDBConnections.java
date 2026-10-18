@@ -5,20 +5,18 @@
  */
 package com.yahoo.dba.perf.myperf.db;
 
+import com.yahoo.dba.perf.myperf.common.*;
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
-import com.yahoo.dba.perf.myperf.common.*;
-
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
-import java.net.ConnectException;
-import java.net.UnknownHostException;
 
 /**
  * This will be all the connections held by a specific user.
@@ -27,22 +25,40 @@ import java.net.UnknownHostException;
  */
 @Slf4j
 public class UserDBConnections {
+    /**
+     * 保存app user信息。
+     */
     @Getter
     @Setter
     private String appUser;//application user name
+    /**
+     * 保存connections集合。
+     */
     private List<DBConnectionWrapper> connections = new ArrayList<>();
+    /**
+     * 标记valid状态。
+     */
     @Getter
     @Setter
     private volatile boolean valid = true;  //if this is still valid
 
+    /**
+     * 保存connection idle timeout信息。
+     */
     @Getter
     @Setter
     private long connectionIdleTimeout = 600000L;
 
+    /**
+     * 保存framework context信息。
+     */
     @Getter
     @Setter
     private MyPerfContext frameworkContext;
 
+    /**
+     * 创建UserDBConnections对象。
+     */
     public UserDBConnections() {
     }
 
@@ -54,7 +70,6 @@ public class UserDBConnections {
      * @return
      */
     synchronized public DBConnectionWrapper checkoutConnection(String dbGroupName, String hostname) {
-
         for (DBConnectionWrapper conn : this.connections)
             if (dbGroupName.equalsIgnoreCase(conn.getDb().getDbGroupName())
                     && hostname.equalsIgnoreCase(conn.getDb().getHostName()) && !conn.isInuse()) {
@@ -74,14 +89,13 @@ public class UserDBConnections {
      */
     public DBConnectionWrapper checkoutConnection(String dbname, int tgtInstance) {
         synchronized (this) {
-
             for (DBConnectionWrapper conn : this.connections)
                 if (dbname.equalsIgnoreCase(conn.getDb().getDbGroupName()) && conn.getInstance_number() == tgtInstance) {
                     conn.setInuse(true);
                     return conn;
                 }
 
-            //if we reach here without credential, stop here
+            //if we reach here without a credential, stop here
             return null;
         }
     }
@@ -158,10 +172,10 @@ public class UserDBConnections {
                 return null;
         }
 
-        //when reach here, we have no db connection available, need create one
+        //when reach here, we have no db connection available, need to create one
         //Because it could take too long to create a new connection to one db, it is better not to
         //block other connections.
-        if (cred != null && cred.getPassword() == null)
+        if (cred.getPassword() == null)
             throw new RuntimeException("No credential provided fro DB group " + cluster.getGroupName());
 
         //now let's try the cluster one by one
@@ -182,6 +196,13 @@ public class UserDBConnections {
         return null;
     }
 
+    /**
+     * 创建connection internal。
+     *
+     * @param dbinfo dbinfo参数。
+     * @param cred   cred参数。
+     * @return 处理结果。
+     */
     private DBConnectionWrapper createConnectionInternal(DBInstanceInfo dbinfo, DBCredential cred)
             throws SQLException {
         log.debug("Connecting to " + dbinfo.getConnectionString() + " using user " + cred.getUsername());
@@ -311,6 +332,12 @@ public class UserDBConnections {
         }
     }
 
+    /**
+     * 关闭idle。
+     *
+     * @param clusterName cluster name参数。
+     * @param hostName    host name参数。
+     */
     public void closeIdle(String clusterName, String hostName) {
         log.debug("Close idle connections (" + clusterName + "," + hostName + ")");
         this.valid = false;
@@ -340,10 +367,20 @@ public class UserDBConnections {
         }
     }
 
+    /**
+     * 获取connection count。
+     *
+     * @return 处理结果。
+     */
     synchronized public int getConnectionCount() {
         return this.connections.size();
     }
 
+    /**
+     * 执行retrieve connection map操作。
+     *
+     * @return 处理结果。
+     */
     synchronized public TreeMap<String, Integer> retrieveConnectionMap() {
         TreeMap<String, Integer> connMap = new TreeMap<>();
 

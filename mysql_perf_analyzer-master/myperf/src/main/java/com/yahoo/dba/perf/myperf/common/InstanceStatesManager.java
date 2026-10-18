@@ -25,14 +25,29 @@ import java.util.Map;
  */
 @Slf4j
 public class InstanceStatesManager implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 保存obj file name信息。
+     */
     public static String OBJ_FILE_NAME = "instance_status.ser";
+    /**
+     * 定义storage dir常量。
+     */
     public static final String STORAGE_DIR = "autoscan";
 
+    /**
+     * 保存root path信息。
+     */
     @Getter
     @Setter
     private String rootPath = "myperf_reports";//data will be stored under $rootPath/autoscan
 
+    /**
+     * 保存states map集合。
+     */
     private Map<Integer, InstanceStates> statesMap = new HashMap<>();
 
     /**
@@ -46,6 +61,11 @@ public class InstanceStatesManager implements Serializable {
         storeObject(objFile);
     }
 
+    /**
+     * 执行store object操作。
+     *
+     * @param objf objf参数。
+     */
     public void storeObject(File objf) {
         try (ObjectOutputStream outputStream = new ObjectOutputStream(Files.newOutputStream(objf.toPath()))) {
             outputStream.writeObject(this.statesMap);
@@ -54,6 +74,12 @@ public class InstanceStatesManager implements Serializable {
         }
     }
 
+    /**
+     * 读取object。
+     *
+     * @param objf objf参数。
+     * @return 处理结果。
+     */
     @SuppressWarnings("unchecked")
     public Map<Integer, InstanceStates> readObject(File objf) {
         try (ObjectInputStream input = new ObjectInputStream(Files.newInputStream(objf.toPath()))) {
@@ -65,6 +91,12 @@ public class InstanceStatesManager implements Serializable {
         return null;
     }
 
+    /**
+     * 获取states。
+     *
+     * @param dbid dbid参数。
+     * @return 处理结果。
+     */
     synchronized public InstanceStates getStates(int dbid) {
 
         if (statesMap.containsKey(dbid))
@@ -74,6 +106,11 @@ public class InstanceStatesManager implements Serializable {
     }
 
 
+    /**
+     * 添加instance states。
+     *
+     * @param dbid dbid参数。
+     */
     synchronized public void addInstanceStates(int dbid) {
 
         if (statesMap.containsKey(dbid))
@@ -82,6 +119,12 @@ public class InstanceStatesManager implements Serializable {
         this.statesMap.put(dbid, new InstanceStates());
     }
 
+    /**
+     * 移除instance states。
+     *
+     * @param dbid dbid参数。
+     * @return 是否满足条件。
+     */
     synchronized public boolean removeInstanceStates(int dbid) {
 
         if (statesMap.containsKey(dbid)) {

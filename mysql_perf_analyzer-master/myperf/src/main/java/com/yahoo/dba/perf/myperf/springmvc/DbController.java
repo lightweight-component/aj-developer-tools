@@ -5,9 +5,8 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
@@ -17,16 +16,33 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * 表示db controller相关的类型。
+ */
 @Slf4j
 public class DbController extends MyPerfBaseController {
+    /**
+     * 保存db manager信息。
+     */
     private DBInfoManager dbManager;
 
+    /**
+     * 设置framework context。
+     *
+     * @param frameworkContext framework context参数。
+     */
     @Override
     public void setFrameworkContext(MyPerfContext frameworkContext) {
         this.frameworkContext = frameworkContext;
         this.dbManager = this.frameworkContext.getDbInfoManager();
     }
 
+    /**
+     * 解析request。
+     *
+     * @param request request参数。
+     * @return 处理结果。
+     */
     private DBInstanceInfo parseRequest(HttpServletRequest request) {
         DBInstanceInfo db = new DBInstanceInfo();
         db.setDbType(request.getParameter("dbtype"));
@@ -58,6 +74,13 @@ public class DbController extends MyPerfBaseController {
         return db;
     }
 
+    /**
+     * 执行validate操作。
+     *
+     * @param cmd cmd参数。
+     * @param db  db参数。
+     * @return 处理结果。
+     */
     private String validate(String cmd, DBInstanceInfo db) {
         String msg = null;
 
@@ -85,6 +108,15 @@ public class DbController extends MyPerfBaseController {
         return msg;
     }
 
+    /**
+     * 处理add update。
+     *
+     * @param request  request参数。
+     * @param response response参数。
+     * @param cmd      cmd参数。
+     * @param db       db参数。
+     * @return 处理结果。
+     */
     private ModelAndView processAddUpdate(HttpServletRequest request, HttpServletResponse response,
                                           String cmd, DBInstanceInfo db) {
         //only admin/standard user can add new dbs
@@ -209,6 +241,15 @@ public class DbController extends MyPerfBaseController {
         return this.respondWithStatus(status, message, request);
     }
 
+    /**
+     * 处理rename cluster。
+     *
+     * @param request  request参数。
+     * @param response response参数。
+     * @param cmd      cmd参数。
+     * @param db       db参数。
+     * @return 处理结果。
+     */
     private ModelAndView processRenameCluster(HttpServletRequest request, HttpServletResponse response,
                                               String cmd, DBInstanceInfo db) {
         int status = Constants.STATUS_BAD;
@@ -242,6 +283,15 @@ public class DbController extends MyPerfBaseController {
         return this.respondWithStatus(status, message, request);
     }
 
+    /**
+     * 处理acl。
+     *
+     * @param request  request参数。
+     * @param response response参数。
+     * @param cmd      cmd参数。
+     * @param db       db参数。
+     * @return 处理结果。
+     */
     private ModelAndView processACL(HttpServletRequest request, HttpServletResponse response,
                                     String cmd, DBInstanceInfo db) {
         int status = Constants.STATUS_BAD;
@@ -266,7 +316,7 @@ public class DbController extends MyPerfBaseController {
 
                 if (!this.frameworkContext.getDbInfoManager().updateRestricteduserAcl(username, grp, visible))
                     message = "Failed, please check log.";
-                 else if (visible) {
+                else if (visible) {
                     //copy db credential. revoke is handled by update directly
                     AppUser appUser = retrieveAppUser(request);
                     DBCredential cred = this.frameworkContext.getMetaDb().retrieveDBCredential(appUser.getName(), grp);
@@ -288,6 +338,13 @@ public class DbController extends MyPerfBaseController {
         return this.respondWithStatus(status, message, request);
     }
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param request  request参数。
+     * @param response response参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest request,
                                              HttpServletResponse response) throws Exception {

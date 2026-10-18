@@ -7,14 +7,13 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.io.Serializable;
 
 
 /**
@@ -23,67 +22,139 @@ import java.io.Serializable;
  */
 @Slf4j
 public class InstanceStates implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 保存last access time信息。
+     */
     private Date lastAccessTime;
+    /**
+     * 保存prev snapshot信息。
+     */
     private StateSnapshot prevSnapshot = new StateSnapshot();
+    /**
+     * 保存curr snapshot信息。
+     */
     private StateSnapshot currSnapshot = new StateSnapshot();
 
+    /**
+     * 保存repeta alert delay信息。
+     */
     public static long REPETA_ALERT_DELAY = 3600000L;//for certain alert, we don't want repeated alerts, so skip for one hour
 
+    /**
+     * 保存last alert type信息。
+     */
     @Getter
     @Setter
     private String lastAlertType;
+    /**
+     * 保存last alert time信息。
+     */
     @Getter
     @Setter
     private Date lastAlertTime;
+    /**
+     * 保存last alert value信息。
+     */
     @Getter
     @Setter
     private String lastAlertValue;
+    /**
+     * 保存last alert end time信息。
+     */
     @Getter
     @Setter
     private Date lastAlertEndTime = null;
+    /**
+     * 保存last update time信息。
+     */
     @Getter
     @Setter
     private long lastUpdateTime = -1;
+    /**
+     * 保存last report time信息。
+     */
     @Getter
     @Setter
     private long lastReportTime = -1;
+    /**
+     * 保存last scan time信息。
+     */
     @Getter
     @Setter
     private long lastScanTime = 0L;
 
 
     //to avoid email bombing
+    /**
+     * 保存last email alert time信息。
+     */
     @Getter
     @Setter
     private long lastEmailAlertTime = -1L;
+    /**
+     * 保存last email alert reason信息。
+     */
     @Getter
     @Setter
     private String lastEmailAlertReason = null;
+    /**
+     * 保存last web alert time信息。
+     */
     @Getter
     @Setter
     private long lastWebAlertTime = -1L;
+    /**
+     * 保存last web alert reason信息。
+     */
     @Getter
     @Setter
     private String lastWebAlertReason = null;
 
     //work in progress reports. We don't want to run limited report runners
     //in case some SQL query hangs because of network or mysql server bugs.
+    /**
+     * 保存reports wip信息。
+     */
     private int reportsWIP = 0;
+    /**
+     * 定义reports wip thresholds常量。
+     */
     public final static int REPORTS_WIP_THRESHOLDS = 2; //no more than 2
 
+    /**
+     * 创建InstanceStates对象。
+     */
     public InstanceStates() {
 
     }
 
+    /**
+     * 获取last access time。
+     *
+     * @return 处理结果。
+     */
     synchronized public Date getLastAccessTime() {
         return lastAccessTime;
     }
 
+    /**
+     * 设置last access time。
+     *
+     * @param dt dt参数。
+     */
     synchronized public void setLastAccessTime(Date dt) {
         lastAccessTime = dt;
     }
 
+    /**
+     * 执行copy snapshots操作。
+     *
+     * @return 处理结果。
+     */
     synchronized public StateSnapshot[] copySnapshots() {
         StateSnapshot[] res = new StateSnapshot[2];
         res[0] = this.prevSnapshot.copy();
@@ -92,6 +163,12 @@ public class InstanceStates implements Serializable {
     }
 
 
+    /**
+     * 执行update操作。
+     *
+     * @param stat       stat参数。
+     * @param thresholds thresholds参数。
+     */
     synchronized public void update(StateSnapshot stat, Map<String, Float> thresholds) {
         //switch and update
         this.prevSnapshot = this.currSnapshot;
@@ -256,7 +333,6 @@ public class InstanceStates implements Serializable {
                         alerts.add(new AlertEntry(this.currSnapshot.getTimestamp(), alertName, metricValue.toString(), dbgroup, host));
 
 
-
             } else {
                 //need average change per second to compare
                 //no previous one to compare
@@ -320,6 +396,14 @@ public class InstanceStates implements Serializable {
         return false;
     }
 
+    /**
+     * 执行report user alert操作。
+     *
+     * @param dt        dt参数。
+     * @param alertName alert name参数。
+     * @param value     value参数。
+     * @return 是否满足条件。
+     */
     public boolean reportUserAlert(Date dt, String alertName, String value) {
 
         if (!alertName.equals(this.lastAlertType)) {
@@ -403,6 +487,14 @@ public class InstanceStates implements Serializable {
         this.lastWebAlertReason = null;
     }
 
+    /**
+     * 判断是否可以send web notification。
+     *
+     * @param ts                      ts参数。
+     * @param reason                  reason参数。
+     * @param webAlertIntervalMinutes web alert interval minutes参数。
+     * @return 是否满足条件。
+     */
     public boolean canSendWebNotification(long ts, String reason, int webAlertIntervalMinutes) {
         boolean toSend = false;
 
@@ -424,6 +516,12 @@ public class InstanceStates implements Serializable {
     //Check if we can run a new report
     //Return true if we can
     //Otherwise slot full
+
+    /**
+     * 判断是否可以run report。
+     *
+     * @return 是否满足条件。
+     */
     synchronized public boolean canRunReport() {
         boolean canRun = false;
 

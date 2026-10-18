@@ -9,7 +9,16 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * 表示md5 util相关的类型。
+ */
 public class MD5Util {
+    /**
+     * 转换to hex。
+     *
+     * @param data data参数。
+     * @return 处理结果。
+     */
     private static String convertToHex(byte[] data) {
         StringBuffer buf = new StringBuffer();
 
@@ -30,6 +39,12 @@ public class MD5Util {
         return buf.toString();
     }
 
+    /**
+     * 执行md5操作。
+     *
+     * @param text text参数。
+     * @return 处理结果。
+     */
     public static String MD5(String text) throws NoSuchAlgorithmException, UnsupportedEncodingException {
         MessageDigest md;
         md = MessageDigest.getInstance("MD5");

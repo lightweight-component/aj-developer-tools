@@ -1,8 +1,7 @@
 package com.yahoo.dba.perf.myperf.db;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetAddress;
 import java.sql.*;
@@ -17,18 +16,45 @@ import java.util.*;
 public class ReplShowProcessor implements CustomQueryProcessor {
 
     //a repl server is a host:port pair
+
+    /**
+     * 表示repl server相关的类型。
+     */
     private static class ReplServer {
+        /**
+         * 保存host信息。
+         */
         String host;
+        /**
+         * 保存port信息。
+         */
         String port;
+        /**
+         * 标记probed状态。
+         */
         boolean probed;
 
+        /**
+         * 保存repls集合。
+         */
         List<ReplServer> repls = new ArrayList<>();
 
+        /**
+         * 创建ReplServer对象。
+         *
+         * @param host host参数。
+         * @param port port参数。
+         */
         ReplServer(String host, String port) {
             this.host = host;
             this.port = port;
         }
 
+        /**
+         * 添加server。
+         *
+         * @param server server参数。
+         */
         void addServer(ReplServer server) {
             boolean findOne = false;
 
@@ -44,6 +70,12 @@ public class ReplShowProcessor implements CustomQueryProcessor {
         }
 
         //slef and children
+
+        /**
+         * 获取all servers。
+         *
+         * @return 处理结果。
+         */
         Map<String, ReplServer> getAllServers() {
             Map<String, ReplServer> childs = new LinkedHashMap<>();
             childs.put(this.toString(), this); //add self first
@@ -51,6 +83,11 @@ public class ReplShowProcessor implements CustomQueryProcessor {
             return childs;
         }
 
+        /**
+         * 执行list all children操作。
+         *
+         * @param childs childs参数。
+         */
         void listAllChildren(Map<String, ReplServer> childs) {
 
             for (ReplServer s : repls)
@@ -61,6 +98,11 @@ public class ReplShowProcessor implements CustomQueryProcessor {
 
         }
 
+        /**
+         * 转换为string。
+         *
+         * @return 处理结果。
+         */
         @Override
         public String toString() {
             return this.host + ":" + this.port;
@@ -71,20 +113,46 @@ public class ReplShowProcessor implements CustomQueryProcessor {
 
     //Cache the entries for short period so that we don't need probe on every request
     //max cache age is configured in MyPerfConfiguration
+
+    /**
+     * 表示repl topology cache entry相关的类型。
+     */
     private static class ReplTopologyCacheEntry {
+        /**
+         * 保存create time信息。
+         */
         long createTime = System.currentTimeMillis();
+        /**
+         * 保存root server信息。
+         */
         private ReplServer rootServer;
 
+        /**
+         * 创建ReplTopologyCacheEntry对象。
+         *
+         * @param rootServer root server参数。
+         */
         ReplTopologyCacheEntry(ReplServer rootServer) {
             this.rootServer = rootServer;
         }
 
+        /**
+         * 获取server。
+         *
+         * @return 处理结果。
+         */
         ReplServer getServer() {
             return rootServer;
         }
 
         //when update with new entries, the client should lock the ReplTopologyCacheEntry
         //before invoke this method
+
+        /**
+         * 执行update操作。
+         *
+         * @param newRoot new root参数。
+         */
         void update(ReplServer newRoot) {
             this.rootServer = newRoot;
             createTime = System.currentTimeMillis();
@@ -92,27 +160,85 @@ public class ReplShowProcessor implements CustomQueryProcessor {
     }
 
     //Store repl status per repl server
+
+    /**
+     * 表示repl status相关的类型。
+     */
     private static class ReplStatus {
+        /**
+         * 保存hostname信息。
+         */
         String hostname;
+        /**
+         * 保存port信息。
+         */
         String port = "3306";
+        /**
+         * 保存master file信息。
+         */
         String masterFile;
+        /**
+         * 保存master position信息。
+         */
         String masterPosition;
+        /**
+         * 保存master executed gtid set信息。
+         */
         String masterExecutedGtidSet;
+        /**
+         * 保存master host信息。
+         */
         String masterHost;
+        /**
+         * 保存master port信息。
+         */
         String masterPort;
+        /**
+         * 保存lag信息。
+         */
         String lag;//seconds behind master
+        /**
+         * 保存io信息。
+         */
         String io;
+        /**
+         * 保存sql信息。
+         */
         String sql;
+        /**
+         * 保存master log file信息。
+         */
         String masterLogFile;
+        /**
+         * 保存read master log pos信息。
+         */
         String readMasterLogPos;
+        /**
+         * 保存relay master log file信息。
+         */
         String relayMasterLogFile;
+        /**
+         * 保存exec master log pos信息。
+         */
         String execMasterLogPos;
+        /**
+         * 保存executed gtid set信息。
+         */
         String executedGtidSet;
 
+        /**
+         * 创建ReplStatus对象。
+         */
         ReplStatus() {
 
         }
 
+        /**
+         * 创建ReplStatus对象。
+         *
+         * @param host host参数。
+         * @param port port参数。
+         */
         ReplStatus(String host, String port) {
             this.hostname = host;
             this.port = port;
@@ -120,8 +246,21 @@ public class ReplShowProcessor implements CustomQueryProcessor {
     }
 
     //For all servers in a topology, it will share the same ReplTopologyCacheEntry
+    /**
+     * 保存topology cache集合。
+     */
     private Map<String, ReplTopologyCacheEntry> topologyCache = new HashMap<>();
 
+    /**
+     * 查询multiple。
+     *
+     * @param context     context参数。
+     * @param dbinfo      dbinfo参数。
+     * @param appUser     app user参数。
+     * @param connWrapper conn wrapper参数。
+     * @param qps         qps参数。
+     * @param rListMap    r list map参数。
+     */
     @Override
     public void queryMultiple(MyPerfContext context, DBInstanceInfo dbinfo,
                               String appUser, DBConnectionWrapper connWrapper,
@@ -131,6 +270,16 @@ public class ReplShowProcessor implements CustomQueryProcessor {
 
     }
 
+    /**
+     * 查询single。
+     *
+     * @param context     context参数。
+     * @param dbinfo      dbinfo参数。
+     * @param appUser     app user参数。
+     * @param connWrapper conn wrapper参数。
+     * @param qps         qps参数。
+     * @return 处理结果。
+     */
     @Override
     public ResultList querySingle(MyPerfContext context, DBInstanceInfo dbinfo,
                                   String appUser, DBConnectionWrapper connWrapper, QueryParameters qps)
@@ -170,7 +319,7 @@ public class ReplShowProcessor implements CustomQueryProcessor {
 
         if (rootServer == null)
             log.warn("Cannot find replication root for " + replServer);
-         else if (startingServer == null) {
+        else if (startingServer == null) {
             //update cache
             log.info("Update cache");
             synchronized (this.topologyCache) {
@@ -214,6 +363,15 @@ public class ReplShowProcessor implements CustomQueryProcessor {
         return rList;
     }
 
+    /**
+     * 执行output tree操作。
+     *
+     * @param server        server参数。
+     * @param statusResults status results参数。
+     * @param probed        probed参数。
+     * @param level         level参数。
+     * @param rList         r list参数。
+     */
     private void outputTree(ReplServer server, Map<String, ReplStatus> statusResults, Set<String> probed, int level, ResultList rList) {
 
         if (server == null)
@@ -237,6 +395,13 @@ public class ReplShowProcessor implements CustomQueryProcessor {
 
     }
 
+    /**
+     * 添加output row。
+     *
+     * @param rpl   rpl参数。
+     * @param rList r list参数。
+     * @param level level参数。
+     */
     private void addOutputRow(ReplStatus rpl, ResultList rList, int level) {
         ResultRow row = new ResultRow();
         String prefix = "";
@@ -396,6 +561,12 @@ public class ReplShowProcessor implements CustomQueryProcessor {
         log.info("End of probing " + replServer.toString());
     }
 
+    /**
+     * 查找repl root。
+     *
+     * @param replStatusMap repl status map参数。
+     * @return 处理结果。
+     */
     private ReplServer findReplRoot(Map<String, ReplStatus> replStatusMap) {
         ReplServer root = null;
         Map<String, ReplServer> probed = new HashMap<>();
@@ -428,6 +599,13 @@ public class ReplShowProcessor implements CustomQueryProcessor {
     }
 
     //probe the map to build a tree like structure, and return the root
+
+    /**
+     * 构建repl tree。
+     *
+     * @param replStatusMap repl status map参数。
+     * @return 处理结果。
+     */
     private ReplServer buildReplTree(Map<String, ReplStatus> replStatusMap) {
         Map<String, ReplServer> tree = new HashMap<>();
 
@@ -462,6 +640,12 @@ public class ReplShowProcessor implements CustomQueryProcessor {
         return tree.get(root.toString());
     }
 
+    /**
+     * 获取hostname by ip。
+     *
+     * @param ip ip参数。
+     * @return 处理结果。
+     */
     private static String getHostnameByIp(String ip) {
 
         if (ip == null || ip.isEmpty())
@@ -480,11 +664,21 @@ public class ReplShowProcessor implements CustomQueryProcessor {
         return ip.toLowerCase();
     }
 
+    /**
+     * 判断multiple。
+     *
+     * @return 是否满足条件。
+     */
     @Override
     public boolean isMultiple() {
         return false;
     }
 
+    /**
+     * 执行require dbconnection操作。
+     *
+     * @return 是否满足条件。
+     */
     @Override
     public boolean requireDBConnection() {
         return true;

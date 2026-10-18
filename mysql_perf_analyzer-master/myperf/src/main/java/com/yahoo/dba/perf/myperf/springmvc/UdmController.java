@@ -5,10 +5,9 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.db.DBConnectionWrapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -21,9 +20,19 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
+/**
+ * 表示udm controller相关的类型。
+ */
 @Slf4j
 public class UdmController extends MyPerfBaseController {
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req,
                                              HttpServletResponse resp) throws Exception {
@@ -57,13 +66,13 @@ public class UdmController extends MyPerfBaseController {
             else
                 return this.respondFailure("Non admin user is not allowed to add UDM", req);
 
-         else if ("test_alert".equals(cmd) || "publish_alert".equals(cmd))
+        else if ("test_alert".equals(cmd) || "publish_alert".equals(cmd))
             if (appUser.isAdminUser())
                 return this.processNewAlert(req, resp);
             else
                 return this.respondFailure("Non admin user is not allowed to add UDM", req);
 
-         else if ("udm_detail".equalsIgnoreCase(cmd))//display
+        else if ("udm_detail".equalsIgnoreCase(cmd))//display
         {
             String name = req.getParameter("name");
             udm = this.frameworkContext.getMetricsDef().getUdmManager().getUDMByName(name);
@@ -126,7 +135,7 @@ public class UdmController extends MyPerfBaseController {
                 for (MetricsGroup subG : subGroups)
                     predefined.put(gname + "." + subG.getGroupName(), subG.isAuto() ? "y" : "n");
 
-             else predefined.put(gname, g.isAuto() ? "y" : "n");
+            else predefined.put(gname, g.isAuto() ? "y" : "n");
         }
 
         mv.addObject("predefined", predefined);
@@ -155,6 +164,13 @@ public class UdmController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 处理udmdbdetail。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView processUDMDBDetail(HttpServletRequest req,
                                             HttpServletResponse resp) {
         ModelAndView mv = null;
@@ -247,6 +263,14 @@ public class UdmController extends MyPerfBaseController {
 
     }
 
+    /**
+     * 处理udmdbupdate。
+     *
+     * @param req     req参数。
+     * @param resp    resp参数。
+     * @param appUser app user参数。
+     * @return 处理结果。
+     */
     private ModelAndView processUDMDBUpdate(HttpServletRequest req,
                                             HttpServletResponse resp, AppUser appUser) {
         ModelAndView mv = null;
@@ -279,6 +303,14 @@ public class UdmController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 处理alert dbupdate。
+     *
+     * @param req     req参数。
+     * @param resp    resp参数。
+     * @param appUser app user参数。
+     * @return 处理结果。
+     */
     private ModelAndView processAlertDBUpdate(HttpServletRequest req,
                                               HttpServletResponse resp, AppUser appUser) {
         ModelAndView mv = null;
@@ -292,7 +324,7 @@ public class UdmController extends MyPerfBaseController {
         if (appUser.isAdminUser())
             updated = this.frameworkContext.getMetricsDef().getUdmManager().updateAlertDbSubscription(
                     group, host, alert, subscribe);
-         else
+        else
             return this.respondFailure("No admin user is not allowed to update alert subscription", req);
 
         ResultList rList = null;
@@ -370,7 +402,7 @@ public class UdmController extends MyPerfBaseController {
                 throw new Exception("failed to connect to target db (" + dbinfo + ")");
 
             try (Statement stmt = connWrapper.getConnection().createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
+                 ResultSet rs = stmt.executeQuery(sql)) {
 
                 if (rs != null) {
                     ResultSetMetaData meta = rs.getMetaData();
@@ -436,6 +468,13 @@ public class UdmController extends MyPerfBaseController {
         }
     }
 
+    /**
+     * 测试and validate alert。
+     *
+     * @param req req参数。
+     * @param def def参数。
+     * @param db  db参数。
+     */
     private void testAndValidateAlert(HttpServletRequest req, AlertDefinition def, String db)
             throws Exception {
 
@@ -475,7 +514,7 @@ public class UdmController extends MyPerfBaseController {
 
 
                 try (Statement stmt = connWrapper.getConnection().createStatement();
-                    ResultSet rs = stmt.executeQuery(sql)) {
+                     ResultSet rs = stmt.executeQuery(sql)) {
                 }
             } finally {
                 //close it anyway
@@ -531,6 +570,13 @@ public class UdmController extends MyPerfBaseController {
         }
     }
 
+    /**
+     * 处理new udm。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView processNewUDM(HttpServletRequest req,
                                        HttpServletResponse resp) {
         boolean valid = true;
@@ -617,6 +663,13 @@ public class UdmController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 处理new alert。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView processNewAlert(HttpServletRequest req,
                                          HttpServletResponse resp) {
         boolean valid = true;
@@ -676,7 +729,7 @@ public class UdmController extends MyPerfBaseController {
                 //if reach here, add and store it.
                 if ("publish_alert".equalsIgnoreCase(cmd))
                     this.frameworkContext.getMetricsDef().getUdmManager().addAlertDefinition(alertDef);
-                    //this.frameworkContext.getMetricDb().addNewUDM(alertDef);
+                //this.frameworkContext.getMetricDb().addNewUDM(alertDef);
 
             } catch (Exception ex) {
                 log.warn("Failed to test ALERT", ex);

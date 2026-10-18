@@ -21,15 +21,30 @@ import java.util.*;
  */
 public class ConfigHistory implements Serializable {
 
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 保存exclude entries集合。
+     */
     private static Map<String, Integer> EXCLUDE_ENTRIES = new HashMap<>();
 
+    /**
+     * 保存starting config信息。
+     */
     @Getter
     @Setter
     private ConfigBlock startingConfig;
+    /**
+     * 保存last checked config信息。
+     */
     @Getter
     @Setter
     private ConfigBlock lastCheckedConfig;
+    /**
+     * 保存changes集合。
+     */
     @Getter
     @Setter
     private List<ConfigBlock> changes;
@@ -41,10 +56,18 @@ public class ConfigHistory implements Serializable {
 
     }
 
+    /**
+     * 创建ConfigHistory对象。
+     */
     public ConfigHistory() {
         changes = new ArrayList<>();
     }
 
+    /**
+     * 添加change。
+     *
+     * @param change change参数。
+     */
     public void addChange(ConfigBlock change) {
         this.changes.add(change);
     }
@@ -64,7 +87,7 @@ public class ConfigHistory implements Serializable {
 
                 if (line.isEmpty())
                     cb = null;//end current configuration block
-                 else if (line.startsWith("[CHANGES]")) {
+                else if (line.startsWith("[CHANGES]")) {
                     cb = new ConfigBlock();
                     this.changes.add(cb);
                 } else if (line.startsWith("[STARTING]")) {
@@ -144,6 +167,12 @@ public class ConfigHistory implements Serializable {
 
     }
 
+    /**
+     * 执行store操作。
+     *
+     * @param root root参数。
+     * @param db   db参数。
+     */
     public void store(File root, DBInstanceInfo db) {
         File f = new File(root, db.getDbGroupName() + "_" + db.getHostName() + "_" + db.getPort() + ".cnf");
         try (FileOutputStream out = new FileOutputStream(f)) {
@@ -212,7 +241,7 @@ public class ConfigHistory implements Serializable {
             //1. The prev has no record
             if (!prevMap.containsKey(key))
                 diffMap.put(key, val);
-             else {
+            else {
                 String oldVal = prevMap.get(key);
 
                 if (oldVal == null)

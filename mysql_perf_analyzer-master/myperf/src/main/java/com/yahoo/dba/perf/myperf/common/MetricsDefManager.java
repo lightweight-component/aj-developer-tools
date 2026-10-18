@@ -6,20 +6,15 @@
 package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
-
 import lombok.extern.slf4j.Slf4j;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
 import java.io.InputStreamReader;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A collection of metrics definitions.
@@ -28,28 +23,63 @@ import java.util.Map;
  */
 @Slf4j
 public class MetricsDefManager implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 保存group tag信息。
+     */
     private static String GROUP_TAG = "metricsGroup";
+    /**
+     * 保存subgroup tag信息。
+     */
     private static String SUBGROUP_TAG = "subgroup";
+    /**
+     * 保存metric tag信息。
+     */
     private static String METRIC_TAG = "metric";
+    /**
+     * 保存builtin metrics file name信息。
+     */
     private static String BUILTIN_METRICS_FILE_NAME = "metrics.xml";
 
     // Metrics definition. the key is the group name
+    /**
+     * 保存metrics groups集合。
+     */
     private Map<String, MetricsGroup> metricsGroups = new LinkedHashMap<>();
 
     //user defined metrics
+    /**
+     * 保存udm manager信息。
+     */
     @Getter
     private UDMManager udmManager = new UDMManager();
 
+    /**
+     * 创建MetricsDefManager对象。
+     */
     public MetricsDefManager() {
 
     }
 
+    /**
+     * 获取group names。
+     *
+     * @return 处理结果。
+     */
     synchronized public String[] getGroupNames() {
 
         return metricsGroups.keySet().toArray(new String[0]);
     }
 
+    /**
+     * 获取group by name。
+     *
+     * @param name name参数。
+     * @return 处理结果。
+     */
     synchronized public MetricsGroup getGroupByName(String name) {
 
         if (this.metricsGroups.containsKey(name))
@@ -58,6 +88,11 @@ public class MetricsDefManager implements Serializable {
             return null;
     }
 
+    /**
+     * 添加group。
+     *
+     * @param group group参数。
+     */
     synchronized void addGroup(MetricsGroup group) {
 
         if (group != null && group.getGroupName() != null
@@ -81,7 +116,7 @@ public class MetricsDefManager implements Serializable {
                 mg = this.udmManager.getUDMByName(grpName.substring(grpName.indexOf('_') + 1)).getMetricsGroup();
             } catch (Exception ex) {
             }
-         else
+        else
             mg = this.metricsGroups.get(grpName);
 
         if (mg == null)
@@ -107,6 +142,9 @@ public class MetricsDefManager implements Serializable {
         return mList;
     }
 
+    /**
+     * 执行init操作。
+     */
     public void init() {
         //empty the metrics definitions and reload
         this.metricsGroups.clear();
@@ -114,6 +152,9 @@ public class MetricsDefManager implements Serializable {
         this.udmManager.init();
     }
 
+    /**
+     * 执行load操作。
+     */
     private void load() {
         log.info("Loading metrics definitions ...");
         //for now, we only load built in metrics
@@ -135,6 +176,13 @@ public class MetricsDefManager implements Serializable {
     }
 
     //make it generic so that later we can extend to load external definitions
+
+    /**
+     * 执行load操作。
+     *
+     * @param in in参数。
+     * @return 处理结果。
+     */
     private List<MetricsGroup> load(InputStream in) {
         List<MetricsGroup> groups = new ArrayList<>();
 
@@ -210,6 +258,12 @@ public class MetricsDefManager implements Serializable {
         return groups;
     }
 
+    /**
+     * 解析sub group。
+     *
+     * @param reader reader参数。
+     * @return 处理结果。
+     */
     private MetricsGroup parseSubGroup(XMLStreamReader reader) {
         //assume tag subGroup
         MetricsGroup mg = this.parseMetricsGroupAttribute(reader);
@@ -243,6 +297,12 @@ public class MetricsDefManager implements Serializable {
         return mg;
     }
 
+    /**
+     * 解析metric。
+     *
+     * @param reader reader参数。
+     * @return 处理结果。
+     */
     private Metric parseMetric(XMLStreamReader reader) {
         //assume current tag is metric
         int attrCount2 = reader.getAttributeCount();

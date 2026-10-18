@@ -13,7 +13,17 @@ import java.io.PrintWriter;
  * @author xrao
  */
 interface ProcessListEntryProcessor {
+    /**
+     * 处理entry。
+     *
+     * @param e e参数。
+     */
     void processEntry(ProcessListEntry e);
 
+    /**
+     * 执行dump summary操作。
+     *
+     * @param pw pw参数。
+     */
     void dumpSummary(PrintWriter pw);
 }

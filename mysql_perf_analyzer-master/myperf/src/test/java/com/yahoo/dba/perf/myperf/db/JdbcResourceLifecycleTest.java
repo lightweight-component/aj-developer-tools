@@ -1,48 +1,64 @@
 package com.yahoo.dba.perf.myperf.db;
 
-import com.yahoo.dba.perf.myperf.common.DBUtils;
-import com.yahoo.dba.perf.myperf.common.MyPerfContext;
-import com.yahoo.dba.perf.myperf.common.QueryParameters;
-import com.yahoo.dba.perf.myperf.common.Sql;
-import com.yahoo.dba.perf.myperf.common.SqlManager;
+import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.metrics.MySQLMetricsDb;
 import com.yahoo.dba.perf.myperf.process.MyProfiler;
-import junit.framework.TestCase;
-import junit.framework.Test;
-import junit.framework.TestSuite;
 import junit.extensions.TestSetup;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
 
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 表示jdbc resource lifecycle test相关的类型。
+ */
 public class JdbcResourceLifecycleTest extends TestCase {
+    /**
+     * 保存context信息。
+     */
     private static MyPerfContext context;
 
+    /**
+     * 执行suite操作。
+     *
+     * @return 处理结果。
+     */
     public static Test suite() {
+        /**
+         * 表示相关的类型。
+         */
         return new TestSetup(new TestSuite(JdbcResourceLifecycleTest.class)) {
+            /**
+             * 保存key file信息。
+             */
             private final Path keyFile = Paths.get(".des");
+            /**
+             * 标记key existed状态。
+             */
             private boolean keyExisted;
 
+            /**
+             * 设置up。
+             */
             @Override
             protected void setUp() {
                 keyExisted = Files.exists(keyFile);
                 context = new MyPerfContext();
             }
 
+            /**
+             * 执行tear down操作。
+             */
             @Override
             protected void tearDown() throws Exception {
                 // MetaDB creates a key; remove only a key created by this test suite.
@@ -54,12 +70,18 @@ public class JdbcResourceLifecycleTest extends TestCase {
         };
     }
 
+    /**
+     * 测试connection check closes query resources but keeps borrowed connection。
+     */
     public void testConnectionCheckClosesQueryResourcesButKeepsBorrowedConnection() {
         JdbcFixture jdbc = new JdbcFixture();
         assertTrue(DBUtils.checkConnection(jdbc.connection));
         assertEquals(Arrays.asList("result.close", "statement.close"), jdbc.events);
     }
 
+    /**
+     * 测试connection check closes resources when reading fails。
+     */
     public void testConnectionCheckClosesResourcesWhenReadingFails() {
         JdbcFixture jdbc = new JdbcFixture();
         jdbc.readFailure = new SQLException("read failed");
@@ -67,6 +89,9 @@ public class JdbcResourceLifecycleTest extends TestCase {
         assertEquals(Arrays.asList("result.close", "statement.close"), jdbc.events);
     }
 
+    /**
+     * 测试connection check closes statement when query fails。
+     */
     public void testConnectionCheckClosesStatementWhenQueryFails() {
         JdbcFixture jdbc = new JdbcFixture();
         jdbc.queryFailure = new SQLException("query failed");
@@ -74,6 +99,9 @@ public class JdbcResourceLifecycleTest extends TestCase {
         assertEquals(Arrays.asList("statement.close"), jdbc.events);
     }
 
+    /**
+     * 测试connection check closes statement when configuration fails。
+     */
     public void testConnectionCheckClosesStatementWhenConfigurationFails() {
         JdbcFixture jdbc = new JdbcFixture();
         jdbc.configurationFailure = new SQLException("timeout failed");
@@ -81,28 +109,50 @@ public class JdbcResourceLifecycleTest extends TestCase {
         assertEquals(Arrays.asList("statement.close"), jdbc.events);
     }
 
+    /**
+     * 测试table lookup closes result on early return。
+     */
     public void testTableLookupClosesResultOnEarlyReturn() {
         JdbcFixture jdbc = new JdbcFixture();
         assertTrue(DBUtils.hasTable(jdbc.connection, "schema", "value"));
         assertEquals(Arrays.asList("result.close"), jdbc.events);
     }
 
+    /**
+     * 测试plain query keeps borrowed connection and clears cancellation reference。
+     */
     public void testPlainQueryKeepsBorrowedConnectionAndClearsCancellationReference() throws Exception {
         assertQueryResources(false, false, false);
     }
 
+    /**
+     * 测试prepared query binds parameters and closes resources。
+     */
     public void testPreparedQueryBindsParametersAndClosesResources() throws Exception {
         assertQueryResources(true, false, false);
     }
 
+    /**
+     * 测试substituted query closes resources。
+     */
     public void testSubstitutedQueryClosesResources() throws Exception {
         assertQueryResources(true, true, false);
     }
 
+    /**
+     * 测试generic query closes resources。
+     */
     public void testGenericQueryClosesResources() throws Exception {
         assertQueryResources(true, false, true);
     }
 
+    /**
+     * 执行assert query resources操作。
+     *
+     * @param parameterized parameterized参数。
+     * @param replace       replace参数。
+     * @param generic       generic参数。
+     */
     private void assertQueryResources(boolean parameterized, boolean replace, boolean generic) throws Exception {
         JdbcFixture jdbc = new JdbcFixture();
         Sql sql = new Sql();
@@ -135,6 +185,9 @@ public class JdbcResourceLifecycleTest extends TestCase {
 
     }
 
+    /**
+     * 测试query failure remains primary when both closes fail。
+     */
     public void testQueryFailureRemainsPrimaryWhenBothClosesFail() throws Exception {
         JdbcFixture jdbc = new JdbcFixture();
         jdbc.readFailure = new SQLException("read failed");
@@ -154,12 +207,18 @@ public class JdbcResourceLifecycleTest extends TestCase {
         assertEquals(Arrays.asList("result.close", "statement.close"), jdbc.events);
     }
 
+    /**
+     * 测试owned connection closes after successful update。
+     */
     public void testOwnedConnectionClosesAfterSuccessfulUpdate() {
         JdbcFixture jdbc = new JdbcFixture();
         assertTrue(metricsDb(jdbc).enableMetrics("group", "host", true, "owner", false));
         assertEquals(Arrays.asList("statement.close", "connection.close"), jdbc.events);
     }
 
+    /**
+     * 测试failed update rolls back before closing owned connection。
+     */
     public void testFailedUpdateRollsBackBeforeClosingOwnedConnection() {
         JdbcFixture jdbc = new JdbcFixture();
         jdbc.queryFailure = new SQLException("update failed");
@@ -167,6 +226,9 @@ public class JdbcResourceLifecycleTest extends TestCase {
         assertEquals(Arrays.asList("statement.close", "connection.rollback", "connection.close"), jdbc.events);
     }
 
+    /**
+     * 测试failed statement creation still rolls back and closes connection。
+     */
     public void testFailedStatementCreationStillRollsBackAndClosesConnection() {
         JdbcFixture jdbc = new JdbcFixture();
         jdbc.creationFailure = new SQLException("prepare failed");
@@ -174,18 +236,30 @@ public class JdbcResourceLifecycleTest extends TestCase {
         assertEquals(Arrays.asList("connection.rollback", "connection.close"), jdbc.events);
     }
 
+    /**
+     * 测试explain plan closes first result before running cost query。
+     */
     public void testExplainPlanClosesFirstResultBeforeRunningCostQuery() throws Exception {
         JdbcFixture jdbc = new JdbcFixture();
         assertEquals(2, profiler(jdbc).runExplainPlan().getRows().size());
         assertEquals(Arrays.asList("result.close", "result.close", "statement.close"), jdbc.events);
     }
 
+    /**
+     * 测试stats closes every result before running next query。
+     */
     public void testStatsClosesEveryResultBeforeRunningNextQuery() throws Exception {
         JdbcFixture jdbc = new JdbcFixture();
         assertNotNull(profiler(jdbc).runStats());
         assertEquals(Arrays.asList("result.close", "result.close", "result.close", "statement.close"), jdbc.events);
     }
 
+    /**
+     * 执行profiler操作。
+     *
+     * @param jdbc jdbc参数。
+     * @return 处理结果。
+     */
     private MyProfiler profiler(JdbcFixture jdbc) throws Exception {
         MyProfiler profiler = new MyProfiler();
         profiler.setSqlText("select 'value'");
@@ -195,6 +269,12 @@ public class JdbcResourceLifecycleTest extends TestCase {
         return profiler;
     }
 
+    /**
+     * 执行executor操作。
+     *
+     * @param manager manager参数。
+     * @return 处理结果。
+     */
     private QueryExecutor executor(SqlManager manager) {
         QueryExecutor executor = new QueryExecutor();
         executor.setSqlManager(manager);
@@ -202,8 +282,21 @@ public class JdbcResourceLifecycleTest extends TestCase {
         return executor;
     }
 
+    /**
+     * 执行wrapper操作。
+     *
+     * @param jdbc jdbc参数。
+     * @return 处理结果。
+     */
     private DBConnectionWrapper wrapper(final JdbcFixture jdbc) {
+        /**
+         * 表示相关的类型。
+         */
         return new DBConnectionWrapper() {
+            /**
+             * 获取connection。
+             * @return 处理结果。
+             */
             @Override
             public Connection getConnection() {
                 return jdbc.connection;
@@ -211,8 +304,22 @@ public class JdbcResourceLifecycleTest extends TestCase {
         };
     }
 
+    /**
+     * 执行metrics db操作。
+     *
+     * @param jdbc jdbc参数。
+     * @return 处理结果。
+     */
     private MySQLMetricsDb metricsDb(final JdbcFixture jdbc) {
+        /**
+         * 表示相关的类型。
+         */
         return new MySQLMetricsDb() {
+            /**
+             * 创建connection。
+             * @param autocommit autocommit参数。
+             * @return 处理结果。
+             */
             @Override
             protected Connection createConnection(boolean autocommit) {
                 return jdbc.connection;
@@ -220,21 +327,66 @@ public class JdbcResourceLifecycleTest extends TestCase {
         };
     }
 
+    /**
+     * 表示jdbc fixture相关的类型。
+     */
     private static class JdbcFixture {
+        /**
+         * 保存events集合。
+         */
         final List<String> events = new ArrayList<>();
+        /**
+         * 保存creation failure信息。
+         */
         SQLException creationFailure;
+        /**
+         * 保存query failure信息。
+         */
         SQLException queryFailure;
+        /**
+         * 保存read failure信息。
+         */
         SQLException readFailure;
+        /**
+         * 保存configuration failure信息。
+         */
         SQLException configurationFailure;
+        /**
+         * 保存result close failure信息。
+         */
         SQLException resultCloseFailure;
+        /**
+         * 保存statement close failure信息。
+         */
         SQLException statementCloseFailure;
+        /**
+         * 保存prepared sql信息。
+         */
         String preparedSql;
+        /**
+         * 保存executed sql信息。
+         */
         String executedSql;
+        /**
+         * 保存bound value信息。
+         */
         String boundValue;
+        /**
+         * 标记connection closed状态。
+         */
         boolean connectionClosed;
+        /**
+         * 标记result open状态。
+         */
         boolean resultOpen;
+        /**
+         * 保存row信息。
+         */
         int row;
 
+        /**
+         * 保存columns信息。
+         */
         final ResultSetMetaData columns = proxy(ResultSetMetaData.class, (p, m, a) -> {
 
             if ("getColumnCount".equals(m.getName()))
@@ -248,6 +400,9 @@ public class JdbcResourceLifecycleTest extends TestCase {
 
             return defaultValue(m.getReturnType());
         });
+        /**
+         * 保存result信息。
+         */
         final ResultSet result = proxy(ResultSet.class, (p, m, a) -> {
 
             if ("close".equals(m.getName())) {
@@ -268,6 +423,9 @@ public class JdbcResourceLifecycleTest extends TestCase {
 
             return defaultValue(m.getReturnType());
         });
+        /**
+         * 保存statement信息。
+         */
         final PreparedStatement statement = proxy(PreparedStatement.class, (p, m, a) -> {
 
             if ("close".equals(m.getName())) {
@@ -278,7 +436,7 @@ public class JdbcResourceLifecycleTest extends TestCase {
 
             } else if ("setQueryTimeout".equals(m.getName()) && configurationFailure != null)
                 throw configurationFailure;
-             else if ("setString".equals(m.getName())) boundValue = (String) a[1];
+            else if ("setString".equals(m.getName())) boundValue = (String) a[1];
             else if ("getUpdateCount".equals(m.getName())) return 1;
             else if ("executeQuery".equals(m.getName()) || "execute".equals(m.getName())) {
 
@@ -300,8 +458,14 @@ public class JdbcResourceLifecycleTest extends TestCase {
 
             return defaultValue(m.getReturnType());
         });
+        /**
+         * 保存metadata信息。
+         */
         final DatabaseMetaData metadata = proxy(DatabaseMetaData.class, (p, m, a) ->
                 "getTables".equals(m.getName()) ? result : defaultValue(m.getReturnType()));
+        /**
+         * 保存connection信息。
+         */
         final Connection connection = proxy(Connection.class, (p, m, a) -> {
 
             if ("close".equals(m.getName())) {
@@ -326,10 +490,23 @@ public class JdbcResourceLifecycleTest extends TestCase {
         });
     }
 
+    /**
+     * 执行proxy操作。
+     *
+     * @param type    type参数。
+     * @param handler handler参数。
+     * @return 处理结果。
+     */
     private static <T> T proxy(Class<T> type, InvocationHandler handler) {
         return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, handler));
     }
 
+    /**
+     * 执行default value操作。
+     *
+     * @param type type参数。
+     * @return 处理结果。
+     */
     private static Object defaultValue(Class<?> type) {
 
         if (type == boolean.class)

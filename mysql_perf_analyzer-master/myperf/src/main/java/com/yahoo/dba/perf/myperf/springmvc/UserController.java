@@ -5,12 +5,10 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
+import com.yahoo.dba.perf.myperf.common.*;
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
-
-import com.yahoo.dba.perf.myperf.common.*;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -31,15 +29,37 @@ import java.util.List;
  */
 @Slf4j
 public class UserController extends MyPerfBaseController {
+    /**
+     * 定义state self signup常量。
+     */
     private static final int STATE_SELF_SIGNUP = 1;
+    /**
+     * 定义state managed action常量。
+     */
     private static final int STATE_MANAGED_ACTION = 0;
+    /**
+     * 定义state self signup post action常量。
+     */
     private static final int STATE_SELF_SIGNUP_POST_ACTION = 2;
+    /**
+     * 定义state self reset常量。
+     */
     private static final int STATE_SELF_RESET = 3;
 
+    /**
+     * 保存reset view信息。
+     */
     @Getter
     @Setter
     private String resetView = "resetpwd";
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req,
                                              HttpServletResponse resp) throws Exception {
@@ -115,7 +135,6 @@ public class UserController extends MyPerfBaseController {
             return new ModelAndView(new RedirectView(nosessView));
 
 
-
         int status = Constants.STATUS_OK;
         String message = "";
         ModelAndView mv = new ModelAndView(this.getFormView());
@@ -128,6 +147,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行show self signup form操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView showSelfSignupForm(HttpServletRequest req) {
         ModelAndView mv = new ModelAndView(this.getFormView());
         mv.addObject("a", STATE_SELF_SIGNUP); //a = 1 means a self signup form
@@ -136,6 +161,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle confirm new user操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleConfirmNewUser(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
@@ -167,6 +198,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle change privilege操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleChangePrivilege(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
@@ -207,6 +244,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle delete操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleDelete(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
@@ -226,7 +269,7 @@ public class UserController extends MyPerfBaseController {
 
             if (ret)
                 message = "User " + name + " has been removed";
-             else {
+            else {
                 status = Constants.STATUS_BAD;
                 message = "Failed to delete user " + name;
             }
@@ -242,6 +285,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle change email操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleChangeEmail(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
@@ -280,6 +329,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle change pwd操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleChangePwd(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
@@ -318,6 +373,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle self signup操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleSelfSignup(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         ModelAndView mv = new ModelAndView(this.getFormView());
@@ -383,6 +444,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle create user操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleCreateUser(HttpServletRequest req) {
         AppUser appUser = retrieveAppUser(req);
         AppUserManager um = this.frameworkContext.getUserManager();
@@ -444,6 +511,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle reset操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleReset(HttpServletRequest req) {
         int status = Constants.STATUS_OK;
         String message = "OK";
@@ -517,6 +590,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行retrieve user info操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView retrieveUserInfo(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
@@ -552,6 +631,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行retrieve user list操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView retrieveUserList(HttpServletRequest req) {
         List<AppUser> users = this.frameworkContext.getMetaDb().retrieveAllUsers();
         AppUser appUser = retrieveAppUser(req);
@@ -577,6 +662,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行retrieve new user list操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView retrieveNewUserList(HttpServletRequest req) {
         List<AppUser> users = this.frameworkContext.getMetaDb().retrieveAllUsers();
         AppUser appUser = retrieveAppUser(req);
@@ -603,6 +694,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行list all users操作。
+     *
+     * @param req req参数。
+     * @return 处理结果。
+     */
     private ModelAndView listAllUsers(HttpServletRequest req) {
         List<AppUser> users = this.frameworkContext.getMetaDb().retrieveAllUsers();
         AppUser appUser = retrieveAppUser(req);
@@ -637,6 +734,12 @@ public class UserController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行append user list to model操作。
+     *
+     * @param req req参数。
+     * @param mv  mv参数。
+     */
     private void appendUserListToModel(HttpServletRequest req, ModelAndView mv) {
         AppUser appUser = retrieveAppUser(req);
 

@@ -7,6 +7,7 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,16 +19,31 @@ import java.util.List;
  */
 public class ColumnDescriptor implements Serializable {
 
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 6923318258330634209L;
 
+    /**
+     * 保存columns集合。
+     */
     @Getter
     @Setter
     private List<ColumnInfo> columns;
 
+    /**
+     * 创建ColumnDescriptor对象。
+     */
     public ColumnDescriptor() {
         columns = new ArrayList<>();
     }
 
+    /**
+     * 获取column。
+     *
+     * @param colName col name参数。
+     * @return 处理结果。
+     */
     public ColumnInfo getColumn(String colName) {
 
         for (int i = this.columns.size() - 1; i >= 0; i--)
@@ -37,6 +53,12 @@ public class ColumnDescriptor implements Serializable {
         return null;
     }
 
+    /**
+     * 获取column index。
+     *
+     * @param colName col name参数。
+     * @return 处理结果。
+     */
     public int getColumnIndex(String colName) {
 
         for (int i = this.columns.size() - 1; i >= 0; i--)
@@ -46,6 +68,13 @@ public class ColumnDescriptor implements Serializable {
         return -1;
     }
 
+    /**
+     * 添加column。
+     *
+     * @param colName  col name参数。
+     * @param isNumber is number参数。
+     * @param pos      pos参数。
+     */
     public void addColumn(String colName, boolean isNumber, int pos) {
 
         if (this.columns == null)

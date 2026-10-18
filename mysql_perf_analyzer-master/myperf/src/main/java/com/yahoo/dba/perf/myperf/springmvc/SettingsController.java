@@ -5,18 +5,27 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.process.AutoScanner;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+/**
+ * 表示settings controller相关的类型。
+ */
 @Slf4j
 public class SettingsController extends MyPerfBaseController {
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req,
                                              HttpServletResponse resp) throws Exception {
@@ -28,11 +37,11 @@ public class SettingsController extends MyPerfBaseController {
 
         if ("update".equalsIgnoreCase(task))
             return handleUpdate(req, resp);
-         else if ("updatesnmp".equalsIgnoreCase(task))
+        else if ("updatesnmp".equalsIgnoreCase(task))
             return handleUpdateSNMP(req, resp);
-         else if ("fetchsnmp".equalsIgnoreCase(task))
+        else if ("fetchsnmp".equalsIgnoreCase(task))
             return handleFetchSNMP(req, resp);
-         else if (("start".equalsIgnoreCase(task) || "restart".equalsIgnoreCase(task)) && appUser.isAdminUser()) {
+        else if (("start".equalsIgnoreCase(task) || "restart".equalsIgnoreCase(task)) && appUser.isAdminUser()) {
             log.info("To start/restart scanner");
             //need reconfig
             this.frameworkContext.getMyperfConfig().init(this.frameworkContext);
@@ -78,6 +87,13 @@ public class SettingsController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle fetch snmp操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleFetchSNMP(HttpServletRequest req,
                                          HttpServletResponse resp) {
         String dbgroup = req.getParameter("group");
@@ -120,6 +136,13 @@ public class SettingsController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle update snmp操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleUpdateSNMP(HttpServletRequest req,
                                           HttpServletResponse resp) {
         boolean successful = this.frameworkContext.getSnmpSettings().updateSnmpSetting(
@@ -142,6 +165,13 @@ public class SettingsController extends MyPerfBaseController {
             return this.respondFailure("Failed to update SNMP settings.", req);
     }
 
+    /**
+     * 执行handle update操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleUpdate(HttpServletRequest req, HttpServletResponse resp) {
         //AutoScanner scanner = this.frameworkContext.getAutoScanner();
         MyPerfConfiguration config = this.frameworkContext.getMyperfConfig();
@@ -269,6 +299,12 @@ public class SettingsController extends MyPerfBaseController {
         return this.respondFailure(message, req);
     }
 
+    /**
+     * 执行db changed操作。
+     *
+     * @param req req参数。
+     * @return 是否满足条件。
+     */
     private boolean dbChanged(HttpServletRequest req) {
         MyPerfConfiguration config = this.frameworkContext.getMyperfConfig();
         try {
@@ -294,6 +330,17 @@ public class SettingsController extends MyPerfBaseController {
         return false;
     }
 
+    /**
+     * 测试metrics db。
+     *
+     * @param host   host参数。
+     * @param port   port参数。
+     * @param schema schema参数。
+     * @param user   user参数。
+     * @param pwd    pwd参数。
+     * @param config config参数。
+     * @return 处理结果。
+     */
     private String testMetricsDB(String host, String port, String schema, String user, String pwd, MyPerfConfiguration config) {
         int toTest = 0; //test if only there is a change
 

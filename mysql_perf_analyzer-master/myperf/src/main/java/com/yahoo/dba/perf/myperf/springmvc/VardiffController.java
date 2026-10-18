@@ -5,10 +5,9 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.db.DBConnectionWrapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
@@ -16,12 +15,20 @@ import javax.servlet.http.HttpServletResponse;
 import java.sql.SQLException;
 import java.util.*;
 
+/**
+ * 表示vardiff controller相关的类型。
+ */
 @Slf4j
 public class VardiffController extends MyPerfBaseController {
-
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
-    protected ModelAndView handleRequestImpl(HttpServletRequest req,
-                                             HttpServletResponse resp) throws Exception {
+    protected ModelAndView handleRequestImpl(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         int status = Constants.STATUS_OK;
         String message = "OK";
 
@@ -41,7 +48,7 @@ public class VardiffController extends MyPerfBaseController {
         String validation = qps.validate();
 
         if (validation == null || validation.isEmpty()) {
-            //do we have such query?
+            //do we have such a query?
             try {
                 QueryInputValidator.validateSql(this.frameworkContext.getSqlManager(), qps);
             } catch (Exception ex) {
@@ -64,19 +71,7 @@ public class VardiffController extends MyPerfBaseController {
 
         try {
             connWrapper = WebAppUtil.getDBConnection(req, this.frameworkContext, dbinfo);
-
-            if (connWrapper == null) {
-                status = Constants.STATUS_BAD;
-                message = "failed to connect to target db (" + dbinfo + ")";
-            } else {
-                connWrapper2 = WebAppUtil.getDBConnection(req, this.frameworkContext, dbinfo2);
-
-                if (connWrapper2 == null) {
-                    status = Constants.STATUS_BAD;
-                    message = "failed to connect to target db (" + dbinfo2 + ")";
-                }
-            }
-
+            connWrapper2 = WebAppUtil.getDBConnection(req, this.frameworkContext, dbinfo2);
         } catch (Throwable th) {
             log.error("Exception", th);
             status = Constants.STATUS_BAD;
@@ -108,12 +103,12 @@ public class VardiffController extends MyPerfBaseController {
                 //check if the connection is still good
                 if (!DBUtils.checkConnection(connWrapper.getConnection()))
                     WebAppUtil.closeDBConnection(req, connWrapper, true, false);
-                 else
+                else
                     WebAppUtil.closeDBConnection(req, connWrapper, true, false);
 
                 if (!DBUtils.checkConnection(connWrapper2.getConnection()))
                     WebAppUtil.closeDBConnection(req, connWrapper2, true, false);
-                 else
+                else
                     WebAppUtil.closeDBConnection(req, connWrapper2, true, false);
 
             } else {

@@ -5,10 +5,9 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.process.AutoScanner;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
@@ -24,6 +23,13 @@ import java.util.*;
 @Slf4j
 public class AlertsController extends MyPerfBaseController {
 
+    /**
+     * 执行handle request impl操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         String cmd = req.getParameter("cmd");
@@ -148,6 +154,13 @@ public class AlertsController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle retrieve new alerts操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleRetrieveNewAlerts(HttpServletRequest req,
                                                  HttpServletResponse resp) {
         Object tsObj = req.getSession().getAttribute("LAST_ALERT_REQ_STAMP");
@@ -192,6 +205,13 @@ public class AlertsController extends MyPerfBaseController {
 
     }
 
+    /**
+     * 执行handle retrieve settings操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleRetrieveSettings(HttpServletRequest req,
                                                 HttpServletResponse resp) {
         ModelAndView mv = new ModelAndView(this.jsonView);
@@ -253,6 +273,13 @@ public class AlertsController extends MyPerfBaseController {
         return mv;
     }
 
+    /**
+     * 执行handle update settings操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView handleUpdateSettings(HttpServletRequest req,
                                               HttpServletResponse resp) {
         String message = null;
@@ -262,7 +289,7 @@ public class AlertsController extends MyPerfBaseController {
 
         if (!appUser.isAdminUser())
             message = "Only admin user can update alert threshold settings.";
-         else if (group == null || group.isEmpty() || "all".equals(group)) {
+        else if (group == null || group.isEmpty() || "all".equals(group)) {
             message = "Cannot update system default settings.";
             status = -1;
         } else {
@@ -291,6 +318,13 @@ public class AlertsController extends MyPerfBaseController {
         return this.respondWithStatus(status, message, req);
     }
 
+    /**
+     * 执行enable metrics操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView enableMetrics(HttpServletRequest req,
                                        HttpServletResponse resp) {
         String message = null;
@@ -328,7 +362,7 @@ public class AlertsController extends MyPerfBaseController {
                 if (this.getFrameworkContext().getMetricDb().enableMetrics(group, host, "metrics_enabled_yes".equalsIgnoreCase(cmd),
                         appUser.getName(), true))
                     dbinfo.setMetricsEnabled("metrics_enabled_yes".equalsIgnoreCase(cmd));
-                 else {
+                else {
                     message = "Failed to update metrics setting";
                     break;
                 }
@@ -345,6 +379,13 @@ public class AlertsController extends MyPerfBaseController {
         return this.respondWithStatus(status, message, req);
     }
 
+    /**
+     * 执行enable alerts操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView enableAlerts(HttpServletRequest req,
                                       HttpServletResponse resp) {
         String message = null;
@@ -382,7 +423,7 @@ public class AlertsController extends MyPerfBaseController {
                 if (this.getFrameworkContext().getMetricDb().enableAlerts(group, host, "alerts_enabled_yes".equalsIgnoreCase(cmd),
                         appUser.getName(), true))
                     dbinfo.setAlertEnabled("alerts_enabled_yes".equalsIgnoreCase(cmd));
-                 else {
+                else {
                     message = "Failed to update alert setting";
                     break;
                 }
@@ -399,6 +440,13 @@ public class AlertsController extends MyPerfBaseController {
         return this.respondWithStatus(status, message, req);
     }
 
+    /**
+     * 执行enable snmp操作。
+     *
+     * @param req  req参数。
+     * @param resp resp参数。
+     * @return 处理结果。
+     */
     private ModelAndView enableSNMP(HttpServletRequest req,
                                     HttpServletResponse resp) {
         String message = null;
@@ -436,7 +484,7 @@ public class AlertsController extends MyPerfBaseController {
                 if (this.getFrameworkContext().getMetricDb().enableSnmp(group, host, "snmp_enabled_yes".equalsIgnoreCase(cmd),
                         appUser.getName(), true))
                     dbinfo.setSnmpEnabled("snmp_enabled_yes".equalsIgnoreCase(cmd));
-                 else {
+                else {
                     message = "Failed to update snmp setting";
                     break;
                 }

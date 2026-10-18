@@ -10,13 +10,16 @@ import lombok.extern.slf4j.Slf4j;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
 import java.io.CharArrayReader;
+import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Types;
+import java.util.*;
 
+/**
+ * 表示result list util相关的类型。
+ */
 @Slf4j
 public class ResultListUtil {
 
@@ -268,6 +271,11 @@ public class ResultListUtil {
     }
 
 
+    /**
+     * 执行fake result list data操作。
+     *
+     * @return 处理结果。
+     */
     public static ResultList fakeResultListData() {
         ResultList resList = new ResultList();
         ColumnInfo col1 = new ColumnInfo("TEST1");
@@ -296,6 +304,15 @@ public class ResultListUtil {
         return resList;
     }
 
+    /**
+     * 转换为multi list jsonstring。
+     *
+     * @param resultMap result map参数。
+     * @param qps       qps参数。
+     * @param status    status参数。
+     * @param message   message参数。
+     * @return 处理结果。
+     */
     public static String toMultiListJSONString(LinkedHashMap<String, ResultList> resultMap, QueryParameters qps, int status, String message) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"resp\":{\"status\":").append(status);//start and status
@@ -359,7 +376,7 @@ public class ResultListUtil {
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
 
-                     else
+                    else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
 
                     first = false;
@@ -377,6 +394,15 @@ public class ResultListUtil {
         return sb.toString();
     }
 
+    /**
+     * 转换为jsonstring。
+     *
+     * @param rs      rs参数。
+     * @param qps     qps参数。
+     * @param status  status参数。
+     * @param message message参数。
+     * @return 处理结果。
+     */
     public static String toJSONString(ResultList rs, QueryParameters qps, int status, String message) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"resp\":{\"status\":").append(status);//start and status
@@ -456,7 +482,7 @@ public class ResultListUtil {
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
 
-                     else
+                    else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
 
                     first = false;
@@ -691,6 +717,14 @@ public class ResultListUtil {
     }
 
     //compare tow arrays if the same
+
+    /**
+     * 判断diff。
+     *
+     * @param arr1 arr1参数。
+     * @param arr2 arr2参数。
+     * @return 是否满足条件。
+     */
     public static boolean isDiff(String[] arr1, String[] arr2) {
 
         if (arr1 == null && arr2 == null)
@@ -810,7 +844,7 @@ public class ResultListUtil {
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
 
-                     else
+                    else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
 
                     first = false;
@@ -827,6 +861,17 @@ public class ResultListUtil {
         return sb.toString();
     }
 
+    /**
+     * 转换为jsondiff list string。
+     *
+     * @param rsA     rs a参数。
+     * @param rsB     rs b参数。
+     * @param qpsA    qps a参数。
+     * @param qpsB    qps b参数。
+     * @param status  status参数。
+     * @param message message参数。
+     * @return 处理结果。
+     */
     public static String toJSONDiffListString(ResultList rsA, ResultList rsB, QueryParameters qpsA, QueryParameters qpsB, int status, String message) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"resp\":{\"status\":").append(status);//start and status
@@ -913,7 +958,7 @@ public class ResultListUtil {
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
 
-                     else
+                    else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
                 }
 
@@ -940,7 +985,7 @@ public class ResultListUtil {
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
 
-                     else
+                    else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
                 }
 
@@ -1048,13 +1093,12 @@ public class ResultListUtil {
                     if (cols.get(i).isNumberType())
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
                             sb.append("\"\"");
+                        else if (row.getColumns().get(i).startsWith("-."))
+                            sb.append(row.getColumns().get(i).replace("-.", "-0."));
                         else
-                            if (row.getColumns().get(i).startsWith("-."))
-                                sb.append(row.getColumns().get(i).replace("-.", "-0."));
-                            else
-                                sb.append(escapeJson(row.getColumns().get(i)));
+                            sb.append(escapeJson(row.getColumns().get(i)));
 
-                     else
+                    else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
 
                     first = false;
@@ -1072,6 +1116,12 @@ public class ResultListUtil {
         return sb.toString();
     }
 
+    /**
+     * 执行escape json操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     public static String escapeJson(String str) {
 
         if (str == null)
@@ -1105,6 +1155,13 @@ public class ResultListUtil {
 
     }
 
+    /**
+     * 判断same。
+     *
+     * @param s1 s1参数。
+     * @param s2 s2参数。
+     * @return 是否满足条件。
+     */
     private static boolean isSame(String[] s1, String[] s2) {
 
         if (s1 == null && s2 == null)
@@ -1160,12 +1217,19 @@ public class ResultListUtil {
         }
     }
 
+    /**
+     * 执行padding or trim操作。
+     *
+     * @param s   s参数。
+     * @param len len参数。
+     * @return 处理结果。
+     */
     public static String paddingOrTrim(String s, int len) {
         StringBuilder sb = new StringBuilder();
 
         if (s != null && s.length() > len)
             sb.append(s.substring(0, len));
-         else {
+        else {
             int l = 0;
 
             if (s != null) {
@@ -1182,21 +1246,52 @@ public class ResultListUtil {
         return sb.toString();
     }
 
+    /**
+     * 表示bind variable相关的类型。
+     */
     private static class BindVariable {
         //<binds><bind name=":1" pos="1" dty="1" dtystr="VARCHAR2(2000)" maxlen="2000" csid="873" len="15">Billing Contact</bind></binds>
+        /**
+         * 保存name信息。
+         */
         public String name;
+        /**
+         * 保存pos信息。
+         */
         public String pos;
+        /**
+         * 保存dtystr信息。
+         */
         public String dtystr;
+        /**
+         * 保存max len信息。
+         */
         public String maxLen;
+        /**
+         * 保存len信息。
+         */
         public String len;
+        /**
+         * 保存value信息。
+         */
         public String value;
 
+        /**
+         * 创建BindVariable对象。
+         */
         public BindVariable() {
 
         }
     }
 
 
+    /**
+     * 解析binds。
+     *
+     * @param binds        binds参数。
+     * @param inputFactory input factory参数。
+     * @return 处理结果。
+     */
     private static List<BindVariable> parseBinds(String binds, XMLInputFactory inputFactory) {
 
         if (binds == null)
@@ -1235,7 +1330,7 @@ public class ResultListUtil {
                         var.dtystr = attrValue;
                     else if ("maxlen".equalsIgnoreCase(attrName))
                         var.maxLen = attrValue;
-                     else if ("len".equalsIgnoreCase(attrName))
+                    else if ("len".equalsIgnoreCase(attrName))
                         var.len = attrValue;
 
                 }
@@ -1257,6 +1352,12 @@ public class ResultListUtil {
         return vars;
     }
 
+    /**
+     * 执行paser bind list操作。
+     *
+     * @param rList r list参数。
+     * @return 处理结果。
+     */
     public static ResultList paserBindList(ResultList rList) {
 
         if (rList != null && rList.getRows().size() > 0) {
@@ -1344,6 +1445,15 @@ public class ResultListUtil {
         return null;
     }
 
+    /**
+     * 转换为multi list jsonstring upper。
+     *
+     * @param resultMap result map参数。
+     * @param qps       qps参数。
+     * @param status    status参数。
+     * @param message   message参数。
+     * @return 处理结果。
+     */
     public static String toMultiListJSONStringUpper(LinkedHashMap<String, ResultList> resultMap, QueryParameters qps, int status, String message) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"resp\":{\"status\":").append(status);//start and status
@@ -1407,7 +1517,7 @@ public class ResultListUtil {
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
 
-                     else
+                    else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
 
                     first = false;

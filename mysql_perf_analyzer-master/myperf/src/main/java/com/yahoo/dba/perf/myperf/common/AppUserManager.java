@@ -5,23 +5,37 @@
  */
 package com.yahoo.dba.perf.myperf.common;
 
+import com.yahoo.dba.perf.myperf.meta.MetaDB;
 import lombok.Getter;
 import lombok.Setter;
 
-import com.yahoo.dba.perf.myperf.meta.MetaDB;
-
 import java.io.Serializable;
-import java.util.Map;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
+/**
+ * 表示app user manager相关的类型。
+ */
 public class AppUserManager implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
+    /**
+     * 保存user map集合。
+     */
     private Map<String, AppUser> userMap = new HashMap<>();
+    /**
+     * 保存meta db信息。
+     */
     @Getter
     @Setter
     private MetaDB metaDb; //to access meta db for persistent actions
 
+    /**
+     * 创建AppUserManager对象。
+     */
     public AppUserManager() {
     }
 
@@ -51,22 +65,51 @@ public class AppUserManager implements Serializable {
         return null;
     }
 
+    /**
+     * 添加user。
+     *
+     * @param user user参数。
+     */
     synchronized public void addUser(AppUser user) {
         this.userMap.put(user.getName(), user);
     }
 
+    /**
+     * 获取user map。
+     *
+     * @return 处理结果。
+     */
     public Map<String, AppUser> getUserMap() {
         return Collections.unmodifiableMap(this.userMap);
     }
 
+    /**
+     * 执行retrieve user info from meta db操作。
+     *
+     * @param username username参数。
+     * @return 处理结果。
+     */
     public AppUser retrieveUserInfoFromMetaDB(String username) {
         return metaDb.retrieveUserInfo(username);
     }
 
+    /**
+     * 执行store new password操作。
+     *
+     * @param username username参数。
+     * @param newpwd   newpwd参数。
+     * @return 是否满足条件。
+     */
     public boolean storeNewPassword(String username, String newpwd) {
         return this.metaDb.changePasssword(username, newpwd);
     }
 
+    /**
+     * 更新password cache。
+     *
+     * @param username username参数。
+     * @param passwd   passwd参数。
+     */
     public void updatePasswordCache(String username, String passwd) {
         AppUser au = this.getUser(username.toLowerCase());
 
@@ -74,10 +117,23 @@ public class AppUserManager implements Serializable {
             au.setMd5Hash(au.calMd5(passwd));
     }
 
+    /**
+     * 执行store email操作。
+     *
+     * @param username username参数。
+     * @param email    email参数。
+     * @return 是否满足条件。
+     */
     public boolean storeEmail(String username, String email) {
         return this.metaDb.changeEmail(username, email);
     }
 
+    /**
+     * 更新email cache。
+     *
+     * @param username username参数。
+     * @param email    email参数。
+     */
     public void updateEmailCache(String username, String email) {
         AppUser au = this.getUser(username.toLowerCase());
 
@@ -85,10 +141,23 @@ public class AppUserManager implements Serializable {
             au.setEmail(email);
     }
 
+    /**
+     * 执行store privilege操作。
+     *
+     * @param username username参数。
+     * @param priv     priv参数。
+     * @return 是否满足条件。
+     */
     public boolean storePrivilege(String username, int priv) {
         return this.metaDb.changePrivilege(username, priv);
     }
 
+    /**
+     * 更新privilege cache。
+     *
+     * @param username username参数。
+     * @param priv     priv参数。
+     */
     public void updateprivilegeCache(String username, int priv) {
         AppUser au = this.getUser(username.toLowerCase());
 
@@ -96,6 +165,12 @@ public class AppUserManager implements Serializable {
             au.setUserprivilege(priv == AppUser.PRIV_USER_POWER ? AppUser.PRIV_USER_POWER : AppUser.PRIV_USER_STANDARD);
     }
 
+    /**
+     * 执行confirm new user操作。
+     *
+     * @param username  username参数。
+     * @param confirmed confirmed参数。
+     */
     public void confirmNewUser(String username, boolean confirmed) {
 
         if (this.metaDb.confirmUser(username, confirmed)) {
@@ -106,6 +181,12 @@ public class AppUserManager implements Serializable {
         }
     }
 
+    /**
+     * 删除user。
+     *
+     * @param username username参数。
+     * @return 是否满足条件。
+     */
     public boolean deleteUser(String username) {
         boolean ret = this.metaDb.deleteUser(username);
 

@@ -5,24 +5,22 @@
  */
 package com.yahoo.dba.perf.myperf.process;
 
-import lombok.Setter;
-
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
 import com.yahoo.dba.perf.myperf.common.SNMPSettings.SNMPSetting;
 import com.yahoo.dba.perf.myperf.db.DBConnectionWrapper;
 import com.yahoo.dba.perf.myperf.db.InnoDbMutexPostProccessor;
 import com.yahoo.dba.perf.myperf.db.UserDBConnections;
 import com.yahoo.dba.perf.myperf.snmp.SNMPClient;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.text.SimpleDateFormat;
 
 /**
  * A thread runner executing the real metrics gathering tasks
@@ -31,19 +29,51 @@ import java.text.SimpleDateFormat;
  */
 @Slf4j
 public class MetricScannerRunner implements Runnable {
+    /**
+     * 保存framework context信息。
+     */
     private final MyPerfContext frameworkContext;
 
     //note those objects are shared, so we need handle synchronization here
+    /**
+     * 保存dbqueue信息。
+     */
     private final LinkedBlockingQueue<DBInstanceInfo> dbqueue;//distributed job
+    /**
+     * 保存app user信息。
+     */
     private final AppUser appUser;//to get db credentials
+    /**
+     * 保存conns信息。
+     */
     private UserDBConnections conns;
+    /**
+     * 保存buffer集合。
+     */
     @Setter
     private Map<String, Map<String, MetricsBuffer>> buffer;
+    /**
+     * 保存snap id信息。
+     */
     private final int snap_id;
+    /**
+     * 保存running信息。
+     */
     private final AtomicBoolean running = new AtomicBoolean();
 
+    /**
+     * 保存sdf信息。
+     */
     protected SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
 
+    /**
+     * 创建MetricScannerRunner对象。
+     *
+     * @param frameworkContext framework context参数。
+     * @param dbqueue          dbqueue参数。
+     * @param appUser          app user参数。
+     * @param snap_id          snap id参数。
+     */
     public MetricScannerRunner(MyPerfContext frameworkContext,
                                LinkedBlockingQueue<DBInstanceInfo> dbqueue,
                                AppUser appUser,
@@ -55,10 +85,16 @@ public class MetricScannerRunner implements Runnable {
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
+    /**
+     * 执行run操作。
+     */
     public void run() {
         scan();
     }
 
+    /**
+     * 执行scan操作。
+     */
     private void scan() {
         running.set(true);
         conns = new UserDBConnections();
@@ -87,11 +123,20 @@ public class MetricScannerRunner implements Runnable {
         log.info(Thread.currentThread() + " done scan metrics: " + count + " servers.");
     }
 
+    /**
+     * 执行shutdown操作。
+     */
     public void shutdown() {
         log.info("Shutdown");
         running.set(false);
     }
 
+    /**
+     * 获取alert threshold。
+     *
+     * @param dbinfo dbinfo参数。
+     * @return 处理结果。
+     */
     private Map<String, Float> getAlertThreshold(DBInstanceInfo dbinfo) {
         HashMap<String, Float> thresholds = new HashMap<>(AlertSettings.COMMON_ALERTS.length);
 
@@ -101,6 +146,11 @@ public class MetricScannerRunner implements Runnable {
         return thresholds;
     }
 
+    /**
+     * 执行report offline操作。
+     *
+     * @param dbinfo dbinfo参数。
+     */
     private void reportOffline(DBInstanceInfo dbinfo) {
         try {
             Date dt = new Date();
@@ -116,6 +166,13 @@ public class MetricScannerRunner implements Runnable {
         }
     }
 
+    /**
+     * 检查and report disk usage alert。
+     *
+     * @param dbinfo    dbinfo参数。
+     * @param diskMount disk mount参数。
+     * @param value     value参数。
+     */
     private void checkAndReportDiskUsageAlert(DBInstanceInfo dbinfo, String diskMount, long value) {
         Float threshold = this.frameworkContext.getAlertSettings().getAlertThreshold(dbinfo, "DISKUSAGE");
 
@@ -145,19 +202,58 @@ public class MetricScannerRunner implements Runnable {
      * @author xrao
      */
     private class ScanData {
+        /**
+         * 保存dbinfo信息。
+         */
         DBInstanceInfo dbinfo = null;
+        /**
+         * 保存conn信息。
+         */
         DBConnectionWrapper conn = null;//find one connection is enough
+        /**
+         * 保存state snap信息。
+         */
         StateSnapshot stateSnap = new StateSnapshot();
+        /**
+         * 保存snap id信息。
+         */
         int snap_id;
+        /**
+         * 保存start timestamp信息。
+         */
         long startTimestamp;
+        /**
+         * 标记status updated状态。
+         */
         boolean statusUpdated = false;
+        /**
+         * 标记report generated状态。
+         */
         boolean reportGenerated = false;//now a report will generate at the moment the issue is detected
+        /**
+         * 标记has snap alert状态。
+         */
         boolean hasSnapAlert = false;
+        /**
+         * 保存snap alert type信息。
+         */
         String snapAlertType = null;
+        /**
+         * 保存snap alert value信息。
+         */
         String snapAlertValue = null;
+        /**
+         * 标记can query snmp状态。
+         */
         boolean canQuerySNMP = true;//since we do multi-round SNMP, if one failed, no meaning for next
     }
 
+    /**
+     * 执行scan snmp disk操作。
+     *
+     * @param scanData scan data参数。
+     * @param mg       mg参数。
+     */
     private void scanSnmpDisk(ScanData scanData, MetricsGroup mg) throws Exception {
 
         if (scanData.dbinfo.isSnmpEnabled() && scanData.canQuerySNMP) {
@@ -205,6 +301,12 @@ public class MetricScannerRunner implements Runnable {
 
     }
 
+    /**
+     * 执行scan snmp storage操作。
+     *
+     * @param scanData scan data参数。
+     * @param mg       mg参数。
+     */
     private void scanSnmpStorage(ScanData scanData, MetricsGroup mg) throws Exception {
 
         if (scanData.dbinfo.isSnmpEnabled() && scanData.canQuerySNMP) {
@@ -271,6 +373,12 @@ public class MetricScannerRunner implements Runnable {
 
     }
 
+    /**
+     * 执行scan snmp net操作。
+     *
+     * @param scanData scan data参数。
+     * @param mg       mg参数。
+     */
     private void scanSnmpNet(ScanData scanData, MetricsGroup mg) {
 
         if (scanData.dbinfo.isSnmpEnabled() && scanData.canQuerySNMP) {
@@ -322,6 +430,12 @@ public class MetricScannerRunner implements Runnable {
 
     }
 
+    /**
+     * 执行scan snmp sys操作。
+     *
+     * @param scanData scan data参数。
+     * @param mg       mg参数。
+     */
     private void scanSnmpSys(ScanData scanData, MetricsGroup mg) {
 
         if (scanData.dbinfo.isSnmpEnabled() && scanData.canQuerySNMP) {
@@ -365,6 +479,12 @@ public class MetricScannerRunner implements Runnable {
 
     }
 
+    /**
+     * 执行scan snmp mysqld操作。
+     *
+     * @param scanData scan data参数。
+     * @param mg       mg参数。
+     */
     private void scanSnmpMysqld(ScanData scanData, MetricsGroup mg) throws Exception {
 
         if (scanData.dbinfo.isSnmpEnabled() && scanData.canQuerySNMP) {
@@ -395,6 +515,12 @@ public class MetricScannerRunner implements Runnable {
 
     }
 
+    /**
+     * 执行scan repl操作。
+     *
+     * @param scanData scan data参数。
+     * @param mg       mg参数。
+     */
     private void scanRepl(ScanData scanData, MetricsGroup mg) throws Exception {
         long ts1 = System.currentTimeMillis();
         HashMap<String, String> resMap = this.frameworkContext.getQueryEngine().showSlaveStatusMetrics(scanData.conn);
@@ -406,6 +532,12 @@ public class MetricScannerRunner implements Runnable {
         }
     }
 
+    /**
+     * 执行scan inno dbmutex操作。
+     *
+     * @param scanData scan data参数。
+     * @param mg       mg参数。
+     */
     private void scanInnoDBMutex(ScanData scanData, MetricsGroup mg) throws Exception {
         QueryParameters qps = new QueryParameters();
         qps.setSql(mg.getSql());
@@ -437,6 +569,15 @@ public class MetricScannerRunner implements Runnable {
     }
 
     //Retrieve metrics buffer for a given group or sub group
+
+    /**
+     * 执行retrieve metrics buffer操作。
+     *
+     * @param scanData scan data参数。
+     * @param mg       mg参数。
+     * @param subGrp   sub grp参数。
+     * @return 处理结果。
+     */
     private MetricsBuffer retrieveMetricsBuffer(ScanData scanData, MetricsGroup mg, MetricsGroup subGrp) {
 
         if (!buffer.containsKey(scanData.dbinfo.getDbGroupName() + ":" + scanData.dbinfo.getHostName()))
@@ -562,7 +703,7 @@ public class MetricScannerRunner implements Runnable {
                 }
             }
 
-         else {
+        else {
             recordUserAlertsFromMetricsData(scanData, mg, kvPairs);
             MetricsBuffer mbuf = retrieveMetricsBuffer(scanData, mg, null);
 
@@ -600,6 +741,13 @@ public class MetricScannerRunner implements Runnable {
         }
     }
 
+    /**
+     * 执行record user alerts from metrics data操作。
+     *
+     * @param scanData scan data参数。
+     * @param mg       mg参数。
+     * @param kvPairs  kv pairs参数。
+     */
     private void recordUserAlertsFromMetricsData(ScanData scanData, MetricsGroup mg, Map<String, String> kvPairs) {
 
         if (kvPairs == null)
@@ -641,6 +789,12 @@ public class MetricScannerRunner implements Runnable {
         }
     }
 
+    /**
+     * 执行record user alerts from global status操作。
+     *
+     * @param scanData scan data参数。
+     * @param kvPairs  kv pairs参数。
+     */
     private void recordUserAlertsFromGlobalStatus(ScanData scanData, Map<String, String> kvPairs) {
 
         if (kvPairs == null)
@@ -664,6 +818,12 @@ public class MetricScannerRunner implements Runnable {
         }
     }
 
+    /**
+     * 执行scan regular predefined操作。
+     *
+     * @param scanData scan data参数。
+     * @param mg       mg参数。
+     */
     private void scanRegularPredefined(ScanData scanData, MetricsGroup mg) throws Exception {
         //log.info("Scan group "+mg.getGroupName()+" for "+scanData.dbinfo+", udm: "+mg.isUdmFlagged());
         //The idea to use sub group is, we can scan once and update multiple sub groups.
@@ -706,11 +866,24 @@ public class MetricScannerRunner implements Runnable {
     }
 
     //for UDM, now we will treat it same as scanRegularPredefined
+
+    /**
+     * 执行scan udm操作。
+     *
+     * @param scanData scan data参数。
+     * @param udm      udm参数。
+     */
     private void scanUDM(ScanData scanData, UserDefinedMetrics udm) throws Exception {
         log.info("Scan UDM " + udm.getName() + " for " + scanData.dbinfo);
         scanRegularPredefined(scanData, udm.getMetricsGroup());
     }
 
+    /**
+     * 执行try connect操作。
+     *
+     * @param scanData scan data参数。
+     * @return 是否满足条件。
+     */
     private boolean tryConnect(ScanData scanData) {
         DBCredential cred = DBUtils.findDBCredential(frameworkContext, scanData.dbinfo.getDbGroupName(), appUser);
 
@@ -758,6 +931,12 @@ public class MetricScannerRunner implements Runnable {
 
     }
 
+    /**
+     * 执行scan host操作。
+     *
+     * @param dbinfo dbinfo参数。
+     * @return 是否满足条件。
+     */
     private boolean scanHost(DBInstanceInfo dbinfo) {
         boolean status = false;
 
@@ -868,7 +1047,6 @@ public class MetricScannerRunner implements Runnable {
                             }
 
 
-
                     scanData.statusUpdated = true;
                     //if(lastAlertTime!=null &&( (lastAlertEndTime==null  && ist.getLastAlertEndTime()!=null)
                     //	||(ist.getLastAlertEndTime()==null && ist.getLastAlertTime()!=null && !ist.getLastAlertType().equalsIgnoreCase(lastAlertType))))
@@ -929,6 +1107,15 @@ public class MetricScannerRunner implements Runnable {
         return status;
     }
 
+    /**
+     * 执行record alert report操作。
+     *
+     * @param conn       conn参数。
+     * @param dbinfo     dbinfo参数。
+     * @param timestamp  timestamp参数。
+     * @param alertType  alert type参数。
+     * @param alertValue alert value参数。
+     */
     private void recordAlertReport(DBConnectionWrapper conn, DBInstanceInfo dbinfo, long timestamp, String alertType, String alertValue) {
 
         if (!dbinfo.isAlertEnabled()) {

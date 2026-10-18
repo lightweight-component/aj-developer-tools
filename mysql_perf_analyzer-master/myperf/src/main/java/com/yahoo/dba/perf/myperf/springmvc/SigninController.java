@@ -5,13 +5,11 @@
  */
 package com.yahoo.dba.perf.myperf.springmvc;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.AppUser;
 import com.yahoo.dba.perf.myperf.common.MyPerfContext;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 import org.springframework.web.servlet.view.RedirectView;
@@ -26,20 +24,42 @@ import javax.servlet.http.HttpServletResponse;
  */
 @Slf4j
 public class SigninController extends AbstractController {
+    /**
+     * 保存framework context信息。
+     */
     @Getter
     @Setter
     private MyPerfContext frameworkContext;
+    /**
+     * 定义default error常量。
+     */
     private static final String DEFAULT_ERROR = "Invalid user name or password.";
+    /**
+     * 保存login form view信息。
+     */
     @Getter
     @Setter
     private String loginFormView;
+    /**
+     * 保存login success view信息。
+     */
     @Getter
     @Setter
     private String loginSuccessView;
+    /**
+     * 保存setup view信息。
+     */
     @Getter
     @Setter
     private String setupView;
 
+    /**
+     * 执行handle request internal操作。
+     *
+     * @param request request参数。
+     * @param resp    resp参数。
+     * @return 处理结果。
+     */
     @Override
     protected ModelAndView handleRequestInternal(HttpServletRequest request,
                                                  HttpServletResponse resp) throws Exception {

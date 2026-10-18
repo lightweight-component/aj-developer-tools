@@ -7,17 +7,16 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
-import java.util.ArrayList;
-import java.util.List;
 import java.io.InputStream;
 import java.io.Serializable;
-import javax.json.Json;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -27,53 +26,111 @@ import javax.json.Json;
  */
 @Slf4j
 public class UserDefinedMetrics implements Serializable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 表示user defined metrics exception相关的类型。
+     */
     public static class UserDefinedMetricsException extends Exception {
+        /**
+         * 定义serial version uid常量。
+         */
         private static final long serialVersionUID = 1L;
 
+        /**
+         * 创建UserDefinedMetricsException对象。
+         */
         public UserDefinedMetricsException() {
             super();
         }
 
+        /**
+         * 创建UserDefinedMetricsException对象。
+         *
+         * @param msg msg参数。
+         */
         public UserDefinedMetricsException(String msg) {
             super(msg);
         }
     }
 
+    /**
+     * 保存name信息。
+     */
     @Getter
     private String name; //UDM name
+    /**
+     * 标记auto状态。
+     */
     @Getter
     private boolean auto;  //auto collect
+    /**
+     * 保存source信息。
+     */
     @Getter
     @Setter
     private String source; //how metrics are gathered, hook up to predefined, or customized sql
+    /**
+     * 保存udm type信息。
+     */
     @Getter
     private String udmType; //column, row, key
+    /**
+     * 保存name col信息。
+     */
     @Getter
     private String nameCol; //for multi row type, column name for metric name
+    /**
+     * 保存value col信息。
+     */
     @Getter
     private String valueCol; //for multi row type, column name for metric value
+    /**
+     * 保存key col信息。
+     */
     @Getter
     private String keyCol; //forl muti row, multi metrics per row, column name to extract entity key
+    /**
+     * 保存sql信息。
+     */
     @Getter
     private String sql; //sql statement for customized sql
+    /**
+     * 标记store in common table状态。
+     */
     @Getter
     private boolean storeInCommonTable = false; //whether we want to store metrics in a common table
     //The advantage is we can add new metrics into the same group
     //The disadvantage is the storage overhead.
 
+    /**
+     * 保存metrics集合。
+     */
     @Getter
     @Setter
     private List<Metric> metrics = new ArrayList<>();
 
+    /**
+     * 保存metrics group信息。
+     */
     @Getter
     private MetricsGroup metricsGroup = new MetricsGroup();//wrap the content into a MetricsGroup
 
+    /**
+     * 创建UserDefinedMetrics对象。
+     */
     public UserDefinedMetrics() {
         metricsGroup.setUdmFlagged(true);
     }
 
+    /**
+     * 创建UserDefinedMetrics对象。
+     *
+     * @param name name参数。
+     */
     public UserDefinedMetrics(String name) {
 
         if (name != null) {
@@ -84,6 +141,11 @@ public class UserDefinedMetrics implements Serializable {
         metricsGroup.setUdmFlagged(true);
     }
 
+    /**
+     * 设置name。
+     *
+     * @param name name参数。
+     */
     public void setName(String name) {
 
         if (name != null) {
@@ -92,11 +154,21 @@ public class UserDefinedMetrics implements Serializable {
         }
     }
 
+    /**
+     * 设置auto。
+     *
+     * @param auto auto参数。
+     */
     public void setAuto(boolean auto) {
         this.auto = auto;
         this.metricsGroup.setAuto(this.auto);
     }
 
+    /**
+     * 设置udm type。
+     *
+     * @param udmType udm type参数。
+     */
     public void setUdmType(String udmType) {
         this.udmType = udmType;
 
@@ -104,11 +176,21 @@ public class UserDefinedMetrics implements Serializable {
             this.metricsGroup.setMultipleMetricsPerRow(true);
     }
 
+    /**
+     * 设置name col。
+     *
+     * @param nameCol name col参数。
+     */
     public void setNameCol(String nameCol) {
         this.nameCol = nameCol;
         this.metricsGroup.setMetricNameColumn(this.nameCol);
     }
 
+    /**
+     * 设置value col。
+     *
+     * @param valueCol value col参数。
+     */
     public void setValueCol(String valueCol) {
         this.valueCol = valueCol;
         this.metricsGroup.setMetricValueColumn(this.valueCol);
@@ -127,6 +209,11 @@ public class UserDefinedMetrics implements Serializable {
 
     }
 
+    /**
+     * 设置sql。
+     *
+     * @param sql sql参数。
+     */
     public void setSql(String sql) {
         this.sql = sql;
 
@@ -134,6 +221,11 @@ public class UserDefinedMetrics implements Serializable {
             this.metricsGroup.setSqlText(this.sql);
     }
 
+    /**
+     * 添加metric。
+     *
+     * @param m m参数。
+     */
     public void addMetric(Metric m) {
 
         if (m != null) {
@@ -143,6 +235,14 @@ public class UserDefinedMetrics implements Serializable {
 
     }
 
+    /**
+     * 添加metric。
+     *
+     * @param name       name参数。
+     * @param sourceName source name参数。
+     * @param inc        inc参数。
+     * @param dataType   data type参数。
+     */
     public void addmetric(String name, String sourceName, boolean inc, MetricDataType dataType) {
 
         if (name != null && !name.isEmpty()) {
@@ -201,6 +301,12 @@ public class UserDefinedMetrics implements Serializable {
 
     }
 
+    /**
+     * 转换为json。
+     *
+     * @param html html参数。
+     * @return 处理结果。
+     */
     public String toJSON(boolean html) {
         StringBuilder mtrStr = new StringBuilder();
         mtrStr.append("{\r\n");
@@ -241,6 +347,12 @@ public class UserDefinedMetrics implements Serializable {
         return mtrStr.toString();
     }
 
+    /**
+     * 执行escape json html操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     public static String escapeJsonHTML(String str) {
 
         if (str == null)
@@ -274,6 +386,12 @@ public class UserDefinedMetrics implements Serializable {
 
     }
 
+    /**
+     * 执行escape json操作。
+     *
+     * @param str str参数。
+     * @return 处理结果。
+     */
     public static String escapeJson(String str) {
 
         if (str == null)
@@ -303,6 +421,12 @@ public class UserDefinedMetrics implements Serializable {
         return sb.toString();
     }
 
+    /**
+     * 创建from json。
+     *
+     * @param in in参数。
+     * @return 处理结果。
+     */
     public static UserDefinedMetrics createFromJson(InputStream in) {
         UserDefinedMetrics udm = null;
         try (JsonReader jsonReader = Json.createReader(in)) {
@@ -338,6 +462,11 @@ public class UserDefinedMetrics implements Serializable {
         return udm;
     }
 
+    /**
+     * 设置store in common table。
+     *
+     * @param storeInCommonTable store in common table参数。
+     */
     public void setStoreInCommonTable(boolean storeInCommonTable) {
         this.storeInCommonTable = storeInCommonTable;
         this.metricsGroup.setStoreInCommonTable(storeInCommonTable);

@@ -5,18 +5,17 @@
  */
 package com.yahoo.dba.perf.myperf.metrics;
 
+import com.yahoo.dba.perf.myperf.common.MetricsGroup;
 import lombok.extern.slf4j.Slf4j;
 
-import com.yahoo.dba.perf.myperf.common.MetricsGroup;
-
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
-import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * persistence store for metrics
@@ -25,39 +24,75 @@ import java.util.Date;
  */
 @Slf4j
 public class MySQLMetricsDb extends MetricsDbBase implements Serializable, Runnable {
+    /**
+     * 定义serial version uid常量。
+     */
     private static final long serialVersionUID = 1L;
 
     //private java.text.DecimalFormat df = new java.text.DecimalFormat("#.###");
     //private java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
 
+    /**
+     * 创建MySQLMetricsDb对象。
+     */
     public MySQLMetricsDb() {
     }
 
+    /**
+     * 获取db type。
+     *
+     * @return 处理结果。
+     */
     public String getDbType() {
         return "mysql";
     }
 
 
+    /**
+     * 构建metric code ddl。
+     *
+     * @return 处理结果。
+     */
     protected String buildMetricCodeDDL() {
         return "CREATE TABLE METRIC_CODE (CODE_ID INT NOT NULL AUTO_INCREMENT, NAME VARCHAR(128), PRIMARY KEY(CODE_ID))";
 
     }
 
+    /**
+     * 构建metric code index ddl。
+     *
+     * @return 处理结果。
+     */
     @Override
     protected String buildMetricCodeIndexDDL() {
         return "create unique index UK_COCE on METRIC_CODE (NAME)";
     }
 
+    /**
+     * 构建alert ddl。
+     *
+     * @return 处理结果。
+     */
     protected String buildAlertDDL() {
         return "CREATE TABLE ALERT (DBID INT, TS BIGINT, END_TS BIGINT DEFAULT '0', ALERT_TYPE VARCHAR(30), ALERT_REASON VARCHAR(128), PRIMARY KEY(DBID, TS))";
 
     }
 
+    /**
+     * 构建alert index ddl。
+     *
+     * @return 处理结果。
+     */
     @Override
     protected String buildAlertIndexDDL() {
         return "create index IDX_ALERT_TS on ALERT(TS)";
     }
 
+    /**
+     * 构建generic metric ddl。
+     *
+     * @return 处理结果。
+     */
     protected String[] buildGenericMetricDDL() {
         return new String[]{
                 "CREATE TABLE METRIC_GENERIC (DBID INT, METRIC_ID INT, SNAP_ID INT, TS BIGINT, VALUE DECIMAL(22,7), PRIMARY KEY(DBID, METRIC_ID, SNAP_ID), KEY idx_metrics_dbid_ts (DBID, SNAP_ID), KEY idx_metrics_ts (SNAP_ID) )"
@@ -65,6 +100,12 @@ public class MySQLMetricsDb extends MetricsDbBase implements Serializable, Runna
 
     }
 
+    /**
+     * 创建connection。
+     *
+     * @param autocommit autocommit参数。
+     * @return 处理结果。
+     */
     protected Connection createConnection(boolean autocommit) {
         Connection conn = null;
         try {
@@ -81,6 +122,13 @@ public class MySQLMetricsDb extends MetricsDbBase implements Serializable, Runna
         return conn;
     }
 
+    /**
+     * 执行store generic metric操作。
+     *
+     * @param s    s参数。
+     * @param q2   q2参数。
+     * @param conn conn参数。
+     */
     @Override
     protected void storeGenericMetric(String s, List<MetricsData> q2, Connection conn) throws SQLException {
         MetricsGroup mg = this.metricsGroups.get(s);
@@ -140,6 +188,11 @@ public class MySQLMetricsDb extends MetricsDbBase implements Serializable, Runna
         }
     }
 
+    /**
+     * 构建host ddl。
+     *
+     * @return 处理结果。
+     */
     @Override
     protected String[] buildHostDDL() {
         return new String[]{
@@ -147,6 +200,11 @@ public class MySQLMetricsDb extends MetricsDbBase implements Serializable, Runna
         };
     }
 
+    /**
+     * 构建alert setting ddl。
+     *
+     * @return 处理结果。
+     */
     @Override
     protected String[] buildAlertSettingDDL() {
         return new String[]{
@@ -154,28 +212,53 @@ public class MySQLMetricsDb extends MetricsDbBase implements Serializable, Runna
         };
     }
 
+    /**
+     * 构建snapshot ddl。
+     *
+     * @return 处理结果。
+     */
     @Override
     protected String[] buildSnapshotDDL() {
         return new String[]{"create table SNAPSHOTS(SNAP_ID INT NOT NULL AUTO_INCREMENT, START_TS BIGINT, END_TS BIGINT, FAILED_HOSTS INT, SUCCEED_HOSTS INT, CREATED TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(SNAP_ID),  KEY IDX_SNAPSHOTS_TS (START_TS))"};
     }
 
+    /**
+     * 构建alert sub scription ddl。
+     *
+     * @return 处理结果。
+     */
     @Override
     protected String[] buildAlertSubScriptionDDL() {
         return new String[]{"CREATE TABLE ALERT_SUBSCRIPT ("
                 + "ID INT NOT NULL AUTO_INCREMENT, DBGROUP VARCHAR(30) NOT NULL, HOSTNAME VARCHAR(100), ALERT_NAME VARCHAR(30) NOT NULL, PARAMS VARCHAR(512), PRIMARY KEY(ID), UNIQUE KEY (DBGROUP, HOSTNAME, ALERT_NAME), KEY (ALERT_NAME))"};
     }
 
+    /**
+     * 构建metrics subscrption ddl。
+     *
+     * @return 处理结果。
+     */
     @Override
     protected String[] buildMetricsSubscrptionDDL() {
         return new String[]{"CREATE TABLE METRICS_SUBSCRIPT ("
                 + "ID INT NOT NULL AUTO_INCREMENT, DBGROUP VARCHAR(30) NOT NULL, HOSTNAME VARCHAR(100), MGROUP VARCHAR(30) NOT NULL,  MSUBGROUP VARCHAR(30), PRIMARY KEY(ID), UNIQUE KEY (DBGROUP, HOSTNAME, MGROUP, MSUBGROUP), KEY (MGROUP, MSUBGROUP))"};
     }
 
+    /**
+     * 判断limit support。
+     *
+     * @return 是否满足条件。
+     */
     @Override
     protected boolean isLimitSupport() {
         return true;
     }
 
+    /**
+     * 构建alert notification ddl。
+     *
+     * @return 处理结果。
+     */
     @Override
     protected String[] buildAlertNotificationDDL() {
         return new String[]{"CREATE TABLE ALERT_NOTIFICATION ("

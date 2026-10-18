@@ -6,9 +6,22 @@ import lombok.extern.slf4j.Slf4j;
 import java.sql.SQLException;
 import java.util.Map;
 
+/**
+ * 表示my sqlstatus query processor相关的类型。
+ */
 @Slf4j
 public class MySQLStatusQueryProcessor implements CustomQueryProcessor {
 
+    /**
+     * 查询multiple。
+     *
+     * @param context     context参数。
+     * @param dbinfo      dbinfo参数。
+     * @param appUser     app user参数。
+     * @param connWrapper conn wrapper参数。
+     * @param qps         qps参数。
+     * @param rListMap    r list map参数。
+     */
     @Override
     public void queryMultiple(MyPerfContext context, DBInstanceInfo dbinfo, String appUser,
                               DBConnectionWrapper connWrapper, QueryParameters qps,
@@ -17,6 +30,16 @@ public class MySQLStatusQueryProcessor implements CustomQueryProcessor {
 
     }
 
+    /**
+     * 查询single。
+     *
+     * @param context     context参数。
+     * @param dbinfo      dbinfo参数。
+     * @param appUser     app user参数。
+     * @param connWrapper conn wrapper参数。
+     * @param qps         qps参数。
+     * @return 处理结果。
+     */
     @Override
     public ResultList querySingle(MyPerfContext context, DBInstanceInfo dbinfo, String appUser,
                                   DBConnectionWrapper connWrapper, QueryParameters qps)
@@ -66,7 +89,7 @@ public class MySQLStatusQueryProcessor implements CustomQueryProcessor {
 
                     if (i == nameIdx)
                         newRow.addColumn(v == null ? null : v.toUpperCase());
-                     else newRow.addColumn(v);
+                    else newRow.addColumn(v);
                 }
 
                 newList.addRow(newRow);
@@ -78,11 +101,21 @@ public class MySQLStatusQueryProcessor implements CustomQueryProcessor {
         return null;
     }
 
+    /**
+     * 判断multiple。
+     *
+     * @return 是否满足条件。
+     */
     @Override
     public boolean isMultiple() {
         return false;
     }
 
+    /**
+     * 执行require dbconnection操作。
+     *
+     * @return 是否满足条件。
+     */
     @Override
     public boolean requireDBConnection() {
         return true;

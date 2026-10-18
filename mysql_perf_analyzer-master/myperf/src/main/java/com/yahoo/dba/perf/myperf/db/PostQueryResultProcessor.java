@@ -13,5 +13,11 @@ import com.yahoo.dba.perf.myperf.common.ResultList;
  * @author xrao
  */
 public interface PostQueryResultProcessor {
+    /**
+     * 执行process操作。
+     *
+     * @param rs rs参数。
+     * @return 处理结果。
+     */
     ResultList process(ResultList rs);
 }
