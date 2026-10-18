@@ -54,13 +54,14 @@ public class UserDBConnections {
      * @return
      */
     synchronized public DBConnectionWrapper checkoutConnection(String dbGroupName, String hostname) {
-        for (DBConnectionWrapper conn : this.connections) {
+
+        for (DBConnectionWrapper conn : this.connections)
             if (dbGroupName.equalsIgnoreCase(conn.getDb().getDbGroupName())
                     && hostname.equalsIgnoreCase(conn.getDb().getHostName()) && !conn.isInuse()) {
                 conn.setInuse(true);
                 return conn;
             }
-        }
+
         return null;
     }
 
@@ -73,12 +74,13 @@ public class UserDBConnections {
      */
     public DBConnectionWrapper checkoutConnection(String dbname, int tgtInstance) {
         synchronized (this) {
-            for (DBConnectionWrapper conn : this.connections) {
+
+            for (DBConnectionWrapper conn : this.connections)
                 if (dbname.equalsIgnoreCase(conn.getDb().getDbGroupName()) && conn.getInstance_number() == tgtInstance) {
                     conn.setInuse(true);
                     return conn;
                 }
-            }
+
             //if we reach here without credential, stop here
             return null;
         }
@@ -94,13 +96,14 @@ public class UserDBConnections {
      */
     public DBConnectionWrapper checkoutConnection(DBInstanceInfo dbinfo, DBCredential cred) {
         synchronized (this) {
-            for (DBConnectionWrapper conn : this.connections) {
+
+            for (DBConnectionWrapper conn : this.connections)
                 if (dbinfo.getDbGroupName().equalsIgnoreCase(conn.getDb().getDbGroupName())
                         && dbinfo.getHostName().equalsIgnoreCase(conn.getDb().getHostName()) && !conn.isInuse()) {
                     conn.setInuse(true);
                     return conn;
                 }
-            }
+
             //if we reach here without credential, stop here
             if (cred == null)
                 return null;
@@ -111,9 +114,11 @@ public class UserDBConnections {
         //block other connections.
         if (cred != null && cred.getPassword() == null)
             throw new RuntimeException("No credential provided fro DB " + dbinfo.getDbGroupName());
+
         try {
             return createConnectionInternal(dbinfo, cred);
         } catch (Exception ex) {
+
             if (ex.getCause() != null) {
                 Throwable cause = ex.getCause();
                 String msg = cause.getMessage();
@@ -125,6 +130,7 @@ public class UserDBConnections {
                 } else
                     log.info("Ex: " + ex.getCause().getClass().getName() + ", " + ex.getCause().getMessage());
             }
+
             log.error("Exception when connecting to (" + dbinfo + ")", ex);
             throw new RuntimeException(ex.getMessage());
         }
@@ -140,12 +146,13 @@ public class UserDBConnections {
      */
     public DBConnectionWrapper checkoutConnection(DBGroupInfo cluster, DBCredential cred) {
         synchronized (this) {
-            for (DBConnectionWrapper conn : this.connections) {
+
+            for (DBConnectionWrapper conn : this.connections)
                 if (cluster.getGroupName().equalsIgnoreCase(conn.getDb().getDbGroupName()) && !conn.isInuse()) {
                     conn.setInuse(true);
                     return conn;
                 }
-            }
+
             //if we reach here without credential, stop here
             if (cred == null)
                 return null;
@@ -158,18 +165,20 @@ public class UserDBConnections {
             throw new RuntimeException("No credential provided fro DB group " + cluster.getGroupName());
 
         //now let's try the cluster one by one
-        for (DBInstanceInfo dbinfo : cluster.getInstances()) {
+        for (DBInstanceInfo dbinfo : cluster.getInstances())
             try {
+
                 if (!dbinfo.isConnectionVerified()) {
                     log.info("Skip host which is not connection verified yet: " + dbinfo.getHostName());
                     continue;
                 }
+
                 return createConnectionInternal(dbinfo, cred);
             } catch (Exception ex) {
                 log.error("Exception when connecting to (" + dbinfo + ")", ex);
                 throw new RuntimeException(ex.getMessage());
             }
-        }
+
         return null;
     }
 
@@ -177,8 +186,10 @@ public class UserDBConnections {
             throws SQLException {
         log.debug("Connecting to " + dbinfo.getConnectionString() + " using user " + cred.getUsername());
         Connection conn = ConnectionFactory.connect(dbinfo, cred, frameworkContext);
+
         if (conn == null)
             throw new SQLException("Failed to create connection: null connection");
+
         conn.setReadOnly(true);//TODO right now, we only allow readonly connection
         //wrap it
         DBConnectionWrapper cw = new DBConnectionWrapper(dbinfo);
@@ -198,8 +209,10 @@ public class UserDBConnections {
      * @param conn
      */
     public void checkinConnection(DBConnectionWrapper conn) {
+
         if (conn == null)
             return;
+
         conn.setCurrentStatement(null);
         conn.setInuse(false);
     }
@@ -213,13 +226,14 @@ public class UserDBConnections {
         conn.setCurrentStatement(null);
         conn.close();
         synchronized (this) {
-            for (int i = 0; i < this.connections.size(); i++) {
+
+            for (int i = 0; i < this.connections.size(); i++)
                 if (conn == this.connections.get(i)) {
                     log.debug("Remove closed connection (" + conn.getAppUser() + "," + conn.getDb());
                     this.connections.remove(i);
                     break;
                 }
-            }
+
         }
     }
 
@@ -232,13 +246,14 @@ public class UserDBConnections {
         conn.setCurrentStatement(null);
         conn.close();
         synchronized (this) {
-            for (int i = 0; i < this.connections.size(); i++) {
+
+            for (int i = 0; i < this.connections.size(); i++)
                 if (conn == this.connections.get(i)) {
                     log.debug("Remove closed connection as requested (" + conn.getAppUser() + "," + conn.getDb());
                     this.connections.remove(i);
                     break;
                 }
-            }
+
         }
     }
 
@@ -247,19 +262,23 @@ public class UserDBConnections {
      */
     synchronized public void close() {
         this.valid = false;
+
         for (DBConnectionWrapper conn : this.connections) {
             log.debug("Closing connection to (" + conn.getAppUser() + ", " + conn.getDb() + ")");
             try {
+
                 if (conn.isInuse() && conn.getCurrentStatement() != null) {
                     log.debug("Cancel pending query, connection  (" + conn.getAppUser() + ", " + conn.getDb() + ")");
                     conn.getCurrentStatement().cancel();
                 }
+
             } catch (Exception ex) {
                 log.error("Exception", ex);
             }
             conn.close();
             log.debug("Closed connection to (" + conn.getAppUser() + ", " + conn.getDb() + ")");
         }
+
         this.connections.clear();
     }
 
@@ -269,12 +288,16 @@ public class UserDBConnections {
      * @param timeMillis
      */
     public void closeExpired(long timeMillis) {
+
         if (timeMillis <= 0)
             timeMillis = this.connectionIdleTimeout;
+
         List<DBConnectionWrapper> idleList = new ArrayList<>();
         synchronized (this.connections) {
+
             for (int i = this.connections.size() - 1; i >= 0; i--) {
                 DBConnectionWrapper conn = this.connections.get(i);
+
                 if (!conn.isInuse() && conn.isExpired(timeMillis)) {
                     log.debug("Remove idle connection from pool (" + conn.getAppUser() + "," + conn.getDb() + "), created at " + conn.getCreateTime());
                     idleList.add(this.connections.remove(i));
@@ -294,8 +317,10 @@ public class UserDBConnections {
         List<DBConnectionWrapper> idleConnections = new ArrayList<>();
         //remove from reuse
         synchronized (this) {
+
             for (int i = this.connections.size() - 1; i >= 0; i--) {
                 DBConnectionWrapper conn = this.connections.get(i);
+
                 if (!clusterName.equalsIgnoreCase(conn.getDb().getDbGroupName())
                         || !hostName.equalsIgnoreCase(conn.getDb().getHostName()) || conn.isInuse()) continue;
 
@@ -321,17 +346,21 @@ public class UserDBConnections {
 
     synchronized public TreeMap<String, Integer> retrieveConnectionMap() {
         TreeMap<String, Integer> connMap = new TreeMap<>();
+
         for (int i = this.connections.size() - 1; i >= 0; i--) {
             DBConnectionWrapper conn = this.connections.get(i);
             String dbname = conn.getDb().getDbGroupName();
             String hostname = conn.getDb().getHostName();
             String key = dbname + ":" + hostname;
             int connCnt = 0;
+
             if (connMap.containsKey(key))
                 connCnt = connMap.get(key);
+
             connCnt++;
             connMap.put(key, connCnt);
         }
+
         return connMap;
     }
 

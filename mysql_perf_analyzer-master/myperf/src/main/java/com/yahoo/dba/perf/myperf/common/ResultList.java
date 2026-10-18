@@ -55,10 +55,13 @@ public class ResultList implements Serializable {
     }
 
     public void addCustomeObject(CustomResultObject obj) {
+
         if (obj == null)
             return;
+
         if (this.customObjects == null)
             this.customObjects = new HashMap<>();
+
         this.customObjects.put(obj.getName(), obj);
     }
 }

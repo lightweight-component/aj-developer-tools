@@ -31,11 +31,14 @@ public class ReplShowProcessor implements CustomQueryProcessor {
 
         void addServer(ReplServer server) {
             boolean findOne = false;
+
             for (int i = 0; i < repls.size(); i++) {
                 ReplServer s = repls.get(i);
+
                 if (s.host.equalsIgnoreCase(server.host) && s.port.equals(server.port))
                     findOne = true;
             }
+
             if (!findOne)
                 repls.add(server);
         }
@@ -49,12 +52,13 @@ public class ReplShowProcessor implements CustomQueryProcessor {
         }
 
         void listAllChildren(Map<String, ReplServer> childs) {
-            for (ReplServer s : repls) {
+
+            for (ReplServer s : repls)
                 if (!childs.containsKey(s.toString())) {
                     childs.put(s.toString(), s);
                     s.listAllChildren(childs);
                 }
-            }
+
         }
 
         @Override
@@ -139,16 +143,18 @@ public class ReplShowProcessor implements CustomQueryProcessor {
         ReplServer startingServer = null;
         synchronized (this.topologyCache) {
             ReplTopologyCacheEntry cache = this.topologyCache.get(replServer.toString());
+
             if (cache != null && cache.createTime + context.getMyperfConfig().getReplTopologyCacheMaxAge() > System.currentTimeMillis())
                 startingServer = cache.rootServer;
         }
 
-        if (cred != null) {
+        if (cred != null)
             if (startingServer == null) {
                 statusResults.put(replServer.toString(), new ReplStatus(dbinfo.getHostName(), dbinfo.getPort()));
                 queryDetail(context, cred, statusResults, replServer, 0);
             } else {
                 Map<String, ReplServer> allServers = startingServer.getAllServers();
+
                 for (Map.Entry<String, ReplServer> e : allServers.entrySet()) {
                     ReplServer s = e.getValue();
                     ReplServer rplServer = new ReplServer(s.host, s.port);
@@ -158,17 +164,20 @@ public class ReplShowProcessor implements CustomQueryProcessor {
                 }
 
             }
-        }
+
 
         ReplServer rootServer = this.buildReplTree(statusResults);
-        if (rootServer == null) {
+
+        if (rootServer == null)
             log.warn("Cannot find replication root for " + replServer);
-        } else if (startingServer == null) {
+         else if (startingServer == null) {
             //update cache
             log.info("Update cache");
             synchronized (this.topologyCache) {
+
                 for (Map.Entry<String, ReplStatus> e : statusResults.entrySet()) {
                     ReplTopologyCacheEntry cache = this.topologyCache.get(e.getKey());
+
                     if (cache == null) {
                         cache = new ReplTopologyCacheEntry(rootServer);
                         this.topologyCache.put(e.getKey(), cache);
@@ -177,6 +186,7 @@ public class ReplShowProcessor implements CustomQueryProcessor {
                 }
             }
         }
+
         ResultList rList = new ResultList();
         ColumnDescriptor desc = new ColumnDescriptor();
         rList.setColumnDescriptor(desc);
@@ -205,43 +215,54 @@ public class ReplShowProcessor implements CustomQueryProcessor {
     }
 
     private void outputTree(ReplServer server, Map<String, ReplStatus> statusResults, Set<String> probed, int level, ResultList rList) {
+
         if (server == null)
             return;
         //always output self
         ReplStatus rpl = statusResults.get(server.toString());
+
         if (rpl == null)
             return; //don't expect so
+
         addOutputRow(rpl, rList, level);
         //if current server probed, or no children stop here
         if (probed.contains(server.toString()) || server.repls.size() == 0)
             return;
+
         probed.add(server.toString());
-        for (ReplServer s : server.repls) {
+
+        for (ReplServer s : server.repls)
             outputTree(s, statusResults, probed, level + 1, rList);
-        }
+
 
     }
 
     private void addOutputRow(ReplStatus rpl, ResultList rList, int level) {
         ResultRow row = new ResultRow();
         String prefix = "";
-        if (level > 0) {
-            for (int i = 0; i < level; i++) {
+
+        if (level > 0)
+            for (int i = 0; i < level; i++)
                 prefix += "-";
-            }
-        }
+
+
         row.addColumn(prefix + rpl.hostname + ":" + rpl.port);
+
         if (rpl.masterHost != null && !rpl.masterHost.isEmpty())
             row.addColumn(rpl.masterHost + ":" + rpl.masterPort);
         else
             row.addColumn(null);
+
         row.addColumn(rpl.lag);
+
         if (rpl.io != null || rpl.sql != null)
             row.addColumn(rpl.io + "/" + rpl.sql);
         else row.addColumn(null);
+
         if (rpl.masterFile != null)
             row.addColumn(rpl.masterFile + ":" + rpl.masterPosition);
         else row.addColumn(null);
+
         row.addColumn(rpl.masterLogFile);
         row.addColumn(rpl.readMasterLogPos);
         row.addColumn(rpl.relayMasterLogFile);
@@ -280,14 +301,18 @@ public class ReplShowProcessor implements CustomQueryProcessor {
                 //we might not have permission
                 if (conn == null)
                     return;
+
                 try (Statement stmt = conn.createStatement()) {
                     try (ResultSet rs = stmt.executeQuery("show master status")) {
+
                         if (rs != null && rs.next()) {
                             ResultSetMetaData meta = rs.getMetaData();
                             int col = meta.getColumnCount();
+
                             for (int i = 1; i <= col; i++) {
                                 String colName = meta.getColumnLabel(i);
                                 String val = rs.getString(i);
+
                                 if ("File".equalsIgnoreCase(colName))
                                     repl.masterFile = val;
                                 else if ("Position".equalsIgnoreCase(colName))
@@ -298,12 +323,15 @@ public class ReplShowProcessor implements CustomQueryProcessor {
                         }
                     }
                     try (ResultSet rs = stmt.executeQuery("show slave status")) {
+
                         if (rs != null && rs.next()) {
                             ResultSetMetaData meta = rs.getMetaData();
                             int col = meta.getColumnCount();
+
                             for (int i = 1; i <= col; i++) {
                                 String colName = meta.getColumnLabel(i);
                                 String val = rs.getString(i);
+
                                 if ("Master_Host".equalsIgnoreCase(colName))
                                     repl.masterHost = getHostnameByIp(val);
                                 else if ("Master_Port".equalsIgnoreCase(colName))
@@ -325,24 +353,27 @@ public class ReplShowProcessor implements CustomQueryProcessor {
                                 else if ("Slave_SQL_Running".equalsIgnoreCase(colName))
                                     repl.sql = val;
                             }
+
                             if (toprobe)
                                 hosts.put(repl.masterHost, repl.masterPort);
                         }
                     }
-                    if (toprobe) {
+                    if (toprobe)
                         try (ResultSet rs = stmt.executeQuery("select host from information_schema.processlist where command like 'Binlog Dump%'")) {
                             while (rs != null && rs.next()) {
                                 String host = rs.getString(1);
-                                if (host != null && host.indexOf(":") > 0) {
+
+                                if (host != null && host.indexOf(":") > 0)
                                     host = host.substring(0, host.indexOf(':'));
-                                }
+
                                 host = getHostnameByIp(host);
+
                                 if (host != null && !host.isEmpty())
                                     //we cannot probe port, assume 3306
                                     hosts.put(host, "3306");
                             }
                         }
-                    }
+
                 }
             }
         } catch (Exception ex) {
@@ -350,8 +381,10 @@ public class ReplShowProcessor implements CustomQueryProcessor {
         }
         //probe
         for (Map.Entry<String, String> server : hosts.entrySet()) {
+
             if (replStatusMap.containsKey(server.getKey() + ":" + server.getValue()))
                 continue;
+
             ReplStatus replChild = new ReplStatus();
             replChild.hostname = server.getKey();
             replChild.port = server.getValue();
@@ -359,6 +392,7 @@ public class ReplShowProcessor implements CustomQueryProcessor {
             replStatusMap.put(childServer.toString(), replChild);
             queryDetail(context, cred, replStatusMap, childServer, depth + 1);
         }
+
         log.info("End of probing " + replServer.toString());
     }
 
@@ -379,11 +413,15 @@ public class ReplShowProcessor implements CustomQueryProcessor {
         //at this stage, root has to be here
         while (true) {
             ReplStatus rpl = replStatusMap.get(root.toString());
+
             if (rpl.masterHost == null || rpl.masterHost.isEmpty())
                 return root;
+
             ReplServer newRoot = new ReplServer(rpl.masterHost, rpl.masterPort);
+
             if (probed.containsKey(newRoot.toString()))
                 return newRoot;
+
             root = newRoot;
             probed.put(root.toString(), root);
         }
@@ -392,23 +430,30 @@ public class ReplShowProcessor implements CustomQueryProcessor {
     //probe the map to build a tree like structure, and return the root
     private ReplServer buildReplTree(Map<String, ReplStatus> replStatusMap) {
         Map<String, ReplServer> tree = new HashMap<>();
+
         for (Map.Entry<String, ReplStatus> e : replStatusMap.entrySet()) {
             String self = e.getKey();
             ReplStatus repl = e.getValue();
             String master = repl.masterHost;
+
             if (master != null && !master.isEmpty())
                 master = master + ":" + repl.masterPort;
+
             ReplServer s = tree.get(self);
+
             if (s == null) {
                 s = new ReplServer(repl.hostname, repl.port);
                 tree.put(self, s);
             }
+
             if (master != null) {
                 ReplServer ms = tree.get(master);
+
                 if (ms == null) {
                     ms = new ReplServer(repl.masterHost, repl.masterPort);
                     tree.put(master, ms);
                 }
+
                 ms.addServer(s);
             }
         }
@@ -418,17 +463,20 @@ public class ReplShowProcessor implements CustomQueryProcessor {
     }
 
     private static String getHostnameByIp(String ip) {
+
         if (ip == null || ip.isEmpty())
             return null;
+
         char c1 = ip.charAt(0);
         char c2 = ip.charAt(ip.length() - 1);
-        if (c1 >= '0' && c1 <= '9' && c2 >= '0' && c2 <= '9') {
+
+        if (c1 >= '0' && c1 <= '9' && c2 >= '0' && c2 <= '9')
             try {
                 InetAddress inetAddress = InetAddress.getByName(ip);
                 return inetAddress.getHostName().toLowerCase();
             } catch (Exception ex) {
             }
-        }
+
         return ip.toLowerCase();
     }
 

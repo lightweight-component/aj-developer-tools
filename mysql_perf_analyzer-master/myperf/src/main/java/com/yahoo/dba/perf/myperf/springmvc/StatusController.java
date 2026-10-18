@@ -18,22 +18,26 @@ public class StatusController extends MyPerfBaseController {
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req,
                                              HttpServletResponse resp) throws Exception {
-
         AppUser appUser = retrieveAppUser(req);
         HashSet<String> filteredGroups = new HashSet<>();
         boolean useFilter = false;
+
         if (appUser != null && appUser.isRestrictedUser()) {
             useFilter = true;
             Set<String> mydbs = this.frameworkContext.getDbInfoManager()
                     .getMyDatabases(appUser.getName(), appUser.isRestrictedUser()).getMyDbList();
-            if (mydbs != null) {
+
+            if (mydbs != null)
                 for (String s : mydbs)
                     filteredGroups.add(s);
-            }
+
         }
+
         String dbgroup = req.getParameter("group");
+
         if (dbgroup == null || dbgroup.trim().length() == 0)
             dbgroup = "all";
+
         String dbhost = req.getParameter("host");
 
         Date now = new Date();
@@ -73,21 +77,27 @@ public class StatusController extends MyPerfBaseController {
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
             DecimalFormat df = new DecimalFormat("#.###");
-            for (Map.Entry<String, DBGroupInfo> e : this.frameworkContext.getDbInfoManager().getClusters().entrySet()) {
+
+            for (Map.Entry<String, DBGroupInfo> e : this.frameworkContext.getDbInfoManager().getClusters().entrySet())
                 for (DBInstanceInfo dbinfo : e.getValue().getInstances()) {
 
                     String dbgroupName = dbinfo.getDbGroupName();
                     String dbHostName = dbinfo.getHostName();
+
                     if (!"all".equals(dbgroup) && !dbgroup.equalsIgnoreCase(dbgroupName))
                         continue;
+
                     if (useFilter && !filteredGroups.contains(dbgroupName))
                         continue;
+
                     InstanceStates stateSnaps = this.frameworkContext.getInstanceStatesManager().getStates(dbinfo.getDbid());
+
                     if (stateSnaps == null)
                         continue;
                     //java.util.Date lastConnectTime = this.frameworkContext.getDbInfoManager().getLastAccessDate(dbgroupName, dbHostName);
                     Date lastConnectTime = stateSnaps.getLastAccessTime();
                     String dbstatus = "Green";
+
                     if (lastConnectTime == null && withinOneScan)
                         dbstatus = "Unknown";
                     else if (lastConnectTime == null)
@@ -106,6 +116,7 @@ public class StatusController extends MyPerfBaseController {
                     StateSnapshot[] snaps = stateSnaps.copySnapshots();
                     boolean isSnapValid = snaps[0].getTimestamp() >= 0L && snaps[1].getTimestamp() > snaps[0].getTimestamp();
                     long interval = snaps[1].getTimestamp() - snaps[0].getTimestamp();
+
                     if (isSnapValid) {
                         //sys CPU
                         double syscpu = 0.0f;
@@ -113,16 +124,17 @@ public class StatusController extends MyPerfBaseController {
                         double iowaits = 0.0f;
                         double loadAvg = 0.0f;
                         int activeThreads = 0;
+
                         if (snaps[0].getQueries() >= 0L && snaps[1].getQueries() >= 0L) {
                             //double val = ((double)(snaps[1].getQueries() - snaps[0].getQueries())*1000)/(double)interval;
                             double val = diffAvgNoNegative(snaps[1].getQueries(), snaps[0].getQueries(),
                                     snaps[1].getTimestamp(), snaps[0].getTimestamp(), snaps[1].getUptime(), true, 1000);
                             vals.add(df.format(val));
-                        } else {
+                        } else
                             vals.add("0.00");
-                        }
 
-                        if (snaps[0].getSyscputime() >= 0L && snaps[1].getSyscputime() >= 0L) {
+
+                        if (snaps[0].getSyscputime() >= 0L && snaps[1].getSyscputime() >= 0L)
                             if (snaps[0].getSyscputime() == snaps[1].getSyscputime()) {
                                 syscpu = 0.0;
                                 vals.add("0.00");
@@ -131,10 +143,11 @@ public class StatusController extends MyPerfBaseController {
                                 vals.add(df.format(val));
                                 syscpu = val;
                             }
-                        } else {
+
+                         else
                             vals.add("0.00");
-                        }
-                        if (snaps[0].getUsercputime() >= 0L && snaps[1].getUsercputime() >= 0L) {
+
+                        if (snaps[0].getUsercputime() >= 0L && snaps[1].getUsercputime() >= 0L)
                             if (snaps[0].getUsercputime() == snaps[1].getUsercputime()) {
                                 usercpu = 0.0;
                                 vals.add("0.00");
@@ -144,10 +157,11 @@ public class StatusController extends MyPerfBaseController {
                                 vals.add(df.format(val));
                                 usercpu = val;
                             }
-                        } else {
+
+                         else
                             vals.add("0.00");
-                        }
-                        if (snaps[0].getIotime() >= 0L && snaps[1].getIotime() >= 0L) {
+
+                        if (snaps[0].getIotime() >= 0L && snaps[1].getIotime() >= 0L)
                             if (snaps[0].getIotime() == snaps[1].getIotime()) {
                                 iowaits = 0.0;
                                 vals.add("0.00");
@@ -156,9 +170,10 @@ public class StatusController extends MyPerfBaseController {
                                 vals.add(df.format(val));
                                 iowaits = val;
                             }
-                        } else {
+
+                         else
                             vals.add("0.00");
-                        }
+
                         if (snaps[1].getLoadAverage() >= 0.0f) {
                             vals.add(df.format(snaps[1].getLoadAverage()));
                             loadAvg = snaps[1].getLoadAverage();
@@ -166,6 +181,7 @@ public class StatusController extends MyPerfBaseController {
                             vals.add("0.00");
 
                         vals.add(String.valueOf(snaps[1].getReplLag()));
+
                         if (snaps[1].getAvailableMem() >= 0L) {
                             long val = snaps[1].getAvailableMem() / 1024;
                             vals.add(String.valueOf(val));
@@ -189,25 +205,25 @@ public class StatusController extends MyPerfBaseController {
                             double val = diffAvgNoNegative(snaps[1].getConnections(), snaps[0].getConnections(),
                                     snaps[1].getTimestamp(), snaps[0].getTimestamp(), snaps[1].getUptime(), true, 1000);
                             vals.add(df.format(val));
-                        } else {
+                        } else
                             vals.add("0.00");
-                        }
+
 
                         if (snaps[0].getAbortedConnectsClients() >= 0L && snaps[1].getAbortedConnectsClients() >= 0L) {
                             //double val = ((double)(snaps[1].getAbortedConnectsClients() - snaps[0].getAbortedConnectsClients())*1000)/(double)interval;
                             double val = diffAvgNoNegative(snaps[1].getAbortedConnectsClients(), snaps[0].getAbortedConnectsClients(),
                                     snaps[1].getTimestamp(), snaps[0].getTimestamp(), snaps[1].getUptime(), true, 1000);
                             vals.add(df.format(val));
-                        } else {
+                        } else
                             vals.add("0.00");
-                        }
+
                         if (snaps[0].getDeadlocks() >= 0L && snaps[1].getDeadlocks() >= 0L) {
                             double val = diffAvgNoNegative(snaps[1].getDeadlocks(), snaps[0].getDeadlocks(),
                                     snaps[1].getTimestamp(), snaps[0].getTimestamp(), snaps[1].getUptime(), false, 1);
                             vals.add((long) val + "(" + snaps[0].getDeadlocks() + ")");
-                        } else {
+                        } else
                             vals.add(String.valueOf(snaps[1].getDeadlocks()));
-                        }
+
                         //hardcoded threshold now
                         if (iowaits > this.frameworkContext.getAlertSettings().getAlertThreshold(dbinfo, "IO")
                                 || (syscpu + usercpu > this.frameworkContext.getAlertSettings().getAlertThreshold(dbinfo, "CPU"))
@@ -215,6 +231,7 @@ public class StatusController extends MyPerfBaseController {
                                 || activeThreads > this.frameworkContext.getAlertSettings().getAlertThreshold(dbinfo, "THREAD"))
                             if (!"Red".equals(dbstatus))
                                 dbstatus = "Yellow";
+
                     } else {
                         vals.add("0.00");
                         vals.add("0.00");
@@ -234,14 +251,19 @@ public class StatusController extends MyPerfBaseController {
                         vals.add("0.00");
                         vals.add("0");
                     }
+
                     vals.add(dbstatus);
+
                     if (lastConnectTime != null)
                         vals.add(sdf.format(lastConnectTime));
                     else
                         vals.add("");
+
                     Date altDt = stateSnaps.getLastAlertTime();
+
                     if (altDt != null) {
                         String val = stateSnaps.getLastAlertValue();
+
                         if (val == null)
                             val = "";
                         //else if(val.indexOf('.')>0 && val.length()>=val.indexOf('.')+4)
@@ -249,11 +271,12 @@ public class StatusController extends MyPerfBaseController {
                         String end_dt = stateSnaps.getLastAlertEndTime() != null ? sdf.format(stateSnaps.getLastAlertEndTime()) : "";
                         vals.add(sdf.format(altDt) + "-" + end_dt + "/" + stateSnaps.getLastAlertType() + "/" + val);
                     } else vals.add("");
+
                     vals.add(String.valueOf(stateSnaps.getLastScanTime()));
                     row.setColumns(vals);
                     rList.addRow(row);
                 }
-            }
+
         } else {
             Date d1 = null;
             Date d2 = null;
@@ -271,28 +294,34 @@ public class StatusController extends MyPerfBaseController {
                         this.frameworkContext.getDbInfoManager().findDB(dbgroup, dbhost).getDbid(), Long.parseLong(startDate), Long.parseLong(endDate));
                 HashMap<String, Integer> connectCounter = new HashMap<>(24 * 8);
                 HashMap<String, Integer> slowCounter = new HashMap<>(24 * 8);
-                if (rList != null && rList.getRows().size() > 0) {
+
+                if (rList != null && rList.getRows().size() > 0)
                     for (ResultRow row : rList.getRows()) {
                         String ts = row.getColumns().get(1);
                         String h = ts.substring(0, ts.length());
+
                         if (connectCounter.containsKey(h))
                             connectCounter.put(h, connectCounter.get(h) + 1);
                         else
                             connectCounter.put(h, 1);
+
                         try {
+
                             if (slowCounter.containsKey(h))
                                 slowCounter.put(h, connectCounter.get(h) + Integer.parseInt(row.getColumns().get(3)));
                             else
                                 slowCounter.put(h, Integer.parseInt(row.getColumns().get(3)));
+
                         } catch (Exception ex) {
                         }
                     }
-                }
+
 
             } catch (Exception ex) {
             }
 
         }
+
         ModelAndView mv = new ModelAndView(jsonView);
         String msg = "OK";
 
@@ -316,10 +345,12 @@ public class StatusController extends MyPerfBaseController {
     private double diffAvgNoNegative(long v1, long v2, long ts1, long ts2, long uptime, boolean avg, int adjustment) {
         long diff = v1 - v2;
         long interval = ts1 - ts2;
+
         if (diff < 0) {
             diff = uptime > 0 ? v1 : 0;
             interval = uptime > 0 ? uptime * 1000 : 0;
         }
+
         if (!avg || diff == 0)
             return diff;
 

@@ -43,6 +43,7 @@ public class SqlManager implements Serializable {
     public Sql getSql(String handle) {
         if (this.sqlMap.containsKey(handle))
             return this.sqlMap.get(handle);
+
         return null;
     }
 
@@ -60,11 +61,15 @@ public class SqlManager implements Serializable {
             while (reader.hasNext()) {
                 //loop till one sql tag is found
                 int evtType = reader.next();
+
                 if (evtType != XMLStreamConstants.START_ELEMENT)
                     continue;
+
                 String tagName = reader.getLocalName();
+
                 if (!"sql".equals(tagName))
                     continue;
+
                 int attrCount = reader.getAttributeCount();
                 String name = null;
                 String paramCount = null;
@@ -74,28 +79,31 @@ public class SqlManager implements Serializable {
                 boolean useDbid = false;
                 boolean expandRow = false;
                 boolean errorInline = false;
+
                 for (int i = 0; i < attrCount; i++) {
                     String attrName = reader.getAttributeLocalName(i);
                     String attrValue = reader.getAttributeValue(i);
+
                     if ("handle".equals(attrName))
                         name = attrValue;
                     else if ("paramCount".equals(attrName))
                         paramCount = attrValue;
                     else if ("comments".equalsIgnoreCase(attrName))
                         comments = attrValue;
-                    else if ("replace".equalsIgnoreCase(attrName)) {
+                    else if ("replace".equalsIgnoreCase(attrName))
                         replace = "Y".equalsIgnoreCase(attrValue) || "TRUE".equalsIgnoreCase(attrValue);
-                    } else if ("useSnapId".equalsIgnoreCase(attrName)) {
+                     else if ("useSnapId".equalsIgnoreCase(attrName))
                         useSnapId = "Y".equalsIgnoreCase(attrValue) || "TRUE".equalsIgnoreCase(attrValue);
-                    } else if ("useDbid".equalsIgnoreCase(attrName)) {
+                     else if ("useDbid".equalsIgnoreCase(attrName))
                         useDbid = "Y".equalsIgnoreCase(attrValue) || "TRUE".equalsIgnoreCase(attrValue);
-                    } else if ("expandRow".equalsIgnoreCase(attrName)) {
+                     else if ("expandRow".equalsIgnoreCase(attrName))
                         expandRow = "Y".equalsIgnoreCase(attrValue) || "TRUE".equalsIgnoreCase(attrValue);
-                    } else if ("errorInline".equalsIgnoreCase(attrName)) {
+                     else if ("errorInline".equalsIgnoreCase(attrName))
                         errorInline = "Y".equalsIgnoreCase(attrValue) || "TRUE".equalsIgnoreCase(attrValue);
-                    }
+
 
                 }
+
                 if (name != null && name.trim().length() > 0) {
                     Sql sql = new Sql();
                     sql.setHandle(name);
@@ -112,11 +120,15 @@ public class SqlManager implements Serializable {
                     }
                     while (reader.hasNext()) {
                         int evtType2 = reader.next();
+
                         if (evtType2 == XMLStreamConstants.END_ELEMENT && "sql".equals(reader.getLocalName()))
                             break;
+
                         if (evtType2 != XMLStreamConstants.START_ELEMENT)
                             continue;
+
                         String tagName2 = reader.getLocalName();
+
                         if ("text".equals(tagName2))
                             sql.setSqlText(reader.getElementText());
                         else if ("class".equals(tagName2))
@@ -133,35 +145,41 @@ public class SqlManager implements Serializable {
                             sql.setFlatKey(reader.getAttributeValue(null, "name").toUpperCase());
                             String flatValue = reader.getAttributeValue(null, "value");
                             try {
-                                for (String s : flatValue.split(",")) {
+
+                                for (String s : flatValue.split(","))
                                     sql.getFlatValueList().add(s.toUpperCase());
-                                }
+
                             } catch (Exception ex) {
                             }
                             flatValue = reader.getAttributeValue(null, "abbr");
                             try {
                                 String[] ss = flatValue.split(",");
+
                                 for (int i = 0; i < ss.length; i++)
                                     sql.getFlatValueAbbrMap().put(sql.getFlatValueList().get(i), ss[i]);
+
                             } catch (Exception ex) {
                             }
-                        } else if ("metric".equalsIgnoreCase(tagName2)) {
+                        } else if ("metric".equalsIgnoreCase(tagName2))
                             if (reader.getAttributeValue(null, "suffix") != null)
                                 sql.getMetrics().put(reader.getAttributeValue(null, "name").toUpperCase(), reader.getAttributeValue(null, "suffix"));
                             else sql.getMetrics().put(reader.getAttributeValue(null, "name").toUpperCase(), "");
-                        } else if ("vsql".equalsIgnoreCase(tagName2)) {
+
+                         else if ("vsql".equalsIgnoreCase(tagName2)) {
                             String minVersion = reader.getAttributeValue(null, "minVersion");
                             String maxVersion = reader.getAttributeValue(null, "maxVersion");
                             String vtext = reader.getElementText();
-                            if (vtext != null && vtext.trim().length() > 0) {
+
+                            if (vtext != null && vtext.trim().length() > 0)
                                 sql.addVSql(vtext, minVersion, maxVersion);
-                            }
+
                         }
                     }
                     this.sqlMap.put(sql.getHandle(), sql);
                 }
             }
         } finally {
+
             if (reader != null) try {
                 reader.close();
                 reader = null;

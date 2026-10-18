@@ -94,19 +94,20 @@ public class MetaDB implements Serializable {
         try (Connection conn = DriverManager.getConnection("jdbc:derby:" + DB_NAME + ";create=true", props);
             ResultSet rs = conn.getMetaData().getSchemas()) {
             while (rs.next()) {
+
                 if (SCHEMA_NAME.equalsIgnoreCase(rs.getString("TABLE_SCHEM"))) {
                     log.info("Find schema " + SCHEMA_NAME);
                     findSchema = true;
                     break;
                 }
             }
-            if (!findSchema) {
+            if (!findSchema)
                 try (Statement stmt = conn.createStatement()) {
                     log.info("Create schema " + SCHEMA_NAME + ".");
                     String sql = "CREATE SCHEMA " + SCHEMA_NAME + " AUTHORIZATION " + this.getDbkey();
                     stmt.execute(sql);
                 }
-            }
+
         }
     }
 
@@ -119,8 +120,10 @@ public class MetaDB implements Serializable {
     }
 
     private void checkAndCreateAppUserTable(Connection conn) throws SQLException {
+
         if (!DBUtils.hasTable(conn, SCHEMA_NAME, APPUSER_TABLENAME)) {
-            if (!DBUtils.hasTable(conn, SCHEMA_NAME, APPUSER_TABLENAME)) {
+
+            if (!DBUtils.hasTable(conn, SCHEMA_NAME, APPUSER_TABLENAME))
                 try (Statement stmt = conn.createStatement()) {
                     log.info("create table " + APPUSER_TABLENAME);
                     String sql = "create table " + APPUSER_TABLENAME + "(USERNAME VARCHAR(30) NOT NULL PRIMARY KEY, EMAIL VARCHAR(100), MD5HASH VARCHAR(100), USER_PRIVILEGE SMALLINT, CREATED TIMESTAMP DEFAULT CURRENT TIMESTAMP, VERIFIED SMALLINT DEFAULT 0)";
@@ -141,8 +144,8 @@ public class MetaDB implements Serializable {
                         conn.commit();
                     }
                 }
-            }
-        } else {
+
+        } else
             try (Statement stmt = conn.createStatement()) {
                 String sql = "select * from " + APPUSER_TABLENAME + " where 1=0";
                 boolean hasCol;
@@ -150,8 +153,10 @@ public class MetaDB implements Serializable {
                     ResultSetMetaData meta = rs.getMetaData();
                     int cnt = meta.getColumnCount();
                     hasCol = false;
+
                     for (int i = 1; i <= cnt; i++) {
                         String col = meta.getColumnName(i);
+
                         if ("VERIFIED".equalsIgnoreCase(col)) {
                             hasCol = true;
                             break;
@@ -165,12 +170,13 @@ public class MetaDB implements Serializable {
                     stmt.execute("UPDATE " + APPUSER_TABLENAME + " SET VERIFIED=1");
                 }
             }
-        }
+
     }
 
 
     private void checkAndCreateDBCredentialTable(Connection conn) throws SQLException {
-        if (!DBUtils.hasTable(conn, SCHEMA_NAME, CRED_TABLENAME)) {
+
+        if (!DBUtils.hasTable(conn, SCHEMA_NAME, CRED_TABLENAME))
             try (Statement stmt = conn.createStatement()) {
                 log.info("create table " + CRED_TABLENAME + ".");
                 String sql = "create table " + CRED_TABLENAME + "(OWNER VARCHAR(30), DBGROUPNAME VARCHAR(30),USERNAME VARCHAR(60), CREDENTIAL VARCHAR(1024), VERIFIED SMALLINT DEFAULT 0, CREATED TIMESTAMP DEFAULT CURRENT TIMESTAMP)";
@@ -178,7 +184,7 @@ public class MetaDB implements Serializable {
                 sql = "create unique index UK_" + CRED_TABLENAME + " on " + CRED_TABLENAME + " (OWNER, DBGROUPNAME)";
                 stmt.execute(sql);
             }
-        } else {
+         else
             try (Statement stmt = conn.createStatement()) {
                 //because of an earlier bug, we forgot to create uniq index/PK on this table
                 String ukSQL = "SELECT * FROM " + " SYS.SYSCONGLOMERATES WHERE " + " CONGLOMERATENAME = 'UK_" + CRED_TABLENAME + "'";
@@ -186,6 +192,7 @@ public class MetaDB implements Serializable {
                 boolean hasIndex;
                 try (ResultSet rs = stmt.executeQuery(ukSQL)) {
                     hasIndex = false;
+
                     if (rs != null && rs.next()) {
                         log.info("UK_" + CRED_TABLENAME + " exists, nothing to do.");
                         hasIndex = true;
@@ -200,14 +207,17 @@ public class MetaDB implements Serializable {
                         log.warn("Exception when create UK_" + CRED_TABLENAME, ex);
                     }
                 }
+
                 String sql = "select * from " + CRED_TABLENAME + " where 1=0";
                 boolean hasCol;
                 try (ResultSet rs = stmt.executeQuery(sql)) {
                     ResultSetMetaData meta = rs.getMetaData();
                     int cnt = meta.getColumnCount();
                     hasCol = false;
+
                     for (int i = 1; i <= cnt; i++) {
                         String col = meta.getColumnName(i);
+
                         if ("CREDENTIAL".equalsIgnoreCase(col) && meta.getColumnDisplaySize(i) < 1024) {
                             hasCol = true;
                             break;
@@ -219,17 +229,18 @@ public class MetaDB implements Serializable {
                     stmt.execute("ALTER TABLE " + CRED_TABLENAME + " ALTER COLUMN CREDENTIAL SET DATA TYPE VARCHAR(1024)");
                 }
             }
-        }
+
     }
 
     private void checkAndCreateUserAclTable(Connection conn) throws SQLException {
-        if (!DBUtils.hasTable(conn, SCHEMA_NAME, USERACL_TABLENAME)) {
+
+        if (!DBUtils.hasTable(conn, SCHEMA_NAME, USERACL_TABLENAME))
             try (Statement stmt = conn.createStatement()) {
                 log.info("create table " + USERACL_TABLENAME + ".");
                 String sql = "create table " + USERACL_TABLENAME + "(USERNAME VARCHAR(30), DBGROUPNAME VARCHAR(30), VISIBLE SMALLINT DEFAULT 0, CREATED TIMESTAMP DEFAULT CURRENT TIMESTAMP, PRIMARY KEY(USERNAME, DBGROUPNAME))";
                 stmt.execute(sql);
             }
-        }
+
     }
 
     /**
@@ -241,9 +252,10 @@ public class MetaDB implements Serializable {
             DriverManager.getConnection("jdbc:derby:;shutdown=true");
         } catch (SQLException ex) {
             log.warn("Exception", ex);
-            if ("XJ015".equalsIgnoreCase(ex.getSQLState())) {
+
+            if ("XJ015".equalsIgnoreCase(ex.getSQLState()))
                 log.info("meta DB has been shutdown.");
-            }
+
         }
     }
 
@@ -266,6 +278,7 @@ public class MetaDB implements Serializable {
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username.toLowerCase());
             try (ResultSet rs = pstmt.executeQuery()) {
+
                 if (rs != null && rs.next()) {
                     AppUser user = new AppUser();
                     user.setName(rs.getString("USERNAME"));
@@ -287,8 +300,10 @@ public class MetaDB implements Serializable {
      * @param user
      */
     public void upsertAppUser(AppUser user) {
+
         if (user == null)
             return;
+
         String sql2 = "update " + APPUSER_TABLENAME + " set MD5HASH=?, USER_PRIVILEGE=?, EMAIL=?, VERIFIED=? where USERNAME=?";
         String sql3 = "insert into " + APPUSER_TABLENAME + " (MD5HASH, USER_PRIVILEGE, EMAIL, VERIFIED,USERNAME) values(?,?,?,?,?)";
         boolean findOne = false;
@@ -307,11 +322,13 @@ public class MetaDB implements Serializable {
                     conn.commit();
                 }
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -328,15 +345,19 @@ public class MetaDB implements Serializable {
      * @return
      */
     public boolean changeEmail(String user, String newEmail) {
+
         if (user == null)
             return false;
+
         String sql2 = "update " + APPUSER_TABLENAME + " set EMAIL=? where USERNAME=?";
         try (Connection conn = getConnection()) {
             try {
                 //first, check if we have record
                 AppUser appUser = this.retrieveUserInfo(conn, user);
+
                 if (appUser == null)
                     return false;
+
                 try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                     pstmt.setString(1, newEmail);
                     pstmt.setString(2, appUser.getName().toLowerCase());
@@ -345,11 +366,13 @@ public class MetaDB implements Serializable {
                     return true;
                 }
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -359,15 +382,19 @@ public class MetaDB implements Serializable {
     }
 
     public boolean confirmUser(String user, boolean confirmed) {
+
         if (user == null)
             return false;
+
         String sql2 = "update " + APPUSER_TABLENAME + " set VERIFIED=? where USERNAME=?";
         try (Connection conn = getConnection()) {
             try {
                 //first, check if we have record
                 AppUser appUser = this.retrieveUserInfo(conn, user);
+
                 if (appUser == null)
                     return false;
+
                 try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                     pstmt.setInt(1, confirmed ? 1 : 0);
                     pstmt.setString(2, appUser.getName().toLowerCase());
@@ -376,11 +403,13 @@ public class MetaDB implements Serializable {
                     return true;
                 }
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -397,15 +426,19 @@ public class MetaDB implements Serializable {
      * @return
      */
     public boolean changePrivilege(String user, int newPrivilege) {
+
         if (user == null)
             return false;
+
         String sql2 = "update " + APPUSER_TABLENAME + " set USER_PRIVILEGE=? where USERNAME=?";
         try (Connection conn = getConnection()) {
             try {
                 //first, check if we have record
                 AppUser appUser = this.retrieveUserInfo(conn, user);
+
                 if (appUser == null)
                     return false;
+
                 appUser.setUserprivilege(newPrivilege);
                 try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                     pstmt.setInt(1, appUser.getUserprivilege());
@@ -415,11 +448,13 @@ public class MetaDB implements Serializable {
                     return true;
                 }
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -436,15 +471,19 @@ public class MetaDB implements Serializable {
      * @return
      */
     public boolean changePasssword(String user, String newPwd) {
+
         if (user == null)
             return false;
+
         String sql2 = "update " + APPUSER_TABLENAME + " set MD5HASH=? where USERNAME=?";
         try (Connection conn = getConnection()) {
             try {
                 //first, check if we have record
                 AppUser appUser = this.retrieveUserInfo(conn, user);
+
                 if (appUser == null)
                     return false;
+
                 appUser.setPassword(newPwd);
                 appUser.setMd5Hash(appUser.calMd5(newPwd));
                 try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
@@ -455,11 +494,13 @@ public class MetaDB implements Serializable {
                     return true;
                 }
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -469,25 +510,30 @@ public class MetaDB implements Serializable {
     }
 
     public boolean deleteUser(String user) {
+
         if (user == null || DEFAULT_USER.equals(user))
             return false;
+
         String[] sql = new String[] { "delete from " + APPUSER_TABLENAME + " where USERNAME=?", "delete from " + CRED_TABLENAME + " where owner=?", "delete from " + USERACL_TABLENAME + " where username=?" };
         try (Connection conn = getConnection()) {
             try {
-                for (int i = 0; i < sql.length; i++) {
+
+                for (int i = 0; i < sql.length; i++)
                     try (PreparedStatement pstmt = conn.prepareStatement(sql[i])) {
                         pstmt.setString(1, user);
                         pstmt.execute();
                         conn.commit();
                     }
-                }
+
                 return true;
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -530,19 +576,23 @@ public class MetaDB implements Serializable {
      */
     public DBCredential retrieveDBCredential(String owner, String dbGroupName) {
         try {
-            if (!this.credCache.containsKey(owner + "||" + dbGroupName)) {
+
+            if (!this.credCache.containsKey(owner + "||" + dbGroupName))
                 try (Connection conn = getConnection()) {
                     DBCredential cred = retrieveDBCredential(conn, owner, dbGroupName);
+
                     if (cred != null)
                         this.credCache.put(owner + "||" + dbGroupName, cred);
                 }
-            }
+
             DBCredential saved = this.credCache.get(owner + "||" + dbGroupName);
+
             if (//return a decrypted copy
             saved != null) {
                 saved = saved.copy();
                 saved.decryptPassword(keyTool);
             }
+
             return saved;
         } catch (Exception ex) {
             log.error("Exception", ex);
@@ -554,9 +604,12 @@ public class MetaDB implements Serializable {
         String sql = (owner != null && owner.trim().length() > 0) ? "select * from " + CRED_TABLENAME + " where dbgroupname=?  and owner=?" : "select * from " + CRED_TABLENAME + " where dbgroupname=? and owner is null";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, dbGroupName.toLowerCase());
+
             if (owner != null && owner.trim().length() > 0)
                 pstmt.setString(2, owner);
+
             try (ResultSet rs = pstmt.executeQuery()) {
+
                 if (rs != null && rs.next()) {
                     DBCredential cred = new DBCredential();
                     cred.setAppUser(owner);
@@ -567,6 +620,7 @@ public class MetaDB implements Serializable {
                     String credString = keyTool.decrypt(credStringOrig);
                     //we will use two :: as separator
                     int verified = rs.getInt("VERIFIED");
+
                     if (verified == 1) {
                         //credString = credString.substring(0, credString.lastIndexOf("::"));
                         //credString = credString.substring(credString.lastIndexOf("::")+2);
@@ -590,6 +644,7 @@ public class MetaDB implements Serializable {
         //nothing to change
         if (newName == null || newName.equalsIgnoreCase(oldName))
             return;
+
         String sql1 = "select * from " + CRED_TABLENAME + " where dbgroupname=?";
         String sql2 = "insert into " + CRED_TABLENAME + " (owner,dbgroupname,username,credential,verified) values(?,?,?,?,1)";
         String sql3 = "delete from " + CRED_TABLENAME + " where dbgroupname=?";
@@ -608,6 +663,7 @@ public class MetaDB implements Serializable {
                         String owner = rs.getString("OWNER");
                         String user = rs.getString("USERNAME");
                         String credString = rs.getString("CREDENTIAL");
+
                         if (credString != null) {
                             credString = keyTool.decrypt(credString);
                             credString = credString.substring(0, credString.lastIndexOf("::"));
@@ -631,6 +687,7 @@ public class MetaDB implements Serializable {
             }
             log.info("Update db group credentials: " + credUserMap.size());
             try (PreparedStatement stmt = conn.prepareStatement(sql2)) {
+
                 for (Map.Entry<String, String> entry : credMap.entrySet()) {
                     credCache.remove(entry.getKey() + "||" + oldName.toLowerCase());
                     String owner = entry.getKey();
@@ -645,6 +702,7 @@ public class MetaDB implements Serializable {
             }
             log.info("Update db acl: " + aclMap.size());
             try (PreparedStatement stmt = conn.prepareStatement(sql5)) {
+
                 for (Map.Entry<String, Integer> entry : aclMap.entrySet()) {
                     stmt.setString(1, entry.getKey());
                     stmt.setString(2, newName.toLowerCase());
@@ -669,12 +727,13 @@ public class MetaDB implements Serializable {
     public void removeDbGroup(String grpName) {
         String[] sql = new String[] { "delete from " + CRED_TABLENAME + " where dbgroupname=?", "delete from " + USERACL_TABLENAME + " where dbgroupname=?" };
         try (Connection conn = getConnection()) {
-            for (int i = 0; i < sql.length; i++) {
+
+            for (int i = 0; i < sql.length; i++)
                 try (PreparedStatement stmt = conn.prepareStatement(sql[i])) {
                     stmt.setString(1, grpName.toLowerCase());
                     stmt.execute();
                 }
-            }
+
         } catch (Exception ex) {
             log.error("Exception", ex);
             throw new RuntimeException(ex);
@@ -722,9 +781,12 @@ public class MetaDB implements Serializable {
             //first, let's update existing ones
             sql = "update " + USERACL_TABLENAME + " set visible=1 where username=? and dbgroupname=?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
                 for (Map.Entry<String, Integer> e : dbGroups.entrySet()) {
+
                     if (e.getValue() == 0 || !existingGroups.contains(e.getKey()))
                         continue;
+
                     stmt.setString(1, username);
                     stmt.setString(2, e.getKey());
                     stmt.execute();
@@ -733,9 +795,12 @@ public class MetaDB implements Serializable {
             //now new entries
             sql = "insert into " + USERACL_TABLENAME + " (username, dbgroupname, visible) values (?, ?, 1)";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
                 for (Map.Entry<String, Integer> e : dbGroups.entrySet()) {
+
                     if (e.getValue() == 0 || existingGroups.contains(e.getKey()))
                         continue;
+
                     stmt.setString(1, username);
                     stmt.setString(2, e.getKey());
                     stmt.execute();
@@ -764,6 +829,7 @@ public class MetaDB implements Serializable {
                 stmt.setString(2, dbgroupname);
                 try (ResultSet rs = stmt.executeQuery()) {
                     findOne = false;
+
                     if (rs != null && rs.next())
                         findOne = true;
                 }
@@ -787,6 +853,7 @@ public class MetaDB implements Serializable {
                     stmt.execute();
                 }
             }
+
             conn.commit();
             return true;
         } catch (Exception ex) {
@@ -797,8 +864,10 @@ public class MetaDB implements Serializable {
 
     private List<String> listMyDBs(Connection conn, String owner, boolean restricted) {
         String sql = "select dbgroupname from " + CRED_TABLENAME + " where owner=? order by dbgroupname";
+
         if (restricted)
             sql = "select dbgroupname from " + USERACL_TABLENAME + " where visible=1 and username=? order by dbgroupname";
+
         List<String> mydbs = new ArrayList<>();
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, owner);
@@ -819,11 +888,13 @@ public class MetaDB implements Serializable {
      * @param cred
      */
     public void upsertDBCredential(DBCredential cred) {
+
         if (cred == null)
             return;
         //bust our cached cred first
         if (this.credCache.containsKey(cred.getAppUser() + "||" + cred.getDbGroupName()))
             this.credCache.remove(cred.getAppUser() + "||" + cred.getDbGroupName());
+
         String sql1 = "update " + CRED_TABLENAME + " set username=?,credential=?,verified=1 where owner=? and dbgroupname=?";
         String sql2 = "insert into " + CRED_TABLENAME + " (owner,dbgroupname,username,credential,verified) values(?,?,?,?,1)";
         String pString = cred.getAppUser() == null ? "NULL" : cred.getAppUser();
@@ -833,7 +904,8 @@ public class MetaDB implements Serializable {
             try {
                 //first, check if we have record
                 findOne = this.retrieveDBCredential(conn, cred.getAppUser(), cred.getDbGroupName()) != null;
-                if (findOne) {
+
+                if (findOne)
                     try (PreparedStatement pstmt = conn.prepareStatement(sql1)) {
                         pstmt.setString(1, cred.getUsername());
                         pstmt.setString(2, keyTool.encrypt(pString));
@@ -842,7 +914,7 @@ public class MetaDB implements Serializable {
                         pstmt.execute();
                         conn.commit();
                     }
-                } else {
+                 else
                     try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                         pstmt.setString(1, cred.getAppUser());
                         pstmt.setString(2, cred.getDbGroupName().toLowerCase());
@@ -851,13 +923,15 @@ public class MetaDB implements Serializable {
                         pstmt.execute();
                         conn.commit();
                     }
-                }
+
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -866,10 +940,13 @@ public class MetaDB implements Serializable {
     }
 
     public void removeDBCredential(String owner, String dbGroupName) {
+
         if (owner == null || owner.isEmpty())
             return;
+
         if (dbGroupName == null || dbGroupName.isEmpty())
             return;
+
         String sql = "delete from " + CRED_TABLENAME + " where  owner=? and dbgroupname=?";
         try (Connection conn = getConnection()) {
             try {
@@ -881,11 +958,13 @@ public class MetaDB implements Serializable {
                 }
                 this.credCache.remove(owner + "||" + dbGroupName.toLowerCase());
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -894,8 +973,10 @@ public class MetaDB implements Serializable {
     }
 
     private void updateDBCredentialInternal(DBCredential cred) {
+
         if (cred == null)
             return;
+
         String sql1 = "update " + CRED_TABLENAME + " set username=?,credential=?,verified=1 where owner=? and dbgroupname=?";
         String pString = cred.getAppUser() == null ? "NULL" : cred.getAppUser();
         pString += "::" + cred.getDbGroupName() + "::" + cred.getUsername() + "::" + cred.getPassword() + "::" + Math.random();
@@ -908,11 +989,13 @@ public class MetaDB implements Serializable {
                 pstmt.execute();
                 conn.commit();
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {

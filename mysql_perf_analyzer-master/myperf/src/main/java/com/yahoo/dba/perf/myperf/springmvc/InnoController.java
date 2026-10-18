@@ -46,33 +46,39 @@ public class InnoController extends MyPerfBaseController {
         try {
             dbinfo = this.frameworkContext.getDbInfoManager().findDB(group, host).copy();
             connWrapper = WebAppUtil.getDBConnection(req, this.frameworkContext, dbinfo);
+
             if (connWrapper == null) {
                 status = Constants.STATUS_BAD;
                 message = "failed to connect to target db (" + dbinfo + ")";
             } else {
                 rList = this.frameworkContext.getQueryEngine().executeQueryGeneric(qps, connWrapper, qps.getMaxRows());
                 log.info("Done query " + qps.getSql() + " with " + (rList != null ? rList.getRows().size() : 0) + " records.");
+
                 if (rList != null && rList.getRows().size() > 0) {
                     log.info(rList.getRows().get(0).getColumns().get(rList.getRows().get(0).getColumns().size() - 1));
                     listMap = parse(rList.getRows().get(0).getColumns().get(rList.getRows().get(0).getColumns().size() - 1));
                 }
+
                 WebAppUtil.closeDBConnection(req, connWrapper, false, this.getFrameworkContext().getMyperfConfig().isReuseMonUserConnction());
             }
+
         } catch (Throwable th) {
             log.error("Exception", th);
+
             if (th instanceof SQLException) {
                 SQLException sqlEx = SQLException.class.cast(th);
                 String msg = th.getMessage();
                 log.info(sqlEx.getSQLState() + ", " + sqlEx.getErrorCode() + ", " + msg);
                 //check if the connection is still good
-                if (!DBUtils.checkConnection(connWrapper.getConnection())) {
+                if (!DBUtils.checkConnection(connWrapper.getConnection()))
                     WebAppUtil.closeDBConnection(req, connWrapper, true, false);
-                } else
+                 else
                     WebAppUtil.closeDBConnection(req, connWrapper, true, false);
-            } else {
+
+            } else
                 if (connWrapper != null)
                     WebAppUtil.closeDBConnection(req, connWrapper, false, this.getFrameworkContext().getMyperfConfig().isReuseMonUserConnction());
-            }
+
             status = Constants.STATUS_BAD;
             message = "Exception: " + th.getMessage();
         } finally {
@@ -80,8 +86,10 @@ public class InnoController extends MyPerfBaseController {
 
 
         ModelAndView mv = new ModelAndView(this.jsonView);
+
         if (req.getParameter("callback") != null && req.getParameter("callback").trim().length() > 0)
             mv.addObject("callback", req.getParameter("callback"));//YUI datasource binding
+
         mv = new ModelAndView(this.jsonView);
         mv.addObject("json_result", ResultListUtil.toMultiListJSONStringUpper(listMap, qps, status, message));
         return mv;
@@ -109,36 +117,44 @@ public class InnoController extends MyPerfBaseController {
             while ((line = bufReader.readLine()) != null) {
                 switch (state) {
                     case BEFORE_STARTLINE:
+
                         if (line.startsWith("==="))
                             state = STARTLINE;
+
                         break;
                     case STARTLINE:
+
                         if (line.startsWith("==="))
                             state = AFTER_STARTLINE;
                         else {
                             int idx = line.indexOf(" INNODB");
-                            if (idx > 0) {
+
+                            if (idx > 0)
                                 valMap.put("Time", line.substring(0, idx).trim());
-                            }
+
                         }
+
                         break;
                     case AFTER_STARTLINE:
+
                         if (line.startsWith("-"))
                             state = SECTION_HEADER_STARTLINE;
-                        else {
-                            if (line.startsWith("Per second averages")) {
+                        else
+                            if (line.startsWith("Per second averages"))
                                 valMap.put("Duration", line.substring(line.indexOf("last") + 5).trim());
-                            }
-                        }
+
+
                         break;
                     case SECTION_HEADER_STARTLINE:
-                        if (line.startsWith("-")) {
+
+                        if (line.startsWith("-"))
                             state = SECTION_HEADER_ENDLINE;
-                        } else {
+                         else
                             currentSection = line.trim();
-                        }
+
                         break;
                     case SECTION_HEADER_ENDLINE:
+
                         if (line.startsWith("-") && !line.startsWith("---TRANSACTION") && !line.startsWith("--Thread") && !(line.startsWith("-------") && line.contains("TRX")) && !"------------------".equals(line)) {
                             state = SECTION_HEADER_STARTLINE;
                             //store previous section
@@ -177,52 +193,65 @@ public class InnoController extends MyPerfBaseController {
                                 log.info("Processing deadlocks: " + deadLockInfo.size());
                                 listMap.put("inno_status_deadlocks", buildDeadlockList(deadLockInfo));
                             } else if ("TRANSACTIONS".equalsIgnoreCase(currentSection)) {
+
                                 if (curTx != null)
                                     txList.add(curTx);
+
                                 curTx = null;
                                 log.info("Processing tx: " + txList.size());
                                 listMap.put("inno_status_txs", buildTransactionList(txList));
                                 txList.clear();
                             }
+
                         } else if ("BACKGROUND THREAD".equalsIgnoreCase(currentSection)) {
                             String vals[] = line.split(":");
-                            if (vals.length > 1) {
+
+                            if (vals.length > 1)
                                 valMap.put(vals[0], vals[1]);
-                            }
-                        } else if ("LATEST DETECTED DEADLOCK".equalsIgnoreCase(currentSection)) {
+
+                        } else if ("LATEST DETECTED DEADLOCK".equalsIgnoreCase(currentSection))
                             deadLockInfo.add(line);
-                        } else if ("FILE I/O".equalsIgnoreCase(currentSection)) {
+                         else if ("FILE I/O".equalsIgnoreCase(currentSection))
                             this.parseFileIO(valMap, line);
-                        } else if ("BUFFER POOL AND MEMORY".equalsIgnoreCase(currentSection)) {
+                         else if ("BUFFER POOL AND MEMORY".equalsIgnoreCase(currentSection))
                             this.parseBufferPool(valMap, line);
-                        } else if ("ROW OPERATIONS".equalsIgnoreCase(currentSection)) {
+                         else if ("ROW OPERATIONS".equalsIgnoreCase(currentSection))
                             this.parseRowOperation(valMap, line);
-                        } else if ("SEMAPHORES".equalsIgnoreCase(currentSection)) {
+                         else if ("SEMAPHORES".equalsIgnoreCase(currentSection)) {
                             boolean parsed = false;
+
                             if (line != null && line.startsWith("--Thread ")) {
                                 //start a new semaphore
                                 curSemap = new SemaphoreEntry();
                                 semapList.add(curSemap);
                             }
+
                             if (curSemap != null)
                                 parsed = curSemap.parse(line);
+
                             if (!parsed)
                                 this.parseSemaphore(valMap, line);
-                        } else if ("LOG".equalsIgnoreCase(currentSection)) {
+
+                        } else if ("LOG".equalsIgnoreCase(currentSection))
                             this.parseLog(valMap, line);
-                        } else if ("INSERT BUFFER AND ADAPTIVE HASH INDEX".equalsIgnoreCase(currentSection)) {
+                         else if ("INSERT BUFFER AND ADAPTIVE HASH INDEX".equalsIgnoreCase(currentSection))
                             this.parseIBuf(valMap, line);
-                        } else if ("TRANSACTIONS".equalsIgnoreCase(currentSection)) {
+                         else if ("TRANSACTIONS".equalsIgnoreCase(currentSection)) {
                             //TODO skip summary portion
                             if (curTx == null && !line.startsWith("---TRANSACTION"))
                                 break;
+
                             if (line.startsWith("---TRANSACTION")) {
+
                                 if (curTx != null)
                                     txList.add(curTx);
+
                                 curTx = new Transaction();
                             }
+
                             curTx.parseLine(line);
                         }
+
                         break;
                     default:
                         break;
@@ -249,9 +278,12 @@ public class InnoController extends MyPerfBaseController {
         desc.addColumn("WAITED_AT", false, idx++);
 
         rList.setColumnDescriptor(desc);
+
         for (SemaphoreEntry tx : semapList) {
+
             if (tx.thread_id == null)
                 continue;
+
             ResultRow row = new ResultRow();
             rList.addRow(row);
             row.setColumnDescriptor(desc);
@@ -267,6 +299,7 @@ public class InnoController extends MyPerfBaseController {
             cols.add(tx.hold_mode);
             cols.add(tx.waited_at);
         }
+
         return rList;
     }
 
@@ -276,6 +309,7 @@ public class InnoController extends MyPerfBaseController {
         desc.addColumn("NAME", false, 1);
         desc.addColumn("VALUE", false, 2);
         rList.setColumnDescriptor(desc);
+
         for (Map.Entry<String, String> e : valMap.entrySet()) {
             ResultRow row = new ResultRow();
             List<String> vals = new ArrayList<>(2);
@@ -285,160 +319,212 @@ public class InnoController extends MyPerfBaseController {
             row.setColumns(vals);
             rList.addRow(row);
         }
+
         return rList;
     }
 
     private void parseFileIO(Map<String, String> valMap, String str) {
         try {
+
             if (str == null || str.isEmpty())
                 return;
+
             str = str.trim();
+
             if (str.startsWith("I/O thread ")) {
                 String vals[] = str.split(":");
-                if (vals.length > 1) {
+
+                if (vals.length > 1)
                     valMap.put(vals[0], vals[1]);
-                }
+
             } else if (str.charAt(0) >= '0' && str.charAt(0) <= '9') {
                 String[] vals = str.split(",");
+
                 for (String v : vals) {
                     String v2 = v.trim();
                     int idx = v2.indexOf(' ');
-                    if (idx > 0) {
+
+                    if (idx > 0)
                         valMap.put(v2.substring(idx + 1).trim(), v2.substring(0, idx).trim());
-                    }
+
                 }
+
             } else if (str.indexOf(',') >= 0) {
                 String[] strs = str.split(",");
+
                 for (String s : strs) {
                     String[] res = this.splitSpaceDelemitNameValuePair(s);
+
                     if (res != null) {
                         String name = res[0];
+
                         if (name.indexOf(":") >= 0)
                             name = name.substring(0, name.indexOf(":"));
+
                         valMap.put(name, res[1]);
                     }
                 }
             }
+
         } catch (Exception ex) {
         }
     }
 
     private void parseRowOperation(Map<String, String> valMap, String str) {
         try {
+
             if (str == null || str.isEmpty())
                 return;
+
             str = str.trim();
+
             if (str.indexOf("queries inside InnoDB") >= 0 || str.indexOf("read views") >= 0) {
                 String vals[] = str.split(",");
+
                 for (String v : vals) {
                     v = v.trim();
                     int idx = v.indexOf(' ');
+
                     if (idx > 0)
                         valMap.put(v.substring(idx + 1), v.substring(0, idx));
                 }
+
             } else if (str.indexOf("Main thread") >= 0) {
                 String[] vals = str.split(",");
+
                 for (String v : vals) {
                     String v2 = v.trim();
                     int idx = v2.lastIndexOf(' ');
+
                     if (idx > 0) {
                         String k = v2.substring(0, idx).trim();
+
                         if (!k.startsWith("Main thread"))
                             k = "Main thread " + k;
+
                         valMap.put(k, v2.substring(idx + 1).trim());
                     }
                 }
+
             } else if (str.indexOf("Number of rows") >= 0) {
                 String[] vals = str.split(",");
+
                 for (String v : vals) {
                     String v2 = v.trim();
                     int idx = v2.lastIndexOf(' ');
+
                     if (idx > 0) {
                         String k = v2.substring(0, idx).trim();
+
                         if (!k.startsWith("Number of rows"))
                             k = "Number of rows " + k;
+
                         valMap.put(k, v2.substring(idx + 1).trim());
                     }
                 }
+
             } else if (str.charAt(0) >= '0' && str.charAt(0) <= '9') {
                 String[] vals = str.split(",");
+
                 for (String v : vals) {
                     String v2 = v.trim();
                     int idx = v2.indexOf(' ');
+
                     if (idx > 0) {
                         String k = v2.substring(idx + 1).trim();
                         valMap.put(k, v2.substring(0, idx).trim());
                     }
                 }
 
-            } else {
+            } else
                 log.warn("Data not parsed: " + str);
-            }
+
         } catch (Exception ex) {
         }
     }
 
     private void parseSemaphore(Map<String, String> valMap, String str) {
         try {
+
             if (str == null || str.isEmpty())
                 return;
+
             str = str.trim();
+
             if (str.startsWith("OS WAIT ARRAY INFO: ")) {
                 String str2 = str.substring(str.indexOf(':') + 1).trim();
                 String vals[] = str2.split(",");
+
                 for (String v : vals) {
                     v = v.trim();
                     int idx = v.lastIndexOf(' ');
+
                     if (idx > 0)
                         valMap.put("OS WAIT ARRAY INFO: " + v.substring(0, idx), v.substring(idx + 1));
                 }
+
             } else if (str.startsWith("Mutex")) {
                 String str2 = str.substring(6).trim();
                 String vals[] = str2.split(",");
+
                 for (String v : vals) {
                     v = v.trim();
                     int idx = v.lastIndexOf(' ');
+
                     if (idx > 0)
                         valMap.put("Mutex " + v.substring(0, idx), v.substring(idx + 1));
                 }
+
             } else if (str.startsWith("Spin rounds per wait:")) {
                 String str2 = str.substring(str.indexOf(':') + 1).trim();
                 String vals[] = str2.split(",");
+
                 for (String v : vals) {
                     v = v.trim();
                     int idx = v.indexOf(' ');
+
                     if (idx > 0)
                         valMap.put("Spin rounds per wait: " + v.substring(idx + 1), v.substring(0, idx));
                 }
+
             } else if (str.indexOf("RW-shared spins") >= 0 || str.indexOf("RW-excl spins") >= 0) {
                 String vals[] = str.split(";");
+
                 for (String v : vals) {
                     v = v.trim();
                     String[] vals2 = v.split(",");
+
                     for (String v2 : vals2) {
                         int idx = v2.lastIndexOf(' ');
+
                         if (idx > 0) {
                             String k = v2.substring(0, idx);
+
                             if (v.indexOf("RW-shared") >= 0 && k.indexOf("RW-shared") < 0)
                                 k = "RW-shared " + k;
                             else if (v.indexOf("RW-excl") >= 0 && k.indexOf("RW-excl") < 0)
                                 k = "RW-excl " + k;
+
                             valMap.put(k, v2.substring(idx + 1));
                         }
                     }
                 }
+
             } else if (str.startsWith("RW-sx")) {
                 String str2 = str.substring(str.indexOf(' ') + 1).trim();
                 String vals[] = str2.split(",");
+
                 for (String v : vals) {
                     v = v.trim();
                     int idx = v.lastIndexOf(' ');
+
                     if (idx > 0)
                         valMap.put("RW-sx " + v.substring(0, idx), v.substring(idx + 1));
                 }
-            } else {
+
+            } else
                 log.warn("Data not parsed: " + str);
-            }
+
         } catch (Exception ex) {
         }
     }
@@ -450,26 +536,34 @@ public class InnoController extends MyPerfBaseController {
      * @return 2 element array. The first is name, the second is value
      */
     private String[] splitSpaceDelemitNameValuePair(String str) {
+
         if (str == null || str.isEmpty())
             return null;
+
         String str2 = str.trim();
         int idx = str2.lastIndexOf(' ');//since we trimmed, it cannot be the last one
+
         if (idx <= 0)
             return null;
+
         String name = str2.substring(0, idx);
         String val = str2.substring(idx + 1);
+
         if (name.isEmpty() || val.isEmpty())
             return null;
+
         name = name.trim();
         try {
             //check if we can parse
             BigDecimal bdecimal = new BigDecimal(val);
+
             if (bdecimal != null) {
                 String[] res = new String[2];
                 res[0] = name;
                 res[1] = val;
                 return res;
             }
+
         } catch (Exception ex) {
 
         }
@@ -477,26 +571,34 @@ public class InnoController extends MyPerfBaseController {
     }
 
     private String[] splitSpaceDelemitValueNamePair(String str) {
+
         if (str == null || str.isEmpty())
             return null;
+
         String str2 = str.trim();
         int idx = str2.indexOf(' ');//since we trimmed, it cannot be the last one
+
         if (idx <= 0)
             return null;
+
         String val = str2.substring(0, idx);
         String name = str2.substring(idx + 1);
+
         if (name.isEmpty() || val.isEmpty())
             return null;
+
         name = name.trim();
         try {
             //check if we can parse
             BigDecimal bdecimal = new BigDecimal(val);
+
             if (bdecimal != null) {
                 String[] res = new String[2];
                 res[0] = name;
                 res[1] = val;
                 return res;
             }
+
         } catch (Exception ex) {
 
         }
@@ -505,19 +607,26 @@ public class InnoController extends MyPerfBaseController {
 
     private void parseLog(Map<String, String> valMap, String str) {
         try {
+
             if (str == null || str.isEmpty())
                 return;
+
             str = str.trim();
+
             if (str.indexOf(',') < 0)//not comma separated line, so name value pair
             {
                 String[] res = splitSpaceDelemitNameValuePair(str);
+
                 if (res != null)
                     valMap.put(res[0], res[1]);
+
             } else //comma separated, each substring has value name pair
             {
                 String[] strs = str.split(",");
+
                 for (String s : strs) {
                     String[] res = splitSpaceDelemitValueNamePair(s);
+
                     if (res != null)
                         valMap.put(res[0], res[1]);
                 }
@@ -529,14 +638,19 @@ public class InnoController extends MyPerfBaseController {
 
     private void parseIBuf(Map<String, String> valMap, String str) {
         try {
+
             if (str == null || str.isEmpty())
                 return;
+
             str = str.trim();
+
             if (str.startsWith("Ibuf: ")) {
                 String str2 = str.substring(5).trim();
                 String[] strs = str2.split(",");
+
                 for (String s : strs) {
                     String[] res = splitSpaceDelemitNameValuePair(s);
+
                     if (res != null)
                         valMap.put("Ibuf " + res[0], res[1]);
                 }
@@ -544,23 +658,32 @@ public class InnoController extends MyPerfBaseController {
             } else if (Character.isDigit(str.charAt(0)))//value name pair
             {
                 String[] strs = str.split(",");
+
                 for (String s : strs) {
                     String[] res = splitSpaceDelemitValueNamePair(s);
+
                     if (res != null)
                         valMap.put(res[0], res[1]);
                 }
+
             } else if (str.startsWith("Hash table")) {
                 String[] strs = str.split(",");
+
                 for (String s : strs) {
+
                     if (s != null)
                         s = s.trim();
                     else continue;
+
                     if (s.startsWith("Hash table")) {
                         String[] res = splitSpaceDelemitNameValuePair(s);
+
                         if (res != null)
                             valMap.put(res[0], res[1]);
+
                     } else if (s.startsWith("node heap")) {
                         String[] ss = s.split(" ");
+
                         if (ss != null && ss.length > 3)
                             valMap.put("node heap buffer(s)", ss[3]);
                     }
@@ -575,29 +698,36 @@ public class InnoController extends MyPerfBaseController {
 
     private void parseBufferPool(Map<String, String> valMap, String str) {
         try {
+
             if (str == null || str.isEmpty())
                 return;
+
             String str2 = str.trim();
+
             if (str2.startsWith("Total memory")) {
                 String vals[] = str2.split(";");
+
                 for (String v : vals) {
                     String v2 = v.trim();
                     int idx = v2.lastIndexOf(' ');
+
                     if (idx > 0)
                         valMap.put(v2.substring(0, idx), v2.substring(idx + 1));
                 }
+
             } else if (str.startsWith("Internal hash"))//Skil sub header
             {
             } else if (str.startsWith("  ") || str.indexOf('(') > 0)//indented
             {
-                for (String hts : BUFFER_INTERNALS) {
+                for (String hts : BUFFER_INTERNALS)
                     if (str.indexOf(hts) >= 0) {
                         str2 = str.substring(str.indexOf(hts) + hts.length()).trim();
                         int idx = str2.lastIndexOf(')');
+
                         if (idx >= 0)
                             valMap.put("Internal hash tables - " + hts, str2.substring(0, idx + 1));
                     }
-                }
+
             } else if (str2.startsWith("Dictionary memory allocated")
                     || str2.startsWith("Buffer pool size")
                     || str2.startsWith("Free buffers")
@@ -606,59 +736,73 @@ public class InnoController extends MyPerfBaseController {
                     || str2.startsWith("Modified db pages")
                     || str2.startsWith("Pending reads")) {
                 int idx = str2.lastIndexOf(' ');
-                if (idx >= 0) {
+
+                if (idx >= 0)
                     valMap.put(str2.substring(0, idx), str2.substring(idx + 1));
-                }
+
             } else if (str2.startsWith("Pending writes")) {
                 String str3 = str2.substring(str2.indexOf(':') + 1).trim();
                 String vals[] = str3.split(",");
+
                 for (String v : vals) {
                     v = v.trim();
+
                     if (v.indexOf("flush list") >= 0 && v.indexOf("single page") >= 0) {
 
                         valMap.put("flush list", v.substring(v.indexOf("flush list") + 11, v.indexOf("single page") - 1));
                         valMap.put("single page", v.substring(v.lastIndexOf(' ') + 1));
                     } else {
                         int idx = v.lastIndexOf(' ');
+
                         if (idx >= 0)
                             valMap.put("Pending writes: " + v.substring(0, idx), v.substring(idx + 1));
                     }
                 }
+
             } else if (str2.indexOf(',') >= 0) {
                 String vals[] = str2.split(",");
+
                 for (String v : vals) {
                     v = v.trim();
+
                     if (v.charAt(0) >= '0' && v.charAt(0) <= '9') {
                         int idx = v.lastIndexOf(' ');
+
                         if (idx >= 0) {
                             String k = v.substring(idx + 1);
                             k = "Pages " + k;
                             valMap.put(k, v.substring(0, idx));
                         }
+
                     } else if (v.indexOf(':') >= 0) {
                         int idx = v.lastIndexOf(':');
-                        if (idx >= 0) {
+
+                        if (idx >= 0)
                             valMap.put(v.substring(0, idx), v.substring(idx + 1));
-                        }
-                    } else if (v.startsWith("Buffer pool hit rate")) {
+
+                    } else if (v.startsWith("Buffer pool hit rate"))
                         valMap.put("Buffer pool hit rate", v.substring(21));
-                    } else if (v.startsWith("young-making rate")) {
+                     else if (v.startsWith("young-making rate")) {
                         int idx = v.lastIndexOf("not");
                         valMap.put("young-making rate", v.substring(18, idx));
 
                     } else {
                         int idx = v.lastIndexOf(' ');
+
                         if (idx >= 0) {
                             String k = v.substring(0, idx);
+
                             if (str.startsWith("Pages") && !k.startsWith("Pages"))
                                 k = "Pages " + k;
+
                             valMap.put(k, v.substring(idx + 1));
                         }
                     }
                 }
-            } else {
+
+            } else
                 log.warn("Data not parsed: " + str2);
-            }
+
         } catch (Exception ex) {
         }
     }
@@ -681,9 +825,12 @@ public class InnoController extends MyPerfBaseController {
         desc.addColumn("LOCKS", false, idx++);
         //TODO lock strcuts
         rList.setColumnDescriptor(desc);
+
         for (Transaction tx : txs) {
+
             if ("not started".equalsIgnoreCase(tx.state) && (tx.sql == null || tx.sql.isEmpty()))
                 continue;//ignore idle one
+
             ResultRow row = new ResultRow();
             rList.addRow(row);
             row.setColumnDescriptor(desc);
@@ -700,6 +847,7 @@ public class InnoController extends MyPerfBaseController {
             //cols.add(tx.action);
             cols.add(tx.cmd);
             cols.add(tx.sql);
+
             if (tx.action != null && !tx.action.isEmpty() && tx.comments != null)
                 cols.add(tx.action + "\n" + tx.comments);
             else if (tx.action != null && !tx.action.isEmpty() && tx.comments == null)
@@ -707,6 +855,7 @@ public class InnoController extends MyPerfBaseController {
             else
                 cols.add(tx.comments);
         }
+
         return rList;
     }
 
@@ -717,6 +866,7 @@ public class InnoController extends MyPerfBaseController {
         desc.addColumn("INFO", false, idx++);
         //TODO lock strcuts
         rList.setColumnDescriptor(desc);
+
         for (String tx : infoList) {
             ResultRow row = new ResultRow();
             rList.addRow(row);
@@ -725,6 +875,7 @@ public class InnoController extends MyPerfBaseController {
             row.setColumns(cols);
             cols.add(tx);
         }
+
         return rList;
     }
 
@@ -763,6 +914,7 @@ public class InnoController extends MyPerfBaseController {
         }
 
         void parseLine(String str) {
+
             if ((str.startsWith("------") && str.contains("TRX"))
                     || str.startsWith("Trx read view will not see trx with id")
                     || str.startsWith("TABLE LOCK table ")
@@ -770,28 +922,36 @@ public class InnoController extends MyPerfBaseController {
                 txstate = TX_COMMENT;
             else if (str.startsWith("MySQL thread id"))
                 txstate = TX_THREAD;
+
             try {
                 switch (txstate) {
                     case TX_BEFORE:
+
                         if (str.startsWith("---TRANSACTION ")) {
                             txstate = TX_START;
                             id = str.substring(str.indexOf(' ') + 1, str.indexOf(','));
                             String str2 = str.substring(str.indexOf(',') + 1).trim();
+
                             if (str2.startsWith("not started")) {
                                 state = "not started";
+
                                 if (str2.indexOf(',') >= 0)
                                     str2 = str2.substring(str2.indexOf(',') + 1).trim();
                                 else str2 = null;
+
                             } else if (str2.startsWith("ACTIVE")) {
                                 state = "ACTIVE";
+
                                 if (str2.indexOf(',') > 0) {
                                     txTime = str2.substring(str2.indexOf(' ') + 1, str2.indexOf(','));
                                     str2 = str2.substring(str2.indexOf(',') + 1).trim();
                                 } else {
                                     int idx1 = str2.indexOf(' ');
                                     int idx2 = str2.indexOf(' ', idx1 + 1);
+
                                     if (idx2 > 0)
                                         idx2 = str2.indexOf(' ', idx2 + 1);
+
                                     if (idx2 > 0) {
                                         txTime = str2.substring(idx1 + 1, idx2);
                                         str2 = str2.substring(idx2).trim();
@@ -800,7 +960,8 @@ public class InnoController extends MyPerfBaseController {
                                         str2 = null;
                                     }
                                 }
-                            } else {
+
+                            } else
                                 if (str2.indexOf(',') >= 0) {
                                     state = str2.substring(0, str2.indexOf(',')).trim();
                                     str2.substring(str2.indexOf(',') + 1).trim();
@@ -808,16 +969,19 @@ public class InnoController extends MyPerfBaseController {
                                     state = str2;
                                     str2 = null;
                                 }
-                            }
-                            if (str2 != null) {
+
+                            if (str2 != null)
                                 if (str2.startsWith("process ")) {
+
                                     if (str2.indexOf(',') > 0)
                                         str2 = str2.substring(0, str2.indexOf(','));
+
                                     this.processNumber = str2.substring(str2.lastIndexOf(' ') + 1);
                                 } else
                                     this.action = str2;
-                            }
+
                         }
+
                         break;
                     case TX_START:
                         this.action = str.trim();
@@ -833,6 +997,7 @@ public class InnoController extends MyPerfBaseController {
                         str2 = str.substring(str.indexOf("query id")).trim();
                         this.queryId = str2.substring(8, str2.indexOf(' ', 10));
                         str2 = str2.substring(str2.indexOf(' ', 10) + 1).trim();
+
                         if (str2.startsWith("Slave ")) {
                             txstate = TX_SQL_START;
                             this.cmd = str2;
@@ -842,35 +1007,43 @@ public class InnoController extends MyPerfBaseController {
                             this.cmd = str2;
                             break;
                         }
+
                         try {
                             this.host = str2.substring(0, str2.indexOf(' '));
                             str2 = str2.substring(str2.indexOf(' ') + 1).trim();
+
                             if (str2.charAt(0) >= '0' && str2.charAt(0) <= '9' && str2.indexOf('.') >= 0) {
                                 //ip address
                                 this.host += " " + str2.substring(0, str2.indexOf(' '));
                                 str2 = str2.substring(str2.indexOf(' ') + 1).trim();
                             }
+
                             if (str2.indexOf(' ') > 0) {
                                 this.user = str2.substring(0, str2.indexOf(' '));
                                 this.cmd = str2.substring(str2.indexOf(' ') + 1);
                             } else
                                 this.user = str2;
+
                         } catch (Exception iex) {
                             log.info(str2 + ", " + str, iex);
                         }
                         txstate = TX_SQL_START;
                         break;
                     case TX_SQL_START:
+
                         if (this.sql == null)
                             this.sql = str;
                         else
                             this.sql += "\n" + str;
+
                         break;
                     case TX_COMMENT:
+
                         if (this.comments == null)
                             this.comments = str;
                         else
                             this.comments += "\n" + str;
+
                         break;
                     default:
                         break;
@@ -906,19 +1079,23 @@ public class InnoController extends MyPerfBaseController {
             //--Thread 140455387199232 has waited at btr/btr0cur.c line 501 for 0.0000 seconds the semaphore:
             if (line == null || line.isEmpty())
                 return false;
+
             if (this.thread_id == null && !line.startsWith("--Thread "))
                 return false;
+
             try {
+
                 if (line.startsWith("--Thread ")) {
                     Pattern pt = Pattern.compile("\\-\\-Thread\\s+(\\d+)\\s+has\\s+waited\\s+at\\s+(.+)\\s+for\\s+(.+)\\s+seconds\\s+the\\s+semaphore:");
                     Matcher mt = pt.matcher(line);
+
                     if (mt.find()) {
                         this.thread_id = mt.group(1);
                         this.waited_at = mt.group(2);
                         this.waited_time = mt.group(3);
-                    } else {
+                    } else
                         log.info("Failed to parse semaphore line: " + line);
-                    }
+
                 } else if (this.lock_name == null) {
                     //S-lock on RW-latch at 0x7fc0e40a46f0 '&new_index->lock'
                     //Mutex at 0x7fc43c785ee0 '&ibuf_mutex', lock var 1
@@ -926,35 +1103,39 @@ public class InnoController extends MyPerfBaseController {
                         this.lock_type = "Mutex";
                         Pattern pt = Pattern.compile("Mutex\\s+at\\s+(0x[a-z0-9]+)\\s+'(.+)'\\s*,\\s*lock\\s+var\\s+(\\d+)");
                         Matcher mt = pt.matcher(line);
+
                         if (mt.find()) {
                             this.lock_loc = mt.group(1);
                             this.lock_name = mt.group(2);
                             this.lock_var = mt.group(3);
-                        } else {
+                        } else
                             log.info("Failed to parse semaphore Mutex line: " + line);
-                        }
+
 
                     } else {
                         Pattern pt = Pattern.compile("([A-Z]+)\\-lock\\s+on\\s+([a-zA-Z\\-]+)\\s+at\\s+(0x[a-z0-9]+)\\s+'(.+)'");
                         Matcher mt = pt.matcher(line);
+
                         if (mt.find()) {
                             this.request_mode = mt.group(1);
                             this.lock_type = mt.group(2);
                             this.lock_loc = mt.group(3);
                             this.lock_name = mt.group(4);
-                        } else {
+                        } else
                             log.info("Failed to parse semaphore lock line: " + line);
-                        }
+
                     }
+
                 } else if (line.contains("thread id") && line.contains("mode")) {//a writer (thread id 139924314879744) has reserved it in mode  exclusive
                     Pattern pt = Pattern.compile("thread\\s+id\\s+(\\d+).+mode\\s+(.+)");
                     Matcher mt = pt.matcher(line);
+
                     if (mt.find()) {
                         this.lock_holder = mt.group(1);
                         this.hold_mode = mt.group(2);
-                    } else {
+                    } else
                         log.info("Failed to parse semaphore holder line: " + line);
-                    }
+
                 } else
                     return false;
                 //ignore other line for now

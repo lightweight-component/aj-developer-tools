@@ -43,17 +43,19 @@ public class MetricsRetentionTask implements Runnable {
 
         //get all dbids
         List<Integer> ids = new ArrayList<>();
-        if (this.dbidToPurge == null) {
+
+        if (this.dbidToPurge == null)
             for (Map.Entry<String, DBGroupInfo> e : context.getDbInfoManager().getClusters().entrySet()) {
                 DBGroupInfo g = e.getValue();
 
                 for (DBInstanceInfo i : g.getInstances())
                     ids.add(i.getDbid());
             }
-        } else {
+
+         else
             for (int id : this.dbidToPurge)
                 ids.add(id);
-        }
+
 
         Calendar c = Calendar.getInstance();
         c.add(Calendar.DATE, -this.renentionDays);
@@ -69,15 +71,16 @@ public class MetricsRetentionTask implements Runnable {
 
         for (String grpName : groupNames) {
             MetricsGroup group = this.context.getMetricsDef().getGroupByName(grpName);
+
             if (group == null)
                 continue; //not supposed to be so
 
             if (group.getSubGroups().size() == 0) //no subgroup, add self
                 mgs.add(group);
-             else {
+             else
                 for (MetricsGroup g : group.getSubGroups())
                     mgs.add(g);
-            }
+
         }
 
         for (Map.Entry<String, UserDefinedMetrics> entry : this.context.getMetricsDef().getUdmManager().getUdms().entrySet()) {
@@ -92,12 +95,12 @@ public class MetricsRetentionTask implements Runnable {
         for (int dbid : ids) {
             log.info("Check and purge db: " + dbid);
 
-            for (MetricsGroup g : mgs) {
+            for (MetricsGroup g : mgs)
                 if (this.dbidToPurge != null)
                     this.context.getMetricDb().purgeAll(g.getSinkTableName(), dbid);
                 else
                     this.context.getMetricDb().purge(g.getSinkTableName(), dbid, endDate);
-            }
+
         }
 
         SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd");
@@ -121,6 +124,7 @@ public class MetricsRetentionTask implements Runnable {
             //also remove old alert reports
             //report root
             File rootPath = this.context.getAlertRootPath();
+
             if (!rootPath.exists() && !rootPath.isDirectory()) {
                 log.warn("Failed to find alert root path: " + rootPath.getPath());
                 return;
@@ -141,20 +145,23 @@ public class MetricsRetentionTask implements Runnable {
                     int nameDate = Integer.parseInt(name);
 
                     if (nameDate < lastPurgeDate) {
-                        if (dir.isDirectory()) {
+
+                        if (dir.isDirectory())
                             for (File ar : dir.listFiles()) {
                                 //don't expect subdir
                                 if (ar.isFile())
                                     ar.delete();
                             }
-                        }
+
 
                         dir.delete();
                     }
+
                 } catch (Exception ex) {
                     log.warn("Failed to delete report for date: " + name);
                 }
             }
+
         } catch (Throwable th) {
             log.warn("Failed to purge report data: " + th.getMessage());
         }

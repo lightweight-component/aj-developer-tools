@@ -75,14 +75,17 @@ public class UserDefinedMetrics implements Serializable {
     }
 
     public UserDefinedMetrics(String name) {
+
         if (name != null) {
             this.name = name.trim().toUpperCase();
             this.metricsGroup.setGroupName(this.name);
         }
+
         metricsGroup.setUdmFlagged(true);
     }
 
     public void setName(String name) {
+
         if (name != null) {
             this.name = name.trim().toUpperCase();
             this.metricsGroup.setGroupName(this.name);
@@ -96,6 +99,7 @@ public class UserDefinedMetrics implements Serializable {
 
     public void setUdmType(String udmType) {
         this.udmType = udmType;
+
         if (!"row".equals(this.udmType))
             this.metricsGroup.setMultipleMetricsPerRow(true);
     }
@@ -117,6 +121,7 @@ public class UserDefinedMetrics implements Serializable {
      */
     public void setKeyCol(String keyCol) {
         this.keyCol = keyCol;
+
         if ("key".equals(this.udmType))
             this.metricsGroup.setKeyColumn(this.keyCol);
 
@@ -124,11 +129,13 @@ public class UserDefinedMetrics implements Serializable {
 
     public void setSql(String sql) {
         this.sql = sql;
+
         if ("SQL".equals(this.source))
             this.metricsGroup.setSqlText(this.sql);
     }
 
     public void addMetric(Metric m) {
+
         if (m != null) {
             this.metrics.add(m);
             this.metricsGroup.addMetrics(m.copy());
@@ -137,6 +144,7 @@ public class UserDefinedMetrics implements Serializable {
     }
 
     public void addmetric(String name, String sourceName, boolean inc, MetricDataType dataType) {
+
         if (name != null && !name.isEmpty()) {
             Metric m = new Metric(name.trim().toUpperCase(), sourceName, dataType, null, null, inc);
             this.metrics.add(m);
@@ -152,41 +160,45 @@ public class UserDefinedMetrics implements Serializable {
     public void validate() throws UserDefinedMetricsException {
         StringBuilder sb = new StringBuilder();
         boolean valid = true;
+
         if (!Metric.isAlphaNumericUnderscoreNotNull(name, 20)) {
             valid = false;
             sb.append("udm name " + name + " is not valid. Please use alphanumeric and underscore with max length of 20. ");
         }
-        if ("SQL".equalsIgnoreCase(source)) {
+
+        if ("SQL".equalsIgnoreCase(source))
             if (sql == null || sql.isEmpty()) {
                 sb.append("Please provide customized SQL. ");
                 valid = false;
             } else {
                 sql = sql.trim();
+
                 if (!sql.toLowerCase().startsWith("select") || sql.indexOf(';') >= 0) {
                     sb.append("The SQL statement must start with select and no semi column is allowed. ");
                     valid = false;
                 }
             }
-        }
+
         if ("key".equalsIgnoreCase(this.udmType) && (keyCol == null || keyCol.isEmpty())) {
             valid = false;
             sb.append("For case of Multiple Rows, Multiple Metrics Per Row, With a Key Column, please provide a valid key column name. ");
         }
+
         if ("row".equalsIgnoreCase(this.udmType) && (nameCol == null || nameCol.isEmpty() || valueCol.isEmpty() || valueCol.isEmpty())) {
             valid = false;
             sb.append("For case of Multiple Rows, One Row One Metric, Key Value Pairs, please provide column names to extract metric names and values.");
         }
-        for (Metric m : this.metrics) {
 
+        for (Metric m : this.metrics)
             if (!Metric.isAlphaNumericUnderscoreNotNull(m.getName(), 32)) {
                 valid = false;
                 sb.append("udm metric name " + m.getName() + " is not valid. Please use alphanumeric and underscore with max length of 32. ");
             }
 
-        }
-        if (!valid) {
+
+        if (!valid)
             throw new UserDefinedMetricsException(sb.toString());
-        }
+
     }
 
     public String toJSON(boolean html) {
@@ -197,36 +209,49 @@ public class UserDefinedMetrics implements Serializable {
         mtrStr.append("\"source\": \"").append(source).append("\",\r\n");
         mtrStr.append("\"type\": \"").append(udmType).append("\",\r\n");
         mtrStr.append("\"storeInCommonTable\": \"").append(this.storeInCommonTable ? "y" : "n").append("\",\r\n");
+
         if (this.nameCol != null && !this.nameCol.isEmpty())
             mtrStr.append("\"nameColumn\": \"").append(nameCol).append("\",\r\n");
+
         if (this.valueCol != null && !this.valueCol.isEmpty())
             mtrStr.append("\"valueColumn\": \"").append(valueCol).append("\",\r\n");
+
         if (this.keyCol != null && !this.keyCol.isEmpty())
             mtrStr.append("\"keyColumn\": \"").append(keyCol).append("\",\r\n");
+
         if (this.sql != null && !this.sql.isEmpty()) mtrStr.append("\"sql\": \"")
                 .append(html ? escapeJsonHTML(sql) : escapeJson(sql)).append("\",\r\n");
+
         mtrStr.append("\"metrics\":[");
         int cnt = this.metrics.size();
+
         for (int i = 0; i < cnt; i++) {
             Metric m = metrics.get(i);
+
             if (i > 0)
                 mtrStr.append(",\r\n");
+
             mtrStr.append("{\"name\": \"").append(m.getName()).append("\",\"sourceName\":\"")
                     .append(m.getSourceName() != null && !m.getSourceName().isEmpty() ? m.getSourceName() : m.getName())
                     .append("\", \"inc\": \"").append(m.isIncremental() ? "y" : "n").append("\", \"dataType\": \"")
                     .append(m.getDataType()).append("\"}");
         }
+
         mtrStr.append("]}");
         return mtrStr.toString();
     }
 
     public static String escapeJsonHTML(String str) {
+
         if (str == null)
             return "";
+
         StringBuilder sb = new StringBuilder(str.length());
         char[] carray = str.toCharArray();
+
         for (int i = 0; i < carray.length; i++) {
             char c = carray[i];
+
             if (c == '\"')
                 sb.append("\\u0022");
             else if (c == '\n')
@@ -244,17 +269,22 @@ public class UserDefinedMetrics implements Serializable {
                 //skip it
             } else sb.append(c);
         }
+
         return sb.toString();
 
     }
 
     public static String escapeJson(String str) {
+
         if (str == null)
             return "";
+
         StringBuilder sb = new StringBuilder(str.length());
         char[] carray = str.toCharArray();
+
         for (int i = 0; i < carray.length; i++) {
             char c = carray[i];
+
             if (c == '\"')
                 sb.append("\\\"");
             else if (c == '\n')
@@ -269,6 +299,7 @@ public class UserDefinedMetrics implements Serializable {
                 //skip it
             } else sb.append(c);
         }
+
         return sb.toString();
     }
 
@@ -287,8 +318,10 @@ public class UserDefinedMetrics implements Serializable {
             udm.setSql(jsonObject.getString("sql", null));
 
             JsonArray metrics = jsonObject.getJsonArray("metrics");
+
             if (metrics != null) {
                 int mlen = metrics.size();
+
                 for (int i = 0; i < mlen; i++) {
                     JsonObject mobj = metrics.getJsonObject(i);
                     udm.addmetric(mobj.getString("name"),
@@ -297,6 +330,7 @@ public class UserDefinedMetrics implements Serializable {
                             Metric.strToMetricDataType(mobj.getString("dataType")));
                 }
             }
+
         } catch (Exception ex) {
             log.warn("Error to parse UDM", ex);
             //TODO

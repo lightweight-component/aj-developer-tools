@@ -63,6 +63,7 @@ public abstract class MyPerfBaseController extends AbstractController {
         {
             if (this.nosessView != null)
                 return new ModelAndView(new RedirectView(nosessView));
+
             return respondFailure("Session expired. Please relogin and try again.", req);
         } else if (this.requireLogin && !user.isVerified()) {
             //TODO use a message view
@@ -106,19 +107,23 @@ public abstract class MyPerfBaseController extends AbstractController {
         //if system level use debug, return true
         if (frameworkContext.isDebug())
             return true;
-        if (req.getSession() != null) {
+
+        if (req.getSession() != null)
             try {
+
                 if ("1".equals(req.getSession().getAttribute(Constants.SESSION_DEBUG)))
                     return true;
+
             } catch (Exception ex) {
             }
-        }
+
 
         return false;
     }
 
     private void setupDebug(HttpServletRequest req) {
         String paramString = req.getQueryString();
+
         if (paramString != null && (paramString.indexOf("debug=y") >= 0 || paramString.indexOf("DEBUG=Y") >= 0))
             req.getSession().setAttribute(Constants.SESSION_DEBUG, "1");
         else if (paramString != null && (paramString.indexOf("debug=n") >= 0 || paramString.indexOf("DEBUG=N") >= 0))
@@ -132,14 +137,16 @@ public abstract class MyPerfBaseController extends AbstractController {
     }
 
     public static String findUserFromRequest(HttpServletRequest req) {
+
         if (req.getUserPrincipal() != null)
             return req.getUserPrincipal().getName();//find from security login JAAS
-        if (req.getSession() != null) {
+
+        if (req.getSession() != null)
             try {
                 return retrieveAppUser(req).getName();//find from session
             } catch (Exception ex) {
             }
-        }
+
         return null;
     }
 
@@ -156,37 +163,44 @@ public abstract class MyPerfBaseController extends AbstractController {
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         sdf2.setTimeZone(TimeZone.getTimeZone("UTC"));
         Date d1 = null;
-        if (startDate != null && !startDate.isEmpty()) {
+
+        if (startDate != null && !startDate.isEmpty())
             try {
+
                 if (startDate.indexOf('-') < 0)
                     d1 = sdf.parse(startDate);
                 else
                     d1 = sdf2.parse(startDate);
+
             } catch (Exception ex) {
             }
-        }
+
         //default to one day earlier
         if (d1 == null) {
             Calendar c = Calendar.getInstance();
             c.add(Calendar.DATE, -1);
             d1 = c.getTime();
         }
+
         String startDateFmt = sdf.format(d1);
 
         Date d2 = null;
-        if (endDate != null && !endDate.isEmpty()) {
+
+        if (endDate != null && !endDate.isEmpty())
             try {
+
                 if (endDate.indexOf('-') < 0)
                     d2 = sdf.parse(endDate);
                 else
                     d2 = sdf2.parse(endDate);
+
             } catch (Exception ex) {
             }
-        }
+
         //default to now
-        if (d2 == null) {
+        if (d2 == null)
             d2 = new Date();
-        }
+
         String endDateFmt = sdf.format(d2);
         return new String[]{startDateFmt, endDateFmt};
     }

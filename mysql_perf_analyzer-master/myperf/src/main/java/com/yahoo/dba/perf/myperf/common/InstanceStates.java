@@ -103,6 +103,7 @@ public class InstanceStates implements Serializable {
         Date dt = new Date(stat.getTimestamp());
         String alertType = null;
         String alertValue = null;
+
         if (isSnapValid) //need two snapshots
         {
             //sys CPU
@@ -115,26 +116,32 @@ public class InstanceStates implements Serializable {
             //note if swapout =  -1, we don't have any record yet
             long swapout = this.prevSnapshot.getSwapout() >= 0L ?
                     this.currSnapshot.getSwapout() - this.prevSnapshot.getSwapout() : 0L;
+
             if (this.prevSnapshot.getSyscputime() >= 0L && this.currSnapshot.getSyscputime() >= 0L) {
                 double val = ((double) (this.currSnapshot.getSyscputime() - this.prevSnapshot.getSyscputime()) * 100) / (double) (this.currSnapshot.getTotalcputime() - this.prevSnapshot.getTotalcputime());
                 syscpu = val;
             }
+
             if (this.prevSnapshot.getUsercputime() >= 0L && this.currSnapshot.getUsercputime() >= 0L) {
                 double val = ((double) (this.currSnapshot.getUsercputime() - this.prevSnapshot.getUsercputime()) * 100) / (double) (this.currSnapshot.getTotalcputime() - this.prevSnapshot.getTotalcputime());
                 usercpu = val;
             }
+
             if (this.prevSnapshot.getIotime() >= 0L && this.currSnapshot.getIotime() >= 0L) {
                 double val = ((double) (this.currSnapshot.getIotime() - this.prevSnapshot.getIotime()) * 100) / (double) (this.currSnapshot.getTotalcputime() - this.prevSnapshot.getTotalcputime());
                 iowaits = val;
             }
+
             if (this.prevSnapshot.getSlowQueryCount() >= 0L && this.currSnapshot.getSlowQueryCount() >= 0L) {
                 double val = ((double) (this.currSnapshot.getSlowQueryCount() - this.prevSnapshot.getSlowQueryCount()) * 60000) / (double) (this.currSnapshot.getTimestamp() - this.prevSnapshot.getTimestamp());
                 slowCount = val;
             }
+
             if (this.prevSnapshot.getAbortedConnectsClients() >= 0L && this.currSnapshot.getAbortedConnectsClients() >= 0L) {
                 double val = ((double) (this.currSnapshot.getAbortedConnectsClients() - this.prevSnapshot.getAbortedConnectsClients()) * 1000) / (double) (this.currSnapshot.getTimestamp() - this.prevSnapshot.getTimestamp());
                 aborted_cc = val;
             }
+
             if (deadlocks > thresholds.get("DEADLOCK"))//will generate alert if any deadlocks detected
             {
                 alertType = "DEADLOCKS";
@@ -172,6 +179,7 @@ public class InstanceStates implements Serializable {
                 alertValue = String.valueOf(this.currSnapshot.getMax_conn_error() - this.prevSnapshot.getMax_conn_error());
             }
         }
+
         if (alertType == null && this.currSnapshot.getTimestamp() > 0)//one snap is enough
         {
             if (this.currSnapshot.getLoadAverage() > thresholds.get("LOADAVG")) {
@@ -187,6 +195,7 @@ public class InstanceStates implements Serializable {
                 alertValue = String.valueOf(this.currSnapshot.getReplLag());
             }
         }
+
         updateAlert(alertType == null, dt, alertType, alertValue, false);
         //updateAlert(alertType==null && (!"REPLDOWN".equals(this.lastAlertType)), dt, alertType, alertValue, false);
     }
@@ -210,62 +219,78 @@ public class InstanceStates implements Serializable {
         if (this.currSnapshot.getMetricsMap() == null
                 || this.currSnapshot.getMetricsMap().size() == 0)
             return null;
+
         List<AlertEntry> alerts = new ArrayList<>();
         //loop entry by entry
         for (Map.Entry<String, Float> entry : this.currSnapshot.getMetricsMap().entrySet()) {
             String alertName = entry.getKey();
             Float metricValue = entry.getValue();
             AlertDefinition def = context.getMetricsDef().getUdmManager().getAlertByName(alertName);
+
             if (def == null)
                 continue;
+
             AlertSubscribers.Subscription subscript = context.getMetricsDef().getUdmManager()
                     .getAlertSubscriptions().getSubscription(dbgroup, host, alertName);
+
             if (subscript == null)
                 continue;
             //since this is metrics based alerts, we only care about threshold
             Float threshold = subscript.threshold;
+
             if (threshold == null)
                 threshold = def.getDefaultThreshold();
+
             if (threshold == null)
                 continue; //something wrong with definition
+
             if (AlertDefinition.METRICS_VALUE_TYPE_VALUE.equals(def.getMetricValueType())) {
                 //only need current value to compare
                 if (AlertDefinition.METRICS_COMPARISION_GREATER_THAN.equalsIgnoreCase(def.getMetricComparison())) {
-                    if (metricValue.floatValue() > threshold.floatValue()) {
+
+                    if (metricValue.floatValue() > threshold.floatValue())
                         alerts.add(new AlertEntry(this.currSnapshot.getTimestamp(), alertName, metricValue.toString(), dbgroup, host));
-                    }
-                } else if (AlertDefinition.METRICS_COMPARISION_LESS_THAN.equalsIgnoreCase(def.getMetricComparison())) {
-                    if (metricValue.floatValue() < threshold.floatValue()) {
+
+                } else if (AlertDefinition.METRICS_COMPARISION_LESS_THAN.equalsIgnoreCase(def.getMetricComparison()))
+                    if (metricValue.floatValue() < threshold.floatValue())
                         alerts.add(new AlertEntry(this.currSnapshot.getTimestamp(), alertName, metricValue.toString(), dbgroup, host));
-                    }
-                }
+
+
 
             } else {
                 //need average change per second to compare
                 //no previous one to compare
                 if (this.prevSnapshot == null || this.prevSnapshot.getTimestamp() < 0L)
                     continue;
+
                 if (this.prevSnapshot.getMetricsMap() == null
                         || this.prevSnapshot.getMetricsMap().size() == 0
                         || !this.prevSnapshot.getMetricsMap().containsKey(alertName)) continue;
+
                 long interval = this.currSnapshot.getTimestamp() - this.prevSnapshot.getTimestamp();
+
                 if (interval <= 0L)
                     continue; //something wrong
+
                 float avg = metricValue.floatValue() - this.prevSnapshot.getMetricsMap().get(alertName).floatValue();
+
                 if (AlertDefinition.METRICS_VALUE_TYPE_DIFF_AVG.equals(def.getMetricValueType()))
                     avg = (float) (((metricValue.floatValue() - this.prevSnapshot.getMetricsMap().get(alertName).floatValue()) * 1000.0) / (float) interval);
+
                 if (AlertDefinition.METRICS_COMPARISION_GREATER_THAN.equalsIgnoreCase(def.getMetricComparison())) {
-                    if (avg > threshold.floatValue()) {
+
+                    if (avg > threshold.floatValue())
                         alerts.add(new AlertEntry(this.currSnapshot.getTimestamp(), alertName, String.valueOf(avg), dbgroup, host));
-                    }
-                } else if (AlertDefinition.METRICS_COMPARISION_LESS_THAN.equalsIgnoreCase(def.getMetricComparison())) {
-                    if (avg < threshold.floatValue()) {
+
+                } else if (AlertDefinition.METRICS_COMPARISION_LESS_THAN.equalsIgnoreCase(def.getMetricComparison()))
+                    if (avg < threshold.floatValue())
                         alerts.add(new AlertEntry(this.currSnapshot.getTimestamp(), alertName, String.valueOf(avg), dbgroup, host));
-                    }
-                }
+
+
             }
 
         }
+
         return alerts;
     }
 
@@ -277,6 +302,7 @@ public class InstanceStates implements Serializable {
      * @return true if status change is logged
      */
     public boolean reportOffline(boolean offline, Date dt) {
+
         if ("OFFLINE".equals(this.lastAlertType) && !offline) {
             updateAlert(true, dt, "OFFLINE", "OFFLINE", false);
             return true;
@@ -290,14 +316,17 @@ public class InstanceStates implements Serializable {
             updateAlert(false, dt, "OFFLINE", "OFFLINE", false);
             return true;
         }
+
         return false;
     }
 
     public boolean reportUserAlert(Date dt, String alertName, String value) {
+
         if (!alertName.equals(this.lastAlertType)) {
             updateAlert(false, dt, alertName, value, false);
             return true;
         }
+
         return false;
     }
 
@@ -309,9 +338,12 @@ public class InstanceStates implements Serializable {
      * @param force:     if true, update lastAlertTime anyway with new values
      */
     public void updateAlert(boolean clear, Date dt, String alertType, String alertValue, boolean force) {
+
         if (clear) {
+
             if (this.lastAlertEndTime == null && this.lastAlertTime != null)
                 this.lastAlertEndTime = dt;
+
         } else //we have an alert
         {
             if (this.lastAlertEndTime != null)//must be a new alert
@@ -324,9 +356,9 @@ public class InstanceStates implements Serializable {
             } else if (this.lastAlertTime != null && !alertType.equalsIgnoreCase(this.lastAlertType))//a new type of alert
             {
                 this.lastAlertTime = dt;
-            } else if (force) {
+            } else if (force)
                 this.lastAlertTime = dt;
-            }
+
             // else //continuous, update new value
 
             this.lastAlertType = alertType;
@@ -345,16 +377,19 @@ public class InstanceStates implements Serializable {
      */
     public boolean canSendEmailNotification(long ts, String reason, int emailAlertIntervalMinutes) {
         boolean toSend = false;
+
         if (this.lastEmailAlertTime == -1L)
             toSend = true; //first alert
         else if (!reason.equalsIgnoreCase(this.lastEmailAlertReason))
             toSend = true;//different type of alert
         else if (ts >= this.lastEmailAlertTime + emailAlertIntervalMinutes * 60000)
             toSend = true;
+
         if (toSend) {
             this.lastEmailAlertTime = ts;
             this.lastEmailAlertReason = reason;
         }
+
         return toSend;
     }
 
@@ -370,16 +405,19 @@ public class InstanceStates implements Serializable {
 
     public boolean canSendWebNotification(long ts, String reason, int webAlertIntervalMinutes) {
         boolean toSend = false;
+
         if (this.lastWebAlertTime == -1L)
             toSend = true; //first alert
         else if (!reason.equalsIgnoreCase(this.lastWebAlertReason))
             toSend = true;//different type of alert
         else if (ts >= this.lastWebAlertTime + webAlertIntervalMinutes * 60000L)
             toSend = true;
+
         if (toSend) {
             this.lastWebAlertTime = ts;
             this.lastWebAlertReason = reason;
         }
+
         return toSend;
     }
 
@@ -401,6 +439,7 @@ public class InstanceStates implements Serializable {
      * Free report slot
      */
     synchronized public void reportDone() {
+
         if (this.reportsWIP > 0)
             this.reportsWIP--;
     }

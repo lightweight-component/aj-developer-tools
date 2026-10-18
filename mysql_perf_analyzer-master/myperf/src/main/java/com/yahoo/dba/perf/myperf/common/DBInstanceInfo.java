@@ -93,22 +93,25 @@ public class DBInstanceInfo implements Serializable {
     }
 
     public void setHostName(String hostName) {
+
         if (hostName != null)
             this.hostName = hostName.toLowerCase().trim();
         else this.hostName = null;
     }
 
     public void setPort(String port) {
-        if (port != null) {
+
+        if (port != null)
             try {
                 int lp = Integer.parseInt(port);
-                if (lp < 0) {
+
+                if (lp < 0)
                     lp = MAX_16BIT_UINT + lp;
-                }
+
                 this.port = String.valueOf(lp);
             } catch (Exception ex) {
             }
-        } else this.port = port;
+         else this.port = port;
     }
 
     public short getPortShort() {
@@ -122,24 +125,27 @@ public class DBInstanceInfo implements Serializable {
     }
 
     public void setLocalHostName(String localHostName) {
+
         if (localHostName != null)
             this.localHostName = localHostName.trim();
         else this.localHostName = null;
     }
 
     public void setLocalPort(String localPort) {
-        if (localPort != null) {
+
+        if (localPort != null)
             try {
                 int lp = Integer.parseInt(localPort);
-                if (lp < 0) {
+
+                if (lp < 0)
                     lp = MAX_16BIT_UINT + lp;
-                }
+
                 this.localPort = String.valueOf(lp);
 
             } catch (Exception ex) {
 
             }
-        } else this.localPort = localPort;
+         else this.localPort = localPort;
     }
 
     public short getLocalPortShort() {
@@ -152,6 +158,7 @@ public class DBInstanceInfo implements Serializable {
     }
 
     public void setUsername(String username) {
+
         if (username != null)
             this.username = username.trim();
         else this.username = username;
@@ -184,24 +191,26 @@ public class DBInstanceInfo implements Serializable {
 
     public String getConnectionString() {
         // Add allowPublicKeyRetrieval to support sha256 password
-        if ("mysql".equalsIgnoreCase(this.dbType)) {
+        if ("mysql".equalsIgnoreCase(this.dbType))
             if (!this.useTunneling)
                 return "jdbc:mysql://" + this.hostName + ":" + this.port + "/" + this.databaseName + "?useSSL=true&enabledTLSProtocols=TLSv1.2&verifyServerCertificate=false";
             else
                 return "jdbc:mysql://" + this.localHostName + ":" + this.localPort + "/" + this.databaseName + "?useSSL=true&enabledTLSProtocols=TLSv1.2&verifyServerCertificate=false";
-        } else if ("oracle".equalsIgnoreCase(this.dbType)) {
-            if (!this.useTunneling) {
+
+         else if ("oracle".equalsIgnoreCase(this.dbType))
+            if (!this.useTunneling)
                 if (!this.virtualHost)
                     return "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + hostName + ")(PORT=" + port + "))(CONNECT_DATA=(SERVER=DEDICATED)(SID=" + databaseName + ")))";
                 else
                     return "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + hostName + ")(PORT=" + port + "))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=" + databaseName + ")))";
-            } else {
+
+             else
                 if (!this.virtualHost)
                     return "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + this.localHostName + ")(PORT=" + this.localPort + "))(CONNECT_DATA=(SERVER=DEDICATED)(SID=" + databaseName + ")))";
                 else
                     return "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" + this.localHostName + ")(PORT=" + this.localPort + "))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=" + databaseName + ")))";
-            }
-        }
+
+
         return null;
     }
 
@@ -214,6 +223,7 @@ public class DBInstanceInfo implements Serializable {
     }
 
     public void setDbType(String dbType) {
+
         if (dbType != null)
             this.dbType = dbType.trim().toLowerCase();
         else
@@ -228,8 +238,10 @@ public class DBInstanceInfo implements Serializable {
      * @return
      */
     public boolean supportClusterQuery() {
+
         if ("Oracle".equalsIgnoreCase(this.dbType))
             return true;
+
         return false;
     }
 

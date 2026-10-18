@@ -51,6 +51,7 @@ public class MetricsDefManager implements Serializable {
     }
 
     synchronized public MetricsGroup getGroupByName(String name) {
+
         if (this.metricsGroups.containsKey(name))
             return this.metricsGroups.get(name);
         else
@@ -58,6 +59,7 @@ public class MetricsDefManager implements Serializable {
     }
 
     synchronized void addGroup(MetricsGroup group) {
+
         if (group != null && group.getGroupName() != null
                 && !group.getGroupName().isEmpty())
             this.metricsGroups.put(group.getGroupName(), group);
@@ -73,29 +75,35 @@ public class MetricsDefManager implements Serializable {
      */
     synchronized public List<Metric> getMetrics(String grpName, String subGrpName, String[] ms) {
         MetricsGroup mg = null;
-        if (grpName != null && grpName.startsWith("UDM_")) {
+
+        if (grpName != null && grpName.startsWith("UDM_"))
             try {
                 mg = this.udmManager.getUDMByName(grpName.substring(grpName.indexOf('_') + 1)).getMetricsGroup();
             } catch (Exception ex) {
             }
-        } else
+         else
             mg = this.metricsGroups.get(grpName);
+
         if (mg == null)
             return null;
-        if (subGrpName != null && !subGrpName.isEmpty() && !subGrpName.equals("_") && !grpName.startsWith("UDM_")) {
+
+        if (subGrpName != null && !subGrpName.isEmpty() && !subGrpName.equals("_") && !grpName.startsWith("UDM_"))
             mg = mg.getSubGroupByName(subGrpName);
-        }
+
         if (mg == null)
             return null;
 
         HashMap<String, Metric> mmap = new HashMap<>(mg.getMetrics().size());
+
         for (Metric m : mg.getMetrics())
             mmap.put(m.getName(), m);
+
         List<Metric> mList = new ArrayList<>(ms.length);
-        for (String mname : ms) {
+
+        for (String mname : ms)
             if (mmap.containsKey(mname))
                 mList.add(mmap.get(mname).copy());
-        }
+
         return mList;
     }
 
@@ -110,13 +118,16 @@ public class MetricsDefManager implements Serializable {
         log.info("Loading metrics definitions ...");
         //for now, we only load built in metrics
         try (InputStream in = this.getClass().getClassLoader().getResourceAsStream(BUILTIN_METRICS_FILE_NAME)) {
+
             if (in != null) {
                 List<MetricsGroup> groups = load(in);
-                if (groups != null) {
+
+                if (groups != null)
                     for (MetricsGroup mg : groups)
                         addGroup(mg);
-                }
+
             }
+
         } catch (Exception ex) {
             log.warn("Error parsing builtin " + BUILTIN_METRICS_FILE_NAME, ex);
         }
@@ -126,6 +137,7 @@ public class MetricsDefManager implements Serializable {
     //make it generic so that later we can extend to load external definitions
     private List<MetricsGroup> load(InputStream in) {
         List<MetricsGroup> groups = new ArrayList<>();
+
         if (in == null)
             return groups;
 
@@ -138,28 +150,39 @@ public class MetricsDefManager implements Serializable {
                 //try{log.info(evtType+"");log.info(reader.getLocalName());}catch(Exception ex){}
                 if (evtType != XMLStreamConstants.START_ELEMENT)
                     continue;
+
                 String tagName = reader.getLocalName();
+
                 if (!GROUP_TAG.equals(tagName))
                     continue;
+
                 MetricsGroup mg = this.parseMetricsGroupAttribute(reader);
+
                 if (mg != null) {
                     try {
                         while (reader.hasNext()) {
                             int evtType2 = reader.next();
+
                             if (evtType2 == XMLStreamConstants.END_ELEMENT && GROUP_TAG.equals(reader.getLocalName()))
                                 break;
+
                             if (evtType2 != XMLStreamConstants.START_ELEMENT)
                                 continue;
+
                             String tagName2 = reader.getLocalName();
+
                             if (METRIC_TAG.equalsIgnoreCase(tagName2)) {
                                 Metric m = parseMetric(reader);
+
                                 if (m != null)
                                     mg.addMetrics(m);
+
                             } else if ("sqlText".equalsIgnoreCase(tagName2)) //only top level MetricsGroup allows sqlText
                                 mg.setSqlText(reader.getElementText());
                             else if (SUBGROUP_TAG.equalsIgnoreCase(tagName2)) {
                                 //now parse subgroup
                                 MetricsGroup subGroup = this.parseSubGroup(reader);
+
                                 if (subGroup != null)
                                     mg.addSubGroups(subGroup);
                             }
@@ -169,13 +192,14 @@ public class MetricsDefManager implements Serializable {
                     }
                     log.info("Add metric group " + mg.getGroupName() + " for " + mg.getDbType());
                     groups.add(mg);
-                } else {
+                } else
                     log.warn("Read metricsGroup without name attribute");
-                }
+
             }
         } catch (Exception ex) {
             log.warn("Error parsing metrics.xml", ex);
         } finally {
+
             if (reader != null) try {
                 reader.close();
                 reader = null;
@@ -189,10 +213,12 @@ public class MetricsDefManager implements Serializable {
     private MetricsGroup parseSubGroup(XMLStreamReader reader) {
         //assume tag subGroup
         MetricsGroup mg = this.parseMetricsGroupAttribute(reader);
-        if (mg != null) {
+
+        if (mg != null)
             try {
                 while (reader.hasNext()) {
                     int evtType2 = reader.next();
+
                     if (evtType2 == XMLStreamConstants.END_ELEMENT
                             && SUBGROUP_TAG.equals(reader.getLocalName()))
                         break;
@@ -201,8 +227,10 @@ public class MetricsDefManager implements Serializable {
                         continue;
 
                     String tagName2 = reader.getLocalName();
+
                     if (METRIC_TAG.equalsIgnoreCase(tagName2)) {
                         Metric m = parseMetric(reader);
+
                         if (m != null)
                             mg.addMetrics(m);
                     }
@@ -211,7 +239,7 @@ public class MetricsDefManager implements Serializable {
             } catch (Exception ex) {
                 log.warn("Error parsing metrics.xml for sub Group " + mg.getGroupName(), ex);
             }
-        }
+
         return mg;
     }
 
@@ -219,6 +247,7 @@ public class MetricsDefManager implements Serializable {
         //assume current tag is metric
         int attrCount2 = reader.getAttributeCount();
         HashMap<String, String> pairs = new HashMap<>(11);
+
         for (int i = 0; i < attrCount2; i++) {
             String attrName = reader.getAttributeLocalName(i);
             String attrValue = reader.getAttributeValue(i);
@@ -226,21 +255,26 @@ public class MetricsDefManager implements Serializable {
         }
 
         String mname = pairs.get("name");
+
         if (mname == null || mname.isEmpty()) {
             log.warn("METRICS column has no name, ignore it.");
             return null;
         }
+
         mname = mname.trim().toUpperCase();
 
         //if cannot be retrieved by both sourceName and mnane, try altname
         String mdbname = pairs.get("sourceName");
+
         if (mdbname == null || mdbname.isEmpty())
             mdbname = pairs.get("name");
+
         String altName = pairs.get("altName");
 
         String mdesc = pairs.get("description");
         String mdataType = pairs.get("dataType");
         MetricDataType md = MetricDataType.INT;
+
         if ("float".equalsIgnoreCase(mdataType))
             md = MetricDataType.FLOAT;
         else if ("double".equalsIgnoreCase(mdataType)) md = MetricDataType.DOUBLE;
@@ -255,14 +289,19 @@ public class MetricsDefManager implements Serializable {
         String mdisplay = pairs.get("chartDisplayUnit");
 
         Metric m = new Metric(mname, mdbname, md, munit, mdesc, "y".equalsIgnoreCase(mincremental));
+
         if (altName != null)
             m.setAltName(altName);
+
         if (mavg != null)
             m.setAverageTimeUnit(mavg);
+
         if (madj != null)
             m.setAdjustment(madj);
+
         if (mdisplay != null)
             m.setChartDisplayUnit(mdisplay);
+
         return m;
     }
 
@@ -275,6 +314,7 @@ public class MetricsDefManager implements Serializable {
     private MetricsGroup parseMetricsGroupAttribute(XMLStreamReader reader) {
         int attrCount2 = reader.getAttributeCount();
         HashMap<String, String> pairs = new HashMap<>(11);
+
         for (int i = 0; i < attrCount2; i++) {
             String attrName = reader.getAttributeLocalName(i);
             String attrValue = reader.getAttributeValue(i);
@@ -283,8 +323,10 @@ public class MetricsDefManager implements Serializable {
 
         //group name, cannot be blank or missing
         String name = pairs.get("name");
+
         if (name == null || name.isEmpty())
             return null;
+
         name = name.trim().toUpperCase();
 
         String sql = pairs.get("sql");
@@ -303,12 +345,15 @@ public class MetricsDefManager implements Serializable {
         mg.setSql(sql);
         mg.setStoreInCommonTable("y".equalsIgnoreCase(storeInCommonTable));
         mg.setTargetTable(targetTable);
+
         if ("n".equalsIgnoreCase(isAuto))
             mg.setAuto(false);
         else
             mg.setAuto(true);
+
         if (keyColumn != null && !keyColumn.isEmpty())
             mg.setKeyColumn(keyColumn);
+
         return mg;
     }
 

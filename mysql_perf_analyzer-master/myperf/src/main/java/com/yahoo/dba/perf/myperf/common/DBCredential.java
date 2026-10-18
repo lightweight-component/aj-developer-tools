@@ -61,8 +61,10 @@ public class DBCredential implements Serializable {
      * @param keyTool
      */
     public void decryptPassword(KeyTool.DesEncrypter keyTool) {
+
         if (encrypted == null)
             return;
+
         String credString = keyTool.decrypt(encrypted);
         credString = credString.substring(0, credString.lastIndexOf("::"));
         credString = credString.substring(credString.lastIndexOf("::") + 2);

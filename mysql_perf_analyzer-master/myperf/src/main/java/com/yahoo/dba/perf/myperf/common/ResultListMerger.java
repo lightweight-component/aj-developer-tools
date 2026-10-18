@@ -17,8 +17,10 @@ public class ResultListMerger {
 
     public static ResultList mergeByKey(Sql sqlA, Sql sqlB, ResultList listA, ResultList listB, boolean diffOnly) {
         log.info("Merge diffonly: " + diffOnly);
+
         if (listA == null)
             return listB;
+
         if (listB == null)
             return listA;
 
@@ -34,6 +36,7 @@ public class ResultListMerger {
         List<Integer> keyAIdx = new ArrayList<>(keyList.size());
         List<Integer> keyBIdx = new ArrayList<>(keyList.size());
         List<String> compKeyList = new ArrayList<>(keyList.size() + 1);
+
         for (int i = 0; i < keyList.size(); i++) {
             ColumnInfo col = descA.getColumn(keyList.get(i)).copy();
             desc.addColumn(col.getName(), col.isNumberType(), pos++);
@@ -43,12 +46,14 @@ public class ResultListMerger {
             //cmpDesc.addColumn(col.getName(), col.isNumberType(), cmpDesc.getColumns().size());
             compKeyList.add(keyList.get(i));
         }
+
         compKeyList.add("#COMP");
         cmpSortDesc.addColumn("#COMP", false, cmpSortDesc.getColumns().size());
         //2. add all value
         List<String> valList = sqlA.getValueList();
         List<Integer> valAIdx = new ArrayList<>(valList.size());
         List<Integer> valBIdx = new ArrayList<>(valList.size());
+
         for (int i = 0; i < valList.size(); i++) {
             ColumnInfo col = descA.getColumn(valList.get(i)).copy();
             ColumnInfo colA = col.copy();
@@ -66,23 +71,29 @@ public class ResultListMerger {
         }
 
         List<ResultRow> listRows = new ArrayList<>(listA.getRows().size() + listB.getRows().size());
+
         for (ResultRow row : listA.getRows()) {
             ResultRow newRow = new ResultRow();
             List<String> cols = new ArrayList<>(row.getColumns().size() + 1);
             //add key first
             for (int i = 0; i < keyAIdx.size(); i++) {
                 int idx = keyAIdx.get(i);
+
                 if (idx >= 0)
                     cols.add(row.getColumns().get(keyAIdx.get(i)));
                 else cols.add(null);
             }
+
             cols.add("A");
+
             for (int i = 0; i < valAIdx.size(); i++) {
                 int idx = valAIdx.get(i);
+
                 if (idx >= 0)
                     cols.add(row.getColumns().get(valAIdx.get(i)));
                 else cols.add(null);
             }
+
             newRow.setColumns(cols);
             listRows.add(newRow);
         }
@@ -93,17 +104,22 @@ public class ResultListMerger {
             //add key first
             for (int i = 0; i < keyBIdx.size(); i++) {
                 int idx = keyBIdx.get(i);
+
                 if (idx >= 0)
                     cols.add(row.getColumns().get(keyBIdx.get(i)));
                 else cols.add(null);
             }
+
             cols.add("B");
+
             for (int i = 0; i < valBIdx.size(); i++) {
                 int idx = valBIdx.get(i);
+
                 if (idx >= 0)
                     cols.add(row.getColumns().get(valBIdx.get(i)));
                 else cols.add(null);
             }
+
             newRow.setColumns(cols);
             listRows.add(newRow);
         }
@@ -119,8 +135,10 @@ public class ResultListMerger {
         finalList.setColumnDescriptor(desc);
         int combinedSize = listRows.size();
         int keySize = keyList.size();
+
         if (combinedSize == 0)
             return finalList;
+
         ResultRow curRow = listRows.get(0);
         String curComp = curRow.getColumns().get(keySize);
         int idx = 1;
@@ -133,7 +151,8 @@ public class ResultListMerger {
                 ResultRow row = new ResultRow();
                 row.setColumnDescriptor(desc);
                 List<String> cols = new ArrayList<>(curRow.getColumns().size() - 1);
-                for (int i = 0; i < curRow.getColumns().size(); i++) {
+
+                for (int i = 0; i < curRow.getColumns().size(); i++)
                     if (i == keySize)
                         continue;
                     else if (i < keySize)
@@ -146,7 +165,7 @@ public class ResultListMerger {
                         cols.add(curRow.getColumns().get(i));
                     }
 
-                }
+
                 row.setColumns(cols);
                 finalList.addRow(row);
                 curComp = nextComp;
@@ -158,7 +177,8 @@ public class ResultListMerger {
                     ResultRow row = new ResultRow();
                     row.setColumnDescriptor(desc);
                     List<String> cols = new ArrayList<>(curRow.getColumns().size() - 1);
-                    for (int i = 0; i < curRow.getColumns().size(); i++) {
+
+                    for (int i = 0; i < curRow.getColumns().size(); i++)
                         if (i == keySize)
                             continue;
                         else if (i < keySize)
@@ -171,12 +191,14 @@ public class ResultListMerger {
                             cols.add(curRow.getColumns().get(i));
                         }
 
-                    }
+
                     row.setColumns(cols);
                     finalList.addRow(row);
                 }
+
                 if (idx == combinedSize - 1)
                     break;//at the end
+
                 curRow = listRows.get(idx + 1);//pre fetch one row
                 curComp = curRow.getColumns().get(keySize);
                 idx = idx + 2;

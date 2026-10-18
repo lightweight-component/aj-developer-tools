@@ -32,20 +32,22 @@ public class InnoDbMutexPostProccessor implements PostQueryResultProcessor {
     @Override
     public ResultList process(ResultList rs) {
         TreeMap<String, MutexName> mutexMetrics = new TreeMap<>();
+
         if (rs != null && rs.getRows().size() > 0) {
             int typeIdx = 0;
             int nameIdx = 1;
             int statusIdx = 2;
             List<ColumnInfo> colList = rs.getColumnDescriptor().getColumns();
-            for (int i = 0; i < colList.size(); i++) {
+
+            for (int i = 0; i < colList.size(); i++)
                 if ("Type".equalsIgnoreCase(colList.get(i).getName()))
                     typeIdx = i;
                 else if ("Name".equalsIgnoreCase(colList.get(i).getName()))
                     nameIdx = i;
                 else if ("Status".equalsIgnoreCase(colList.get(i).getName()))
                     statusIdx = i;
-            }
-            for (ResultRow row : rs.getRows()) {
+
+            for (ResultRow row : rs.getRows())
                 try {
                     List<String> sList = row.getColumns();
                     String type = sList.get(typeIdx);
@@ -55,14 +57,15 @@ public class InnoDbMutexPostProccessor implements PostQueryResultProcessor {
                     String[] nv = status.split("=");
                     String key = type + "|" + name + "|" + nv[0];
                     int val = Integer.parseInt(nv[1]);
-                    if (!mutexMetrics.containsKey(key)) {
+
+                    if (!mutexMetrics.containsKey(key))
                         mutexMetrics.put(key, new MutexName(type, name, nv[0]));
-                    }
+
                     mutexMetrics.get(key).val += val;
                     mutexMetrics.get(key).count++;
-                } catch (Exception ex) {
+                } catch (Exception ignored) {
                 }
-            }
+
         }
         //now build new List
         ResultList rlist = new ResultList();
@@ -71,6 +74,7 @@ public class InnoDbMutexPostProccessor implements PostQueryResultProcessor {
         desc.addColumn("VALUE", true, 1);
         desc.addColumn("COUNT", true, 2);
         rlist.setColumnDescriptor(desc);
+
         for (MutexName m : mutexMetrics.values()) {
             ResultRow row = new ResultRow();
             row.setColumnDescriptor(desc);
@@ -79,8 +83,7 @@ public class InnoDbMutexPostProccessor implements PostQueryResultProcessor {
             row.addColumn(String.valueOf(m.count));
             rlist.addRow(row);
         }
+
         return rlist;
     }
-
-
 }

@@ -52,6 +52,7 @@ public class QueryParameters implements Serializable {
     }
 
     public void setGroup(String group) {
+
         if (group != null && group.trim().length() > 0)
             this.group = group.trim();
         else
@@ -59,30 +60,35 @@ public class QueryParameters implements Serializable {
     }
 
     public void setHost(String host) {
+
         if (host != null && host.trim().length() > 0)
             this.host = host.trim();
         else this.host = null;
     }
 
     public void setPort(String port) {
+
         if (port != null && port.trim().length() > 0)
             this.port = port.trim();
         else this.port = "1521";
     }
 
     public void setSvc(String svc) {
+
         if (svc != null && svc.trim().length() > 0)
             this.svc = svc.trim();
         else this.svc = null;
     }
 
     public void setSid(String sid) {
+
         if (sid != null && sid.trim().length() > 0)
             this.sid = sid.trim();
         else this.sid = null;
     }
 
     public void setSql(String sql) {
+
         if (sql != null && sql.trim().length() > 0)
             this.sql = sql.trim();
         else this.sql = null;
@@ -99,11 +105,12 @@ public class QueryParameters implements Serializable {
         sb.append(",[svc=").append(svc).append("]");
         sb.append(",[sid=").append(sid).append("]");
         sb.append(",[sql=").append(sql).append("]");
-        if (this.sqlParams.size() > 0) {
-            for (String key : this.sqlParams.keySet()) {
+
+        if (this.sqlParams.size() > 0)
+            for (String key : this.sqlParams.keySet())
                 sb.append(",[").append(key).append("=").append(this.sqlParams.get(key)).append("]");
-            }
-        }
+
+
         return sb.toString();
     }
 
@@ -115,13 +122,16 @@ public class QueryParameters implements Serializable {
      */
     public String validate() {
         StringBuilder sb = new StringBuilder();
+
         if (group == null)
             sb.append("group is required. ");
+
         if (host == null)
             sb.append("host is required. ");
         //if(svc==null&&sid==null)sb.append("one of svc and sid is required. ");
         if (sql == null)
             sb.append("sql is required. ");
+
         return sb.toString();
     }
 

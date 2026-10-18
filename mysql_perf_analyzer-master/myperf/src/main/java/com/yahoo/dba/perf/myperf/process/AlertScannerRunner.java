@@ -76,6 +76,7 @@ public class AlertScannerRunner implements Runnable {
 
     private boolean tryConnect(ScanData scanData) {
         DBCredential cred = DBUtils.findDBCredential(frameworkContext, scanData.dbinfo.getDbGroupName(), appUser);
+
         if (cred == null) {
             log.info("No credential for cluster " + scanData.dbinfo.getDbGroupName() + ", skip it");
             return false;//log the error
@@ -86,6 +87,7 @@ public class AlertScannerRunner implements Runnable {
         try {
             scanData.conn = conns.checkoutConnection(scanData.dbinfo, cred);
         } catch (Throwable iex) {
+
             if (Constants.CONN_MSG_NORETRY.equals(iex.getMessage()))
                 return false;
             //log.warn("Failed to connect to "+scanData.dbinfo, iex);
@@ -112,18 +114,20 @@ public class AlertScannerRunner implements Runnable {
         try {
             List<AlertSubscribers.Subscription> subscripts = this.frameworkContext.getMetricsDef().getUdmManager()
                     .getAlertSubscriptions().getSubscriptions(dbinfo.getDbGroupName(), dbinfo.getHostName());
+
             if (subscripts == null || subscripts.size() == 0)
                 return false; //nothing to scan
 
             if (!tryConnect(scanData))
                 return false;
 
-            for (AlertSubscribers.Subscription subscript : subscripts) {
+            for (AlertSubscribers.Subscription subscript : subscripts)
                 scanAlert(scanData, subscript);
-            }
+
         } catch (Exception ex) {
             log.warn("exception: " + dbinfo, ex);
         } finally {
+
             if (scanData.conn != null) {
                 conns.checkinConnectionAndClose(scanData.conn);
                 scanData.conn = null;
@@ -137,6 +141,7 @@ public class AlertScannerRunner implements Runnable {
 
     private void scanAlert(ScanData scanData, AlertSubscribers.Subscription subscript) {
         AlertDefinition def = this.frameworkContext.getMetricsDef().getUdmManager().getAlertByName(subscript.alertName);
+
         if (def == null) {
             log.warn("Cannot find alert definition for " + subscript.alertName);
             return;
@@ -171,6 +176,7 @@ public class AlertScannerRunner implements Runnable {
             InstanceStates ist = this.frameworkContext.getInstanceStatesManager().getStates(scanData.dbinfo.getDbid());
 
             if (rList != null && rList.getRows().size() > 0) {
+
                 if (ist.reportUserAlert(new Date(startTime), def.getName(), String.valueOf(rList.getRows().size()))) {
                     AlertEntry alertEntry = new AlertEntry(startTime, subscript.alertName, null, scanData.dbinfo.getDbGroupName(), scanData.dbinfo.getHostName());
                     this.frameworkContext.addAlert(alertEntry);
@@ -182,10 +188,10 @@ public class AlertScannerRunner implements Runnable {
                 }
 
                 hasAlert = true;
-            } else {
+            } else
                 if (ist != null && ist.getLastAlertType() != null && ist.getLastAlertType().equals(def.getName()))
                     this.frameworkContext.getMetricDb().markAlertEnd(Long.parseLong(sdf.format(startTime)) - 100, scanData.dbinfo.getDbid(), System.currentTimeMillis(), subscript.alertName);
-            }
+
 
             log.info("AlertScan done on " + scanData.dbinfo + ", alert " + def.getName() + ", has alert: " + hasAlert);
         } catch (Throwable ex) {

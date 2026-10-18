@@ -23,6 +23,7 @@ public class TableMetaProcessor implements CustomQueryProcessor {
     public void queryMultiple(MyPerfContext context, DBInstanceInfo dbinfo, String appUser,
                               DBConnectionWrapper connWrapper, QueryParameters qps, Map<String, ResultList> rListMap)
             throws SQLException {
+
         for (int i = 0; i < TBL_QUERIES.length; i++) {
             QueryParameters qps2 = new QueryParameters();
             qps2.setSql(TBL_QUERIES[i]);
@@ -34,14 +35,16 @@ public class TableMetaProcessor implements CustomQueryProcessor {
                 rList = context.getQueryEngine().executeQueryGeneric(qps2, connWrapper, qps.getMaxRows());
             } catch (Throwable th) {
                 log.warn("Error when retrieve meta data", th);
+
                 if (th instanceof SQLException) {
                     //check if the connection is still good
-                    if (!DBUtils.checkConnection(connWrapper.getConnection())) {
+                    if (!DBUtils.checkConnection(connWrapper.getConnection()))
                         throw SQLException.class.cast(th);
-                    }
+
                 }
 
                 Sql sql = context.getSqlManager().getSql(qps2.getSql());
+
                 if (sql != null && sql.isErrorInline()) {
                     rList = new ResultList();
                     ColumnDescriptor desc = new ColumnDescriptor();

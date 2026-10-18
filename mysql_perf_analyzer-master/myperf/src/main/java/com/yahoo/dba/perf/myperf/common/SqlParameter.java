@@ -32,11 +32,13 @@ public class SqlParameter implements Serializable {
 
     public SqlParameter(String name, String dataType) {
         this.name = name;
+
         if (dataType != null)
             this.dataType = dataType;
     }
 
     public void setDataType(String dataType) {
+
         if (dataType != null)
             this.dataType = dataType;
     }
@@ -48,14 +50,15 @@ public class SqlParameter implements Serializable {
 
     public boolean isValidValue(String input) {
         //check if numeric type
-        if (TYPE_NUMERIC.equalsIgnoreCase(this.dataType)) {
+        if (TYPE_NUMERIC.equalsIgnoreCase(this.dataType))
             try {
                 BigDecimal dec = new BigDecimal(input);
                 return true;
             } catch (Exception ex) {
                 return false;
             }
-        } else if (TYPE_NONBREAKABLE_STRING.equalsIgnoreCase(this.dataType)) {
+         else if (TYPE_NONBREAKABLE_STRING.equalsIgnoreCase(this.dataType)) {
+
             if (input == null)
                 return true;
             else if (input.indexOf(' ') >= 0) return false;
@@ -67,12 +70,15 @@ public class SqlParameter implements Serializable {
 
             return true;
         }
+
         return true;
     }
 
     public static String escapeSingleQuote(String input) {
+
         if (input == null)
             return null;
+
         return input.replaceAll("'", "''");
     }
 }

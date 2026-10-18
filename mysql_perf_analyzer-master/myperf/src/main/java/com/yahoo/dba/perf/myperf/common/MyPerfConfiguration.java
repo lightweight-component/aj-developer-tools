@@ -150,10 +150,13 @@ public class MyPerfConfiguration implements Serializable {
 
         File cfgFile = null;
         myperfConfigPath = System.getProperty(MYPERF_CONFIG_PATH_PROP_NAME);
+
         if (myperfConfigPath == null || myperfConfigPath.isEmpty()) {
             File cfgDir = new File(new File(ROOTPATH), STORAGE_DIR);
+
             if (!cfgDir.exists()) //if directories do not exist, create first
                 cfgDir.mkdirs();
+
             cfgFile = new File(cfgDir, MYPERF_CONFIG_FILE_NAME);
             myperfConfigPath = cfgFile.getAbsolutePath();
         } else
@@ -168,9 +171,10 @@ public class MyPerfConfiguration implements Serializable {
 
         //now read configuration back
         log.info("Read configuration from file " + cfgFile.getAbsolutePath());
-        if (readConfig(cfgFile, ctx)) {
+
+        if (readConfig(cfgFile, ctx))
             configured = true;
-        }
+
         log.info("Done read configuration from file " + cfgFile.getAbsolutePath()
                 + ", configured=" + configured);
     }
@@ -181,22 +185,29 @@ public class MyPerfConfiguration implements Serializable {
             Properties props = new Properties();
             props.load(in);
             this.metricsScannerUser = props.getProperty("metricsScannerUser");
+
             if (this.metricsScannerUser == null)
                 return false;
+
             this.alertNotificationEmails = props.getProperty("alertNotificationEmails");
             this.adminEmail = props.getProperty("adminEmail");
 
             this.scannerIntervalSeconds = Integer.parseInt(props.getProperty("scannerIntervalSeconds", "300"));//default to 5 minutes
+
             if (this.scannerIntervalSeconds < 1)
                 this.scannerIntervalSeconds = 300;//minimum 1 second, if not set, use default
+
             this.alertScanIntervalSeconds = Integer.parseInt(props.getProperty("alertScanIntervalSeconds", "300"));
+
             if (this.alertScanIntervalSeconds < 60)
                 this.alertScanIntervalSeconds = 300;//minimum 1 minute
+
             this.recordRententionDays = Integer.parseInt(props.getProperty("recordRententionDays", "60"));
             this.scannerThreadCount = Integer.parseInt(props.getProperty("scannerThreadCount", "4"));
             this.reuseMonUserConnction = !"n".equalsIgnoreCase(props.getProperty("reuseMonUserConnction", "y"));
 
             this.metricsDbType = props.getProperty("metricsDbType", this.metricsDbType);
+
             if (!"derby".equalsIgnoreCase(this.metricsDbType))//if not derby db
             {
                 this.metricsDbHost = props.getProperty("metricsDbHost");
@@ -205,10 +216,13 @@ public class MyPerfConfiguration implements Serializable {
                 this.setMetricsDbUserName(props.getProperty("metricsDbUserName"));
                 this.setMetricsDbPassword(ctx.getMetaDb().dec(props.getProperty("metricsDbPassword")));
             }
+
             this.hipchatUrl = props.getProperty("hipchatUrl", null);
             String tmpAuthTocken = props.getProperty("hipchatAuthToken", null);
+
             if (tmpAuthTocken != null && !tmpAuthTocken.isEmpty())
                 this.hipchatAuthToken = ctx.getMetaDb().dec(tmpAuthTocken);
+
             return true;
         } catch (Exception ex) {
             log.error("Failed to read configuration file " + cfgFile.getAbsolutePath(), ex);
@@ -235,18 +249,25 @@ public class MyPerfConfiguration implements Serializable {
             pw.println("scannerThreadCount=" + this.scannerThreadCount);
             pw.println("reuseMonUserConnction=" + (reuseMonUserConnction ? "y" : "n"));
             pw.println("metricsDbType=" + this.metricsDbType);
+
             if (this.metricsDbHost != null && !this.metricsDbHost.isEmpty())
                 pw.println("metricsDbHost=" + this.metricsDbHost);
+
             if (this.metricsDbPort > 0)
                 pw.println("metricsDbPort=" + this.metricsDbPort);
+
             if (this.metricsDbName != null && !this.metricsDbName.isEmpty())
                 pw.println("metricsDbName=" + this.metricsDbName);
+
             if (this.metricsDbUserName != null && !this.metricsDbUserName.isEmpty())
                 pw.println("metricsDbUserName=" + this.metricsDbUserName);
+
             if (this.metricsDbPassword != null && !this.metricsDbPassword.isEmpty())
                 pw.println("metricsDbPassword=" + ctx.getMetaDb().enc(this.metricsDbPassword));
+
             if (this.hipchatUrl != null && !this.hipchatUrl.isEmpty())
                 pw.println("hipchatUrl=" + this.hipchatUrl);
+
             if (this.hipchatAuthToken != null && !this.hipchatAuthToken.isEmpty())
                 pw.println("hipchatAuthToken=" + ctx.getMetaDb().enc(this.hipchatAuthToken));
 

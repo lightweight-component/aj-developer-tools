@@ -99,12 +99,14 @@ public class DBConnectionWrapper implements Comparable<DBConnectionWrapper> {
     }
 
     public int compareTo(DBConnectionWrapper conn) {
+
         if (this.db.getDbGroupName() != null && !this.db.getDbGroupName().equalsIgnoreCase(conn.getDb().getDbGroupName()))
             return this.getDb().getDbGroupName().compareTo(conn.getDb().getDbGroupName());
         else if (this.db.getDbGroupName() == null && conn.getDb().getDbGroupName() != null)
             return -1;
         else if (this.db.getHostName() != null && !this.db.getHostName().equalsIgnoreCase(conn.getDb().getHostName()))
             return this.db.getHostName().compareTo(conn.getDb().getHostName());
+
         return 0;
     }
 
@@ -112,10 +114,12 @@ public class DBConnectionWrapper implements Comparable<DBConnectionWrapper> {
      * Version and oracle instance info. Called by setConnection
      */
     private void retrieveInfoUponOpen() {
+
         if (this.connection == null)
             return;
 
         String sql = null;
+
         if ("oracle".equalsIgnoreCase(this.db.getDbType()))
             sql = "select instance_number, version from v$instance";
         else if ("mysql".equalsIgnoreCase(this.db.getDbType()))
@@ -129,14 +133,14 @@ public class DBConnectionWrapper implements Comparable<DBConnectionWrapper> {
             stmt = connection.createStatement();
             rs = stmt.executeQuery(sql);
 
-            if (rs != null && rs.next()) {
+            if (rs != null && rs.next())
                 if ("oracle".equalsIgnoreCase(this.db.getDbType())) {
                     this.instance_number = rs.getInt(1);
                     this.version = rs.getString(2);
-                } else if ("mysql".equalsIgnoreCase(this.db.getDbType())) {
+                } else if ("mysql".equalsIgnoreCase(this.db.getDbType()))
                     this.version = rs.getString(1);
-                }
-            }
+
+
         } catch (Exception ex) {
             DBUtils.close(rs);
             DBUtils.close(stmt);

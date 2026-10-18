@@ -18,8 +18,10 @@ public class HelpController extends AbstractController {
                                                  HttpServletResponse resp) throws Exception {
 
         String key = req.getParameter("key");
+
         if (key == null || key.trim().length() == 0)
             key = "about";
+
         ModelAndView mv = new ModelAndView("help/" + key);
         return mv;
 

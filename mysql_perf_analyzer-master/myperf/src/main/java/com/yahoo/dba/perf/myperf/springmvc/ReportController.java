@@ -50,20 +50,27 @@ public class ReportController extends AbstractController {
     private Map<String, String> parseURL(HttpServletRequest req) {
         Map<String, String> reqParams = new HashMap<>();
         String path = req.getServletPath();
+
         if (path != null) {
             String[] paths = path.split("/");
+
             if (paths.length > 2) {
                 reqParams.put(Constants.URL_PATH_CMD, paths[2]);
+
                 if (paths.length > 3)
                     reqParams.put(Constants.URL_PATH_DBGROUP, paths[3]);
+
                 if (paths.length > 4)
                     reqParams.put(Constants.URL_PATH_DBHOST, paths[4]);
+
                 if (paths.length > 5)
                     reqParams.put(Constants.URL_PATH_ALERT_TYPE, paths[5]);
+
                 if (paths.length > 6)
                     reqParams.put(Constants.URL_PATH_START_TS, paths[6]);
             }
         }
+
         return reqParams;
     }
 
@@ -77,6 +84,7 @@ public class ReportController extends AbstractController {
     private boolean checkPermission(HttpServletRequest req, Map<String, String> pathParams) {
         String cmd = pathParams.get(Constants.URL_PATH_CMD);
         AppUser appUser = AppUser.class.cast(req.getSession().getAttribute(AppUser.SESSION_ATTRIBUTE));
+
         if (appUser == null)
             return false;//not allow anonymous access
 
@@ -103,6 +111,7 @@ public class ReportController extends AbstractController {
         log.info("receive url: " + req.getRequestURI() + ", parameter: " + req.getQueryString());
 
         Map<String, String> pathParams = parseURL(req);
+
         if (!checkPermission(req, pathParams)) {
             //if we reach here, something wrong
             ModelAndView mv = new ModelAndView(this.jsonView);
@@ -112,13 +121,13 @@ public class ReportController extends AbstractController {
 
         String cmd = pathParams.get(Constants.URL_PATH_CMD);//report command, create, list, get, or del
 
-        if ("get".equalsIgnoreCase(cmd)) {
+        if ("get".equalsIgnoreCase(cmd))
             return download(pathParams, req, resp);
-        } else if ("list".equalsIgnoreCase(cmd)) {
+         else if ("list".equalsIgnoreCase(cmd))
             return list(req, resp);
-        } else if ("del".equalsIgnoreCase(cmd) || "delete".equalsIgnoreCase(cmd)) {
+         else if ("del".equalsIgnoreCase(cmd) || "delete".equalsIgnoreCase(cmd))
             return delete(req, resp);
-        }
+
         ModelAndView mv = new ModelAndView(this.jsonView);
         mv.addObject("json_result", ResultListUtil.toJSONString(null, null, Constants.STATUS_BAD, "Requested service is not supported."));
         return mv;
@@ -136,6 +145,7 @@ public class ReportController extends AbstractController {
             //delete first, the  update the idx file, and re-list
             //get session
             String appUser = WebAppUtil.findUserFromRequest(req);
+
             if (appUser == null || urm == null) {
                 status = -1;
                 message = "Not login or session timed out";
@@ -143,6 +153,7 @@ public class ReportController extends AbstractController {
                 urm.deleteFile(fname, id);
                 rList = urm.listResultList();
             }
+
         } catch (Exception ex) {
             log.error("Exception", ex);
         }
@@ -159,12 +170,13 @@ public class ReportController extends AbstractController {
         UserReportManager urm = this.getUserReportManager(req);
         try {
             String appUser = WebAppUtil.findUserFromRequest(req);
+
             if (appUser == null || urm == null) {
                 status = -1;
                 message = "Not login or session timed out";
-            } else {
+            } else
                 rList = urm.listResultList();
-            }
+
         } catch (Exception ex) {
             log.error("Exception", ex);
         }
@@ -180,8 +192,10 @@ public class ReportController extends AbstractController {
      * @return
      */
     private String getDateFromTS(String ts) {
+
         if (ts == null || ts.isEmpty())
             return ts;
+
         String[] parts = ts.split(" ");
         return parts[0].replaceAll("-", "");
     }
@@ -193,8 +207,10 @@ public class ReportController extends AbstractController {
      * @return
      */
     private String getOriginalTS(String ts) {
+
         if (ts == null || ts.isEmpty())
             return ts;
+
         return ts.replace(" ", "").replaceAll("-", "").replaceAll(":", "");
     }
 
@@ -205,15 +221,19 @@ public class ReportController extends AbstractController {
         String dt = this.getDateFromTS(ts);
         File dir = new File(rootPath, dt);
         do {
+
             if (!dir.exists())
                 break;
+
             String origTS = getOriginalTS(ts);
             File f = new File(dir, pathParams.get(Constants.URL_PATH_ALERT_TYPE)
                     + "_" + pathParams.get(Constants.URL_PATH_DBGROUP)
                     + "_" + pathParams.get(Constants.URL_PATH_DBHOST)
                     + "_" + origTS + ".txt");
+
             if (!f.exists())
                 break;
+
             resp.setContentType("text/plain");
             resp.setContentLength((int) f.length());
             //resp.setHeader("Content-Disposition","attachment; filename=\""+f.getName()+"\"");
@@ -240,8 +260,10 @@ public class ReportController extends AbstractController {
     private UserReportManager getUserReportManager(HttpServletRequest req) {
 
         String appUser = WebAppUtil.findUserFromRequest(req);
+
         if (appUser == null)
             return null;
+
         HttpSession sess = req.getSession();
         UserReportManager urm = UserReportManager.class.cast(sess.getAttribute("UserReportManager"));
         //if none, we need add one
@@ -250,6 +272,7 @@ public class ReportController extends AbstractController {
             urm.init();
             sess.setAttribute("UserReportManager", urm);
         }
+
         return urm;
     }
 

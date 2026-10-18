@@ -25,6 +25,7 @@ public class CredController extends MyPerfBaseController {
             return this.respondFailure("Session timed out", request);
 
         String dbGroupName = request.getParameter("dbGroupName");
+
         if (dbGroupName == null || dbGroupName.isEmpty()
                 || this.getFrameworkContext().getDbInfoManager().findGroup(dbGroupName) == null)
             return this.respondFailure("Please provide valid DB group name", request);
@@ -45,6 +46,7 @@ public class CredController extends MyPerfBaseController {
         //check for restricted user
         if (appUser.isRestrictedUser()) {
             Set<String> mydbs = this.frameworkContext.getDbInfoManager().getMyDatabases(appUser.getName(), true).getMyDbList();
+
             if (mydbs == null || !mydbs.contains(dbGroupName))
                 return this.respondFailure("As a restricted user, you have no permission to use this db group yet: " + dbGroupName, request);
         }
@@ -62,17 +64,19 @@ public class CredController extends MyPerfBaseController {
 
         boolean testCred = "y".equals(request.getParameter("test_cred"));
         String testResult = null;
-        if (testCred) {
+
+        if (testCred)
             for (DBInstanceInfo db : dbGroup.getInstances()) {
                 testResult = DBUtils.testConnection(db, username, pw);
-                if (testResult == null) {
+
+                if (testResult == null)
                     break;
-                } else {
+                 else {
                     //TODO catch the case the first server is offline
                     return this.respondFailure(testResult, request);
                 }
             }
-        }
+
         //either test is not required, or passed
         DBCredential cred = new DBCredential();
         cred.setDbGroupName(dbGroupName);
@@ -82,12 +86,14 @@ public class CredController extends MyPerfBaseController {
         this.frameworkContext.getMetaDb().upsertDBCredential(cred);
         this.frameworkContext.getDbInfoManager().getMyDatabases(cred.getAppUser(), appUser.isRestrictedUser()).addDb(cred.getDbGroupName());
         log.info("Add new credential for " + cred.getDbGroupName() + ", app user " + cred.getAppUser());
+
         if (testCred && testResult == null) {
             //we will save the cred for default user and the user used for metrics gathering
             //for easy on boarding
             this.frameworkContext.saveManagedDBCredentialForScanner(cred.getUsername(),
                     cred.getDbGroupName(), cred.getUsername(), cred.getPassword());
         }
+
         return this.respondSuccess("MySQL account to access group " + dbGroupName + " has been updated successfully.", request);
     }
 

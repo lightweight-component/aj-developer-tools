@@ -37,6 +37,7 @@ public class DBInfoManager implements Serializable {
     }
 
     synchronized public DBGroupInfo findGroup(String groupName) {
+
         if (groups != null && groups.containsKey(groupName))
             return groups.get(groupName);
 
@@ -60,10 +61,11 @@ public class DBInfoManager implements Serializable {
 
         if (cls == null)
             return null;
-        for (DBInstanceInfo inst : cls.getInstances()) {
+
+        for (DBInstanceInfo inst : cls.getInstances())
             if (hostname.equalsIgnoreCase(inst.getHostName()))
                 return inst;
-        }
+
 
         return null;
     }
@@ -76,27 +78,32 @@ public class DBInfoManager implements Serializable {
 
         for (int i = cls.getInstances().size() - 1; i >= 0; i--) {
             DBInstanceInfo inst = cls.getInstances().get(i);
+
             if (hostname.equalsIgnoreCase(inst.getHostName())) {
                 cls.getInstances().remove(i);
                 return true;
             }
         }
+
         return false;
     }
 
     synchronized public void removeGroup(String groupName) {
         DBGroupInfo cls = this.findGroup(groupName);
+
         if (cls == null)
             return;
+
         this.groups.remove(groupName);
         this.projectDb.removeDbGroup(groupName);
     }
 
     synchronized public List<String> listGroupNames() {
         ArrayList<String> clist = new ArrayList<>(this.groups.size());
-        for (DBGroupInfo c : this.groups.values()) {
+
+        for (DBGroupInfo c : this.groups.values())
             clist.add(c.getGroupName());
-        }
+
         return clist;
     }
 
@@ -111,22 +118,27 @@ public class DBInfoManager implements Serializable {
         log.info("Loading stored db info");
         mydbs.clear();//refill
         List<DBInstanceInfo> dbList = null;
+
         if (this.metricsDb != null) {
             dbList = this.metricsDb.SearchDbInfo(null);
             log.info("Find " + dbList.size() + " db info");
+
             for (DBInstanceInfo db : dbList) {
                 DBGroupInfo cls = findGroup(db.getDbGroupName());
+
                 if (cls == null) {
                     cls = new DBGroupInfo();
                     cls.setGroupName(db.getDbGroupName());
                     this.groups.put(db.getDbGroupName(), cls);
                 }
+
                 cls.getInstances().add(db);
             }
+
             return true;
-        } else {
+        } else
             log.warn("Cannot find stored db info because there is no metrics db");
-        }
+
         return false;
     }
 
@@ -141,8 +153,10 @@ public class DBInfoManager implements Serializable {
     public MyDatabases getMyDatabases(String owner, boolean restricted) {
         MyDatabases mydb = null;
         synchronized (this.mydbs) {
+
             if (this.mydbs.containsKey(owner))
                 return this.mydbs.get(owner);
+
             mydb = new MyDatabases();
             this.mydbs.put(owner, mydb);
         }
@@ -162,15 +176,16 @@ public class DBInfoManager implements Serializable {
         List<String> alldb = new ArrayList<>(this.groups.size());
 
         synchronized (this) {
-            for (String db : mydb) {
+
+            for (String db : mydb)
                 if (this.groups.containsKey(db))
                     alldb.add(db);
-            }
+
             if (!restricted)
-                for (String key : this.groups.keySet()) {
+                for (String key : this.groups.keySet())
                     if (!mydb.contains(key))
                         alldb.add(key);
-                }
+
         }
         return alldb;
     }
@@ -189,12 +204,15 @@ public class DBInfoManager implements Serializable {
     }
 
     public DBInstanceInfo retrieveDBInfo(String dbGroupName, String hostName) {
+
         if (this.metricsDb != null)
             return this.metricsDb.retrieveDBInfo(dbGroupName, hostName);
+
         return null;
     }
 
     public void upsertDBInfo(DBInstanceInfo dbinfo) {
+
         if (this.metricsDb != null)
             this.metricsDb.upsertDBInfo(dbinfo);
         else
@@ -202,33 +220,43 @@ public class DBInfoManager implements Serializable {
     }
 
     public boolean removeDbGroup(String dbGroupName, String owner, boolean force) {
+
         if (this.metricsDb != null)
             return this.metricsDb.removeDbGroup(dbGroupName, owner, force);
+
         return false;
     }
 
     public boolean removeDBInfo(String dbGroupName, String hostName, String owner, boolean force) {
+
         if (this.metricsDb != null)
             return this.metricsDb.removeDBInfo(dbGroupName, hostName, owner, force);
+
         return false;
     }
 
     public List<DBInstanceInfo> SearchDbInfo(String keyword) {
+
         if (this.metricsDb != null)
             return this.metricsDb.SearchDbInfo(keyword);
+
         return new ArrayList<>();
 
     }
 
     public boolean enableSnmp(String dbGroup, String hostname, boolean enabled, String owner, boolean force) {
+
         if (this.metricsDb != null)
             return this.metricsDb.enableSnmp(dbGroup, hostname, enabled, owner, force);
+
         return false;
     }
 
     public boolean enableMetrics(String dbGroup, String hostname, boolean enabled, String owner, boolean force) {
+
         if (this.metricsDb != null)
             return this.metricsDb.enableMetrics(dbGroup, hostname, enabled, owner, force);
+
         return false;
     }
 
@@ -236,33 +264,40 @@ public class DBInfoManager implements Serializable {
         //nothing to do
         if (!this.groups.containsKey(oldname.toLowerCase()) || newName == null || newName.isEmpty())
             return;
+
         DBGroupInfo dbgroups = this.groups.get(oldname.toLowerCase());
         this.groups.remove(oldname.toLowerCase());
         this.metricsDb.renameDbGroup(oldname, newName);
         List<DBInstanceInfo> instances = dbgroups.getInstances();
         dbgroups.setGroupName(newName.toLowerCase());
+
         for (DBInstanceInfo inst : instances)
             inst.setDbGroupName(newName.toLowerCase());
+
         this.groups.put(newName.toLowerCase(), dbgroups);
         this.projectDb.renameDbGroupName(oldname.toLowerCase(), newName.toLowerCase());
-        for (Map.Entry<String, MyDatabases> entry : this.mydbs.entrySet()) {
+
+        for (Map.Entry<String, MyDatabases> entry : this.mydbs.entrySet())
             entry.getValue().replaceDb(oldname.toLowerCase(), newName.toLowerCase());
-        }
+
     }
 
     public boolean updateRestricteduserAcl(String username, String dbgroupname, boolean visible) {
+
         if (this.projectDb.updateUserAcl(username, dbgroupname, visible)) {
             MyDatabases mydb = this.getMyDatabases(username, true);
-            if (mydb != null) {
+
+            if (mydb != null)
                 if (visible)
                     mydb.addDb(dbgroupname);
                 else {
                     revokeDBCredential(username, dbgroupname);
                     mydb.removeDb(dbgroupname);
                 }
-            }
+
             return true;
         }
+
         return false;
 
     }
@@ -279,8 +314,10 @@ public class DBInfoManager implements Serializable {
      */
     public void copyManagedDBCredential(String targetUserName, boolean restrictedUser,
                                         String srcUsername, String dbGroup, String dbuser, String password) {
+
         if (targetUserName == null || targetUserName.isEmpty() || targetUserName.equalsIgnoreCase(srcUsername))
             return;
+
         DBCredential cred2 = new DBCredential();
         cred2.setAppUser(targetUserName);
         cred2.setDbGroupName(dbGroup);

@@ -55,12 +55,14 @@ public class AlertScanner {
         for (String cl : clusternames) {
 
             DBCredential cred = DBUtils.findDBCredential(frameworkContext, cl, appUser);
+
             if (cred == null) {
                 log.info("No credential for group " + cl + ", skip it");
                 continue;//log the error
             }
 
             DBGroupInfo cls = frameworkContext.getDbInfoManager().findGroup(cl);
+
             if (cls == null) {
                 log.info("Group " + cl + " might have been deleted.");
                 continue;
@@ -95,6 +97,7 @@ public class AlertScanner {
     }
 
     public void setThreadCount(int threadCount) {
+
         if (threadCount <= 0)
             threadCount = 1;
         else

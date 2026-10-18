@@ -32,17 +32,22 @@ public class AppUserManager implements Serializable {
      * @return
      */
     synchronized public AppUser getUser(String name) {
+
         if (name == null || name.isEmpty())
             return null;
+
         if (this.userMap.containsKey(name))
             return this.userMap.get(name);
 
         if (this.metaDb != null) {
             AppUser appUser = this.metaDb.retrieveUserInfo(name);
+
             if (appUser != null)
                 this.addUser(appUser);
+
             return appUser;
         }
+
         return null;
     }
 
@@ -64,6 +69,7 @@ public class AppUserManager implements Serializable {
 
     public void updatePasswordCache(String username, String passwd) {
         AppUser au = this.getUser(username.toLowerCase());
+
         if (au != null)
             au.setMd5Hash(au.calMd5(passwd));
     }
@@ -74,6 +80,7 @@ public class AppUserManager implements Serializable {
 
     public void updateEmailCache(String username, String email) {
         AppUser au = this.getUser(username.toLowerCase());
+
         if (au != null)
             au.setEmail(email);
     }
@@ -84,13 +91,16 @@ public class AppUserManager implements Serializable {
 
     public void updateprivilegeCache(String username, int priv) {
         AppUser au = this.getUser(username.toLowerCase());
+
         if (au != null)
             au.setUserprivilege(priv == AppUser.PRIV_USER_POWER ? AppUser.PRIV_USER_POWER : AppUser.PRIV_USER_STANDARD);
     }
 
     public void confirmNewUser(String username, boolean confirmed) {
+
         if (this.metaDb.confirmUser(username, confirmed)) {
             AppUser au = this.getUser(username.toLowerCase());
+
             if (au != null)
                 au.setVerified(confirmed);
         }
@@ -98,8 +108,10 @@ public class AppUserManager implements Serializable {
 
     public boolean deleteUser(String username) {
         boolean ret = this.metaDb.deleteUser(username);
+
         if (ret)
             this.userMap.remove(username);
+
         return ret;
     }
 
@@ -114,6 +126,7 @@ public class AppUserManager implements Serializable {
      * @return
      */
     public AppUser addNewUser(String username, String pwd, String priv, String email, boolean confirmed) {
+
         if (this.retrieveUserInfoFromMetaDB(username) != null)
             return null;
 
@@ -125,6 +138,7 @@ public class AppUserManager implements Serializable {
         newUser.setVerified(confirmed);
         try {
             int privInt = Integer.parseInt(priv);
+
             if (privInt == AppUser.PRIV_USER_POWER || privInt == AppUser.PRIV_USER_RESTRICTED)
                 newUser.setUserprivilege(privInt);
             //otherwise standard

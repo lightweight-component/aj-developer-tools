@@ -45,9 +45,9 @@ public class UserController extends MyPerfBaseController {
                                              HttpServletResponse resp) throws Exception {
         String actionSrc = req.getParameter("a");//user action src
         //only "reset" and "new" allowed no session
-        if (!"reset".equalsIgnoreCase(actionSrc) && !"new".equals(actionSrc) && !WebAppUtil.hasValidSession(req)) {
+        if (!"reset".equalsIgnoreCase(actionSrc) && !"new".equals(actionSrc) && !WebAppUtil.hasValidSession(req))
             return new ModelAndView(new RedirectView(nosessView));
-        }
+
 
         AppUser appUser = AppUser.class.cast(req.getSession().getAttribute(AppUser.SESSION_ATTRIBUTE));
 
@@ -82,38 +82,38 @@ public class UserController extends MyPerfBaseController {
             return this.retrieveUserInfo(req);
 
         //for admin to create a new user
-        if (appUser != null && appUser.isAdminUser() && "new".equalsIgnoreCase(actionSrc)) {
+        if (appUser != null && appUser.isAdminUser() && "new".equalsIgnoreCase(actionSrc))
             return handleCreateUser(req);
-        }
+
         //confirm a new user
-        if (appUser != null && appUser.isAdminUser() && "confirm".equalsIgnoreCase(actionSrc)) {
+        if (appUser != null && appUser.isAdminUser() && "confirm".equalsIgnoreCase(actionSrc))
             return this.handleConfirmNewUser(req);
-        }
+
 
         //delete a user
-        if (appUser != null && appUser.isAdminUser() && "delete".equalsIgnoreCase(actionSrc)) {
+        if (appUser != null && appUser.isAdminUser() && "delete".equalsIgnoreCase(actionSrc))
             return this.handleDelete(req);
-        }
+
 
         //change privilege
-        if (appUser != null && appUser.isAdminUser() && "otherpriv".equalsIgnoreCase(actionSrc)) {
+        if (appUser != null && appUser.isAdminUser() && "otherpriv".equalsIgnoreCase(actionSrc))
             return this.handleChangePrivilege(req);
-        }
+
 
         if (appUser != null && ("selfpwd".equals(actionSrc)
-                || (appUser.isAdminUser() && "otherpwd".equals(actionSrc)))) {
+                || (appUser.isAdminUser() && "otherpwd".equals(actionSrc))))
             return this.handleChangePwd(req);
-        }
+
 
         if (appUser != null && ("selfemail".equals(actionSrc)
-                || (appUser.isAdminUser() && "otheremail".equals(actionSrc)))) {
+                || (appUser.isAdminUser() && "otheremail".equals(actionSrc))))
             return this.handleChangeEmail(req);
-        }
+
 
         //anything else except display form is not valid
-        if (appUser == null || (actionSrc != null && !actionSrc.isEmpty())) {
+        if (appUser == null || (actionSrc != null && !actionSrc.isEmpty()))
             return new ModelAndView(new RedirectView(nosessView));
-        }
+
 
 
         int status = Constants.STATUS_OK;
@@ -139,12 +139,15 @@ public class UserController extends MyPerfBaseController {
     private ModelAndView handleConfirmNewUser(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
+
         if (name != null)
             name = name.trim();
+
         um.confirmNewUser(name, true);
         AppUser newUser = um.getUser(name);
         int status = Constants.STATUS_OK;
         String message = null;
+
         if (newUser.isVerified()) {
             message = "User " + name + " confirmation has been updated.";
             MailUtil.sendMail(newUser.getEmail(), "Confrmation of your account with MySQL Perf Analyzer",
@@ -153,6 +156,7 @@ public class UserController extends MyPerfBaseController {
             status = Constants.STATUS_BAD;
             message = "The attempt to confirm user " + name + " is failed.";
         }
+
         ModelAndView mv = new ModelAndView(this.getFormView());
         mv.addObject("userInfo", retrieveAppUser(req));
         mv.addObject("status", status);
@@ -166,11 +170,14 @@ public class UserController extends MyPerfBaseController {
     private ModelAndView handleChangePrivilege(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
+
         if (name != null)
             name = name.trim();
+
         AppUser appUser = retrieveAppUser(req);
         int status = Constants.STATUS_OK;
         String message = null;
+
         if (name == null || name.equalsIgnoreCase(appUser.getName())) {
             status = Constants.STATUS_BAD;
             message = "Illegal operation. Cannot change privilege for yourself.";
@@ -189,6 +196,7 @@ public class UserController extends MyPerfBaseController {
                 message = "The attempt to change privilege for " + name + " failed.";
             }
         }
+
         ModelAndView mv = new ModelAndView(this.getFormView());
         mv.addObject("userInfo", retrieveAppUser(req));
         mv.addObject("status", status);
@@ -202,23 +210,28 @@ public class UserController extends MyPerfBaseController {
     private ModelAndView handleDelete(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
+
         if (name != null)
             name = name.trim();
+
         AppUser appUser = retrieveAppUser(req);
         int status = Constants.STATUS_OK;
         String message = null;
+
         if (name == null || name.equalsIgnoreCase(appUser.getName())) {
             status = Constants.STATUS_BAD;
             message = "Illegal operation. Cannot delete self .";
         } else {
             boolean ret = um.deleteUser(name);
-            if (ret) {
+
+            if (ret)
                 message = "User " + name + " has been removed";
-            } else {
+             else {
                 status = Constants.STATUS_BAD;
                 message = "Failed to delete user " + name;
             }
         }
+
         ModelAndView mv = new ModelAndView(this.getFormView());
         mv.addObject("userInfo", retrieveAppUser(req));
         mv.addObject("status", status);
@@ -232,15 +245,20 @@ public class UserController extends MyPerfBaseController {
     private ModelAndView handleChangeEmail(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
+
         if (name != null)
             name = name.trim();
+
         String email = req.getParameter("email");
+
         if (email != null)
             email = email.trim();
+
         AppUser appUser = retrieveAppUser(req);
         String actionSrc = req.getParameter("a");
         int status = Constants.STATUS_OK;
         String message = null;
+
         if (email == null || email.isEmpty() || email.indexOf('@') < 0) {
             status = Constants.STATUS_BAD;
             message = "Please provide valid email address..";
@@ -251,6 +269,7 @@ public class UserController extends MyPerfBaseController {
             status = Constants.STATUS_BAD;
             message = "The attempt to change email for " + ("selfemail".equals(actionSrc) ? appUser.getName() : name) + " failed.";
         }
+
         ModelAndView mv = new ModelAndView(this.getFormView());
         mv.addObject("userInfo", retrieveAppUser(req));
         mv.addObject("status", status);
@@ -264,15 +283,20 @@ public class UserController extends MyPerfBaseController {
     private ModelAndView handleChangePwd(HttpServletRequest req) {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
+
         if (name != null)
             name = name.trim();
+
         String passwd = req.getParameter("password");
+
         if (passwd != null)
             passwd = passwd.trim();
+
         AppUser appUser = retrieveAppUser(req);
         String actionSrc = req.getParameter("a");
         int status = Constants.STATUS_OK;
         String message = null;
+
         if (passwd == null || passwd.isEmpty()) {
             status = Constants.STATUS_BAD;
             message = "Empty password is not allowed.";
@@ -283,6 +307,7 @@ public class UserController extends MyPerfBaseController {
             status = Constants.STATUS_BAD;
             message = "The attempt to change password of " + ("selfpwd".equals(actionSrc) ? appUser.getName() : name) + " failed.";
         }
+
         ModelAndView mv = new ModelAndView(this.getFormView());
         mv.addObject("userInfo", retrieveAppUser(req));
         mv.addObject("status", status);
@@ -299,29 +324,36 @@ public class UserController extends MyPerfBaseController {
         int status = Constants.STATUS_OK;
         String message = "OK";
         String name = req.getParameter("name");
+
         if (name != null)
             name = name.trim().toLowerCase();
+
         String passwd = req.getParameter("password");
         String userprivilege = "0"; //standard user
         String email = req.getParameter("email");
 
         do {
+
             if (name == null || name.isEmpty()) {
                 status = Constants.STATUS_BAD;
                 message = "Please provide username";
                 break;
             }
+
             if (passwd == null || passwd.isEmpty()) {
                 status = Constants.STATUS_BAD;
                 message = "Please provide password";
                 break;
             }
+
             if (email == null || email.isEmpty() || email.indexOf('@') < 0) {
                 status = Constants.STATUS_BAD;
                 message = "Please provide valid email address";
                 break;
             }
+
             AppUser newUser = um.addNewUser(name, passwd, userprivilege, email, false);
+
             if (newUser == null) {
                 status = Constants.STATUS_BAD;
                 message = "Cannot add user " + name + ". Usename " + name + " has been taken.";
@@ -335,6 +367,7 @@ public class UserController extends MyPerfBaseController {
                 mv.addObject("a", 2);
                 mv.addObject("signinview", this.nosessView);
             }
+
         } while (false);
 
         AppUser tmpUser = new AppUser();
@@ -357,29 +390,36 @@ public class UserController extends MyPerfBaseController {
         int status = Constants.STATUS_OK;
         String message = "OK";
         String name = req.getParameter("name");
+
         if (name != null)
             name = name.trim().toLowerCase();
+
         String passwd = req.getParameter("password");
         String userprivilege = req.getParameter("userprivilege");
         String email = req.getParameter("email");
 
         do {
+
             if (name == null || name.isEmpty()) {
                 status = Constants.STATUS_BAD;
                 message = "Please provide username";
                 break;
             }
+
             if (passwd == null || passwd.isEmpty()) {
                 status = Constants.STATUS_BAD;
                 message = "Please provide password";
                 break;
             }
+
             if (email == null || email.isEmpty() || email.indexOf('@') < 0) {
                 status = Constants.STATUS_BAD;
                 message = "Please provide valid email address";
                 break;
             }
+
             AppUser newUser = um.addNewUser(name, passwd, userprivilege, email, true);
+
             if (newUser == null) {
                 message = "Cannot add user " + name + ". Usename " + name + " has been taken.";
                 log.info("Failed to add user " + name);
@@ -387,6 +427,7 @@ public class UserController extends MyPerfBaseController {
                 log.info("Add/update user " + newUser.getName());
                 message = "User " + name + " has been added.";
             }
+
         } while (false);
 
         AppUser tmpUser = new AppUser();
@@ -407,8 +448,10 @@ public class UserController extends MyPerfBaseController {
         int status = Constants.STATUS_OK;
         String message = "OK";
         String name = req.getParameter("name");
+
         if (name != null)
             name = name.trim().toLowerCase();
+
         String email = req.getParameter("email");
 
         if (name == null) {
@@ -458,6 +501,7 @@ public class UserController extends MyPerfBaseController {
                 message = "Password has been reset to " + mypwd;
                 break;
             }
+
             status = Constants.STATUS_BAD;
             message = "The system failed to auto reset the password. Please contact application administrator for help.";
             break;
@@ -477,6 +521,7 @@ public class UserController extends MyPerfBaseController {
         AppUserManager um = this.frameworkContext.getUserManager();
         String name = req.getParameter("name");
         AppUser appUser = retrieveAppUser(req);
+
         if (appUser == null)
             name = null;
         else if (!appUser.isAdminUser())
@@ -490,6 +535,7 @@ public class UserController extends MyPerfBaseController {
         desc.addColumn("privilege", true, 2);
         desc.addColumn("verified", true, 3);
         rList.setColumnDescriptor(desc);
+
         if (au != null) {
             ResultRow row = new ResultRow();
             ArrayList<String> cols = new ArrayList<>();
@@ -500,6 +546,7 @@ public class UserController extends MyPerfBaseController {
             row.setColumns(cols);
             rList.addRow(row);
         }
+
         ModelAndView mv = new ModelAndView(this.jsonView);
         mv.addObject("json_result", ResultListUtil.toJSONString(rList, null, 0, "OK"));
         return mv;
@@ -515,13 +562,16 @@ public class UserController extends MyPerfBaseController {
         rs.setColumnDescriptor(desc);
 
         for (AppUser u : users) {
+
             if (appUser.getName().equals(u.getName()))
                 continue;
+
             ResultRow row = new ResultRow();
             row.setColumnDescriptor(desc);
             row.addColumn(u.getName());
             rs.addRow(row);
         }
+
         ModelAndView mv = new ModelAndView(this.jsonView);
         mv.addObject("json_result", ResultListUtil.toJSONString(rs, null, 0, "OK"));
         return mv;
@@ -537,14 +587,17 @@ public class UserController extends MyPerfBaseController {
         rs.setColumnDescriptor(desc);
 
         for (AppUser u : users) {
+
             if (appUser.getName().equals(u.getName())
                     || u.isVerified())
                 continue;
+
             ResultRow row = new ResultRow();
             row.setColumnDescriptor(desc);
             row.addColumn(u.getName());
             rs.addRow(row);
         }
+
         ModelAndView mv = new ModelAndView(this.jsonView);
         mv.addObject("json_result", ResultListUtil.toJSONString(rs, null, 0, "OK"));
         return mv;
@@ -568,14 +621,17 @@ public class UserController extends MyPerfBaseController {
             row.addColumn(u.getName());
             row.addColumn(u.getEmail());
             String userType = "Standard User";
+
             if (u.isAdminUser())
                 userType = "Power User";
             else if (u.isRestrictedUser())
                 userType = "Restricted User";
+
             row.addColumn(userType);
             row.addColumn(u.isVerified() ? "Yes" : "No");
             rs.addRow(row);
         }
+
         ModelAndView mv = new ModelAndView(this.jsonView);
         mv.addObject("json_result", ResultListUtil.toJSONString(rs, null, 0, "OK"));
         return mv;
@@ -583,17 +639,23 @@ public class UserController extends MyPerfBaseController {
 
     private void appendUserListToModel(HttpServletRequest req, ModelAndView mv) {
         AppUser appUser = retrieveAppUser(req);
+
         if (appUser == null || !appUser.isAdminUser())
             return;
+
         List<String> allUsers = new ArrayList<>();
         List<String> newUsers = new ArrayList<>();
         List<AppUser> userList = this.frameworkContext.getMetaDb().retrieveAllUsers();
+
         for (AppUser u : userList) {
+
             if (!u.getName().equalsIgnoreCase(appUser.getName()))
                 allUsers.add(u.getName());
+
             if (!u.isVerified())
                 newUsers.add(u.getName());
         }
+
         mv.addObject("allUsers", allUsers);
         mv.addObject("newUsers", newUsers);
         mv.addObject("mydbs", this.frameworkContext.getDbInfoManager()

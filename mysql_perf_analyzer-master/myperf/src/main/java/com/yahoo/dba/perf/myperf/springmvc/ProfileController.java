@@ -36,10 +36,12 @@ public class ProfileController extends MyPerfBaseController {
         String sqltext = req.getParameter("sqltext");
         String format = req.getParameter("format");
         boolean useJson = "json".equalsIgnoreCase(format) && explainPlan;
+
         if (useJson) {
             sessionStatus = false;
             profile = false;
         }
+
         log.info("profiling " + sqltext);
         ResultList rList = null;
         LinkedHashMap<String, ResultList> listMap = new LinkedHashMap<>();
@@ -48,48 +50,63 @@ public class ProfileController extends MyPerfBaseController {
         DBInstanceInfo dbinfo = null;
         try {
             dbinfo = this.frameworkContext.getDbInfoManager().findDB(group, host).copy();
+
             if (dbuser == null || dbuser.isEmpty()) {
                 //use build in credential
                 AppUser appUser = null;
                 DBCredential cred = null;
                 appUser = AppUser.class.cast(req.getSession().getAttribute(AppUser.SESSION_ATTRIBUTE));
+
                 if (appUser == null)
                     throw new RuntimeException("No user found. Session might not be valid.");
+
                 cred = WebAppUtil.findDBCredential(this.frameworkContext, dbinfo.getDbGroupName(), appUser);
+
                 if (cred != null) {
                     dbuser = cred.getUsername();
                     dbpwd = cred.getPassword();
                 }
             }
+
             profiler.setDbinfo(dbinfo);
             profiler.setFrameworkContext(frameworkContext);
+
             if (dbname != null && !dbname.isEmpty())
                 dbinfo.setDatabaseName(dbname);
+
             profiler.setSqlText(sqltext);
             profiler.connect(dbuser, dbpwd, explainPlan && !profile && !sessionStatus);
-            if (useJson) {
+
+            if (useJson)
                 jsonString = profiler.runExplainPlanJson();
-            } else if (explainPlan) listMap.put("plan", profiler.runExplainPlan());
+             else if (explainPlan) listMap.put("plan", profiler.runExplainPlan());
+
             if (profile)
                 listMap.put("profile", profiler.runProfile());
+
             if (sessionStatus)
                 listMap.put("stats", profiler.runStats());
+
         } catch (Exception ex) {
             status = Constants.STATUS_BAD;
             message = "Error when profiling: " + ex.getMessage();
             log.warn("Error when profiling", ex);
         } finally {
+
             if (profiler != null)
                 profiler.destroy();
         }
         ModelAndView mv = null;
         mv = new ModelAndView(this.jsonView);
+
         if (req.getParameter("callback") != null && req.getParameter("callback").trim().length() > 0)
             mv.addObject("callback", req.getParameter("callback"));//YUI datasource binding
+
         if (jsonString == null)
             mv.addObject("json_result", ResultListUtil.toMultiListJSONStringUpper(listMap, null, status, message));
         else
             mv.addObject("json_result", jsonString);
+
         return mv;
     }
 

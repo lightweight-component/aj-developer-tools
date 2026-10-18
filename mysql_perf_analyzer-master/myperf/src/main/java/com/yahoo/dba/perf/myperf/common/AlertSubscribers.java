@@ -40,12 +40,15 @@ public class AlertSubscribers {
 
         //parse and set params
         public void setParams(String paramString) {
+
             if (paramString == null || paramString.isEmpty())
                 return;
+
             try (JsonReader jsonReader = Json.createReader(new ByteArrayInputStream(paramString.getBytes()))) {
                 JsonObject jsonObject = jsonReader.readObject();
 
                 String thresholdString = jsonObject.getString("threshold", null);
+
                 if (thresholdString != null && !thresholdString.isEmpty())
                     try {
                         threshold = Float.parseFloat(thresholdString);
@@ -53,14 +56,17 @@ public class AlertSubscribers {
                     }
 
                 JsonArray paramList = jsonObject.getJsonArray("params");
+
                 if (paramList != null) {
                     int mlen = paramList.size();
+
                     for (int i = 0; i < mlen; i++) {
                         JsonObject mobj = paramList.getJsonObject(i);
                         params.put(mobj.getString("name"),
                                 mobj.getString("value"));
                     }
                 }
+
             } catch (Exception ex) {
                 log.warn("Error to parse alert subscription params: " + paramString, ex);
             }
@@ -68,21 +74,29 @@ public class AlertSubscribers {
         }
 
         public String paramToJSON() {
+
             if ((this.params == null || this.params.size() == 0) && this.threshold == null)
                 return null;
+
             StringBuilder mtrStr = new StringBuilder();
             mtrStr.append("{\r\n");
+
             if (this.threshold != null)
                 mtrStr.append("\"threshold\": \"").append(threshold).append("\",\r\n");
+
             mtrStr.append("\"params\":[");
             int cnt = 0;
+
             for (Map.Entry<String, String> e : this.params.entrySet()) {
+
                 if (cnt > 0)
                     mtrStr.append(",\r\n");
+
                 mtrStr.append("{\"name\": \"").append(e.getKey()).append("\",\"value\":\"")
                         .append(e.getValue())
                         .append("\"}");
             }
+
             mtrStr.append("]}");
             return mtrStr.toString();
         }
@@ -104,10 +118,13 @@ public class AlertSubscribers {
         }
 
         public void deleteSubscription(Subscription sub) {
+
             if (sub == null)
                 return;
+
             for (int i = this.subscriptions.size() - 1; i >= 0; i--) {
                 Subscription sub2 = this.subscriptions.get(i);
+
                 if (sub2.alertName.equals(sub.alertName)) {
                     this.subscriptions.remove(i);
                     this.subscriptionsMap.remove(sub.alertName);
@@ -134,60 +151,72 @@ public class AlertSubscribers {
         }
 
         public void addSubscription(Subscription sub) {
+
             if (sub == null)
                 return;
+
             if (sub.host == null || sub.host.isEmpty())
                 this.subscriptions.add(sub);
             else {
+
                 if (!this.hostsSubscriptions.containsKey(sub.host))
                     this.hostsSubscriptions.put(sub.host, new HostSubscriptions());
+
                 this.hostsSubscriptions.get(sub.host).addSubscription(sub);
                 this.subscriptionsMap.put(sub.alertName, sub);
             }
         }
 
         public void deleteSubscription(Subscription sub) {
+
             if (sub == null)
                 return;
-            if (sub.host == null || sub.host.isEmpty()) {
+
+            if (sub.host == null || sub.host.isEmpty())
                 for (int i = this.subscriptions.size() - 1; i >= 0; i--) {
                     Subscription sub2 = this.subscriptions.get(i);
+
                     if (sub2.alertName.equals(sub.alertName)) {
                         this.subscriptions.remove(i);
                         this.subscriptionsMap.remove(sub.alertName);
                         break;
                     }
                 }
-            } else if (this.hostsSubscriptions.containsKey(sub.host)) {
+
+             else if (this.hostsSubscriptions.containsKey(sub.host))
                 this.hostsSubscriptions.get(sub.host).deleteSubscription(sub);
-            }
+
         }
 
         public Subscription getSubscription(String host, String alertName) {
             Subscription sub = null;
+
             if (this.hostsSubscriptions.containsKey(host))
                 sub = this.hostsSubscriptions.get(host).getSubscription(alertName);
+
             if (sub == null)
                 sub = this.subscriptionsMap.get(alertName);
+
             return sub;
         }
 
         public List<Subscription> getSubscription(String host) {
             HashSet<String> alertnames = new HashSet<>();
             List<Subscription> mysubs = new ArrayList<>();
-            if (this.hostsSubscriptions.containsKey(host)) {
+
+            if (this.hostsSubscriptions.containsKey(host))
                 for (Subscription sub : this.hostsSubscriptions.get(host).getSubscriptions()) {
                     mysubs.add(sub);
                     alertnames.add(sub.alertName);
                 }
-            }
+
             //group level
-            for (Subscription sub : subscriptions) {
+            for (Subscription sub : subscriptions)
                 if (!alertnames.contains(sub.alertName)) {
                     mysubs.add(sub);
                     alertnames.add(sub.alertName);
                 }
-            }
+
             return mysubs;
         }
     }
@@ -207,16 +236,19 @@ public class AlertSubscribers {
      * @return
      */
     public boolean load() {
-        if (this.context.getMetricDb() != null) {
+
+        if (this.context.getMetricDb() != null)
             try {
                 List<Subscription> subs = this.context.getMetricDb().loadAlertSubscriptions();
                 synchronized (this.groupSubscriptions) {
                     this.groupSubscriptions.clear();//remove old data
+
                     for (Subscription sub : subs) {
                         String group = sub.group;
-                        if (!this.groupSubscriptions.containsKey(group)) {
+
+                        if (!this.groupSubscriptions.containsKey(group))
                             this.groupSubscriptions.put(group, new GroupSubscriptions());
-                        }
+
                         this.groupSubscriptions.get(group).addSubscription(sub);
                     }
                 }
@@ -225,22 +257,27 @@ public class AlertSubscribers {
                 log.warn("Failed to load alert subscriptions", ex);
                 return false;
             }
-        }
+
         return false;
     }
 
     public boolean addSubscription(Subscription sub) {
+
         if (sub == null || sub.group == null || sub.group.isEmpty()
                 || sub.alertName == null || sub.alertName.isEmpty()) return false;
 
         boolean status = this.context.getMetricDb() != null ?
                 this.context.getMetricDb().upsertAlertSubscription(sub) : false;
+
         if (!status)
             return false;
+
         synchronized (this.groupSubscriptions) {
             String group = sub.group;
+
             if (!this.groupSubscriptions.containsKey(group))
                 this.groupSubscriptions.put(group, new GroupSubscriptions());
+
             this.groupSubscriptions.get(group).addSubscription(sub);
         }
         return true;
@@ -249,10 +286,13 @@ public class AlertSubscribers {
     public boolean deleteSubscription(Subscription sub) {
         boolean status = this.context.getMetricDb() != null ?
                 this.context.getMetricDb().deleteAlertSubscription(sub) : false;
+
         if (!status)
             return false;
+
         synchronized (this.groupSubscriptions) {
             String group = sub.group;
+
             if (this.groupSubscriptions.containsKey(group))
                 this.groupSubscriptions.get(group).deleteSubscription(sub);
         }
@@ -269,16 +309,20 @@ public class AlertSubscribers {
      */
     public Subscription getSubscription(String group, String host, String alertName) {
         synchronized (this.groupSubscriptions) {
+
             if (!this.groupSubscriptions.containsKey(group))
                 return null;
+
             return this.groupSubscriptions.get(group).getSubscription(host, alertName);
         }
     }
 
     public List<Subscription> getSubscriptions(String group, String host) {
         synchronized (this.groupSubscriptions) {
+
             if (!this.groupSubscriptions.containsKey(group))
                 return null;
+
             return this.groupSubscriptions.get(group).getSubscription(host);
         }
     }

@@ -48,10 +48,13 @@ public class Metric {
     public Metric(String name, String sourceName, MetricDataType dataType, String metricUnit, String description) {
         this.name = name;
         this.sourceName = sourceName;
+
         if (dataType != null)
             this.dataType = dataType;
+
         if (metricUnit != null)
             this.metricUnit = metricUnit;
+
         this.description = description;
         this.incremental = true;
     }
@@ -59,17 +62,22 @@ public class Metric {
     public Metric(String name, String sourceName, MetricDataType dataType, String metricUnit, String description, boolean incremental) {
         this.name = name;
         this.sourceName = sourceName;
+
         if (dataType != null)
             this.dataType = dataType;
+
         if (metricUnit != null)
             this.metricUnit = metricUnit;
+
         this.description = description;
         this.incremental = incremental;
     }
 
     public String getChartDisplayUnit() {
+
         if (this.chartDisplayUnit == null)
             return this.metricUnit;
+
         return chartDisplayUnit;
     }
 
@@ -85,16 +93,22 @@ public class Metric {
 
     //convert string rep to enum, default to INT
     public static MetricDataType strToMetricDataType(String str) {
+
         if ("byte".equalsIgnoreCase(str))
             return MetricDataType.BYTE;
+
         if ("short".equalsIgnoreCase(str))
             return MetricDataType.SHORT;
+
         if ("int".equalsIgnoreCase(str))
             return MetricDataType.INT;
+
         if ("long".equalsIgnoreCase(str))
             return MetricDataType.LONG;
+
         if ("float".equalsIgnoreCase(str))
             return MetricDataType.FLOAT;
+
         if ("double".equalsIgnoreCase(str))
             return MetricDataType.DOUBLE;
 
@@ -102,17 +116,24 @@ public class Metric {
     }
 
     public static boolean isAlphaNumericUnderscoreNotNull(String str, int len) {
+
         if (str == null || str.isEmpty())
             return false;
+
         if (len > 0 && str.length() > len)
             return false;
+
         char[] chars = str.toCharArray();
+
         for (int i = 0; i < chars.length; i++) {
             char c = chars[i];
+
             if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
                 continue;
+
             return false;
         }
+
         return true;
     }
 }

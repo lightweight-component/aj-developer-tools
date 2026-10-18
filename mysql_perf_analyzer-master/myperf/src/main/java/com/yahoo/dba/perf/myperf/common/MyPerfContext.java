@@ -168,9 +168,11 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
         log.info("Setup afterPropertiesSet.");
 
         log.info("Loading JDBC Drivers");
+
         if (this.jdbcDriver != null) {
             DriverManager.setLoginTimeout(60);
             log.info("Set JDBC DriverManager loginTimeout as 60 seconds");
+
             for (Map.Entry<String, String> e : jdbcDriver.entrySet()) {
                 log.info("Loading " + e.getKey() + ": " + e.getValue());
                 try {
@@ -208,20 +210,24 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
         log.info("Initialize AutoScanner ...");
         this.myperfConfig.init(this);
         this.snmpSettings.init(this);
+
         if (this.myperfConfig.isConfigured()) {
             this.initMetricsDB(); //move metrics db creation and initialization away from scanner
             this.alertSettings.setContext(this);
+
             if (this.metricDb != null) {
                 this.dbInfoManager.init(this.metricDb);//need metricsDB to update
                 this.metricsDef.getUdmManager().loadSubscriptions(this);
                 this.metricDb.loadAlertSetting(this.alertSettings);//load alert setting after DB info is loaded.
             }
         }
+
         this.instanceStatesManager.init(this);
         this.hipchat.init(this);
 
         autoScanner = new AutoScanner(this);
         autoScanner.init();//it will update metricsDB
+
         if (autoScanner.isInitialized()) {
             log.info("Starting AutoScanner ...");
             autoScanner.start();
@@ -231,14 +237,18 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
     }
 
     public void destroy() throws Exception {
+
         if (this.autoScanner != null)
             this.autoScanner.stop();
+
         if (this.metricDb != null)
             this.metricDb.destroy();
+
         this.metaDb.destroy();
     }
 
     public void setConnectionIdleTime(long connectionIdleTime) {
+
         if (connectionIdleTime <= 0)
             this.connectionIdleTime = 600000L;
         else
@@ -249,11 +259,13 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
         ch.qos.logback.classic.Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
         String configuredLevel = getLogLevel();
+
         if ("SEVERE".equals(configuredLevel))
             configuredLevel = "ERROR";
         else if ("WARNING".equals(configuredLevel)) configuredLevel = "WARN";
         else if ("CONFIG".equals(configuredLevel) || "FINE".equals(configuredLevel)) configuredLevel = "DEBUG";
         else if ("FINER".equals(configuredLevel) || "FINEST".equals(configuredLevel)) configuredLevel = "TRACE";
+
         rootLogger.setLevel(Level.toLevel(configuredLevel, Level.INFO));
         try {
             String logRoot = System.getProperty("logPath", ".");
@@ -313,6 +325,7 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
 
     public void refreshMetricsList() {
         synchronized (metricsListRefreshLock) {
+
             if (metricsList == null)
                 metricsList = new ArrayList<>();
             else
@@ -323,52 +336,65 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
                     this.getMetricsDef().getUdmManager().getUdms().entrySet()) {
                 String key = e.getKey();
                 UserDefinedMetrics udm = e.getValue();
+
                 for (Metric m : udm.getMetrics())
                     metricsList.add("UDM." + key + "." + m.getName());
             }
 
             String[] mgNames = this.metricsDef.getGroupNames();
+
             for (String mgName : mgNames) {
                 MetricsGroup mg = this.metricsDef.getGroupByName(mgName);
+
                 if (mg == null)
                     continue;
+
                 if (mg.getSubGroups() != null && mg.getSubGroups().size() > 0) {
                     //deal with sub groups
-                    for (MetricsGroup subGrp : mg.getSubGroups()) {
+                    for (MetricsGroup subGrp : mg.getSubGroups())
                         for (Metric m : subGrp.getMetrics())
                             metricsList.add(mg.getGroupName().toUpperCase() + "."
                                     + subGrp.getGroupName() + "." + m.getName());
-                    }
+
                 } else {
                     //deal with top level metrics with name convention: {group name}._.{metric name}
                     for (Metric m : mg.getMetrics())
                         metricsList.add(mg.getGroupName().toUpperCase() + "._." + m.getName());
                 }
             }
+
             Collections.sort(metricsList);
         }
     }
 
     public String getSqlTextForMetricsGroup(String groupName) {
+
         if (groupName == null)
             return null;
+
         String sql = null;
 
         MetricsGroup mg = getMetricsDef().getGroupByName(groupName);
+
         if (mg != null) {
             String sqlId = mg.getSql();
+
             if (sqlId != null) {
                 Sql sqlObj = getSqlManager().getSql(sqlId);
+
                 if (sqlObj != null)
                     sql = sqlObj.getSqlText();
             }
         }
+
         return sql;
     }
 
     public boolean initMetricsDB() {
+
         if (!this.getMyperfConfig().isConfigured())
             return false;
+
         if (this.metricDb != null)
             this.metricDb.destroy();
         //by default, use derby
@@ -386,6 +412,7 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
                     + getMyperfConfig().getMetricsDbName()
                     + "?useSSL=true&enabledTLSProtocols=TLSv1.2&verifyServerCertificate=false");
         }
+
         this.metricDb.setFrameworkContext(this);
         this.metricDb.setMetricsGroups(this.getMetricsDef());
         this.metricDb.init();
@@ -395,11 +422,13 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
 
     public void addAlert(AlertEntry alert) {
         try {
+
             if (!this.instanceStatesManager.getStates(
                             this.dbInfoManager.findDB(alert.getDbGroup(), alert.getDbHost()).getDbid())
                     .canSendWebNotification(alert.getTs(), alert.getAlertReason(), this.myperfConfig.getWebAlertIntervalMinutes())
             )
                 return;
+
         } catch (Exception ex) {
         }
         alerts.addAlert(alert);
@@ -461,16 +490,19 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
      */
     public void emailAlert(AlertEntry alert) {
         try {
+
             if (!this.instanceStatesManager.getStates(
                             this.dbInfoManager.findDB(alert.getDbGroup(), alert.getDbHost()).getDbid())
                     .canSendEmailNotification(alert.getTs(), alert.getAlertReason(), this.myperfConfig.getEmailAlertIntervalMinutes())
             )
                 return;
+
         } catch (Exception ex) {
         }
 
         //String receiver = getMyperfConfig().getAlertNotificationEmails();
         String receiver = this.alertSettings.getNotificationEmails(alert.getDbGroup(), alert.getDbHost());
+
         if (receiver != null && !receiver.isEmpty()) {
             String subject = this.getAlertEmailSubject(alert);
             String msg = this.getAlertMessage(alert);
@@ -500,8 +532,10 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
      */
     private String getAlertEmailTime(AlertEntry alert) {
         long mytime = alert.getTs();
+
         if (mytime <= 0L)
             mytime = System.currentTimeMillis();
+
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         try {
@@ -531,18 +565,19 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
     public void saveManagedDBCredentialForScanner(String username, String dbGroup, String dbuser, String password) {
         AppUser defaultUser = getUserManager().getUser(MetaDB.DEFAULT_USER);
         AppUser metricsUser = getUserManager().getUser(getMyperfConfig().getMetricsScannerUser());
+
         if (!MetaDB.DEFAULT_USER.equals(username) && //save one db search
-                DBUtils.findDBCredential(this, dbGroup, defaultUser) == null) {
+                DBUtils.findDBCredential(this, dbGroup, defaultUser) == null)
             this.dbInfoManager.copyManagedDBCredential(defaultUser.getName(),
                     false, username, dbGroup, dbuser, password);
-        }
+
 
         if (metricsUser != null && !MetaDB.DEFAULT_USER.equals(metricsUser.getName())
                 && !username.equals(metricsUser.getName()) //save one db search
-                && DBUtils.findDBCredential(this, dbGroup, metricsUser) == null) {
+                && DBUtils.findDBCredential(this, dbGroup, metricsUser) == null)
             this.dbInfoManager.copyManagedDBCredential(metricsUser.getName(),
                     false, username, dbGroup, dbuser, password);
-        }
+
 
     }
 
@@ -557,6 +592,7 @@ public class MyPerfContext implements Serializable, InitializingBean, Disposable
     public void saveManagedDBCredentialForScanner2(String username, String dbGroup, String dbuser, String password) {
         AppUser defaultUser = getUserManager().getUser(MetaDB.DEFAULT_USER);
         AppUser metricsUser = getUserManager().getUser(getMyperfConfig().getMetricsScannerUser());
+
         if (!MetaDB.DEFAULT_USER.equals(username) && //save one db search
                 DBUtils.findDBCredential(this, dbGroup, defaultUser) == null) {
             DBCredential cred2 = new DBCredential();

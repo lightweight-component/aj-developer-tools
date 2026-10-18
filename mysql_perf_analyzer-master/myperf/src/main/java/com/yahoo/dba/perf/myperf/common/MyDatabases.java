@@ -22,23 +22,27 @@ public class MyDatabases implements Serializable {
     }
 
     synchronized public void addDb(String name) {
+
         if (!this.myDbSet.contains(name))
             this.myDbSet.add(name);
     }
 
     synchronized public void addDbs(List<String> names) {
-        for (String name : names) {
+
+        for (String name : names)
             if (!this.myDbSet.contains(name))
                 this.myDbSet.add(name);
-        }
+
     }
 
     synchronized public void removeDb(String name) {
+
         if (this.myDbSet.contains(name))
             this.myDbSet.remove(name);
     }
 
     synchronized public void replaceDb(String oldName, String newName) {
+
         if (!this.myDbSet.contains(oldName)) {
             this.myDbSet.remove(oldName);
             this.myDbSet.remove(newName);

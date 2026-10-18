@@ -31,23 +31,29 @@ public class ResultListUtil {
     public static ResultList fromSqlResultSet(ResultSet rs, int maxCount) throws SQLException {
         log.debug(new Date() + ": Process results ...");
         ResultList resList = new ResultList();
+
         if (rs == null)
             return resList;
+
         ResultSetMetaData meta = rs.getMetaData();
         int colCnt = meta.getColumnCount();
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.setColumns(new ArrayList<>(colCnt));
+
         for (int i = 1; i <= colCnt; i++) {
             //for now, we only record name
             ColumnInfo col = new ColumnInfo(meta.getColumnName(i));
             int sqlt = meta.getColumnType(i);
+
             if (sqlt == Types.BIGINT || sqlt == Types.DECIMAL || sqlt == Types.DOUBLE
                     || sqlt == Types.FLOAT || sqlt == Types.INTEGER || sqlt == Types.NUMERIC
                     || sqlt == Types.TINYINT || sqlt == Types.SMALLINT)
                 col.setNumberType(true);
+
             col.setPosition(i);
             desc.getColumns().add(col);
         }
+
         resList.setColumnDescriptor(desc);
         int rowCnt = 0;
         List<ColumnInfo> cols = desc.getColumns();
@@ -57,6 +63,7 @@ public class ResultListUtil {
             row.setColumnDescriptor(desc);
             ArrayList<String> cols2 = new ArrayList<>(colCnt);
             row.setColumns(cols2);
+
             for (int i = 1; i <= colCnt; i++) {
                 String val = rs.getString(i);
 
@@ -67,8 +74,10 @@ public class ResultListUtil {
 
                 cols2.add(val);
             }
+
             resList.addRow(row);
             rowCnt++;
+
             if (maxCount > 0 && rowCnt >= maxCount)
                 break;
         }
@@ -86,56 +95,66 @@ public class ResultListUtil {
      * @throws SQLException
      */
     public static ResultList flatSqlResultSet(Sql sql, ResultSet rs, int maxCount) throws SQLException {
+
         if (sql.isExpandRow())
             return expandSqlResultSet(sql, rs);
-        else if (sql == null || sql.getFlatKey() == null || sql.getFlatKey().trim().length() == 0 || sql.getFlatValueList().size() == 0) {
+        else if (sql == null || sql.getFlatKey() == null || sql.getFlatKey().trim().length() == 0 || sql.getFlatValueList().size() == 0)
             return fromSqlResultSet(rs, maxCount);
-        }
+
 
         ResultList resList = new ResultList();
+
         if (rs == null)
             return resList;
+
         ResultSetMetaData meta = rs.getMetaData();
         int colCnt = meta.getColumnCount();
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.setColumns(new ArrayList<>(colCnt));
 
         Map<String, Integer> typeMap = new HashMap<>();
-        for (int i = 1; i <= colCnt; i++) {
+
+        for (int i = 1; i <= colCnt; i++)
             typeMap.put(meta.getColumnName(i), meta.getColumnType(i));
-        }
+
         Map<String, Integer> flatkeyIdx = new HashMap<>();
+
         for (int i = 0; i < sql.getFlatValueList().size(); i++) {
             //log.info("Add "+sql.getFlatValueList().get(i));
             flatkeyIdx.put(sql.getFlatValueList().get(i), i);
         }
+
         int colIndex = 1;
         //first all keys
         for (String k : sql.getKeyList()) {
             ColumnInfo col = new ColumnInfo(k);
             col.setPosition(colIndex);
             int sqlt = typeMap.get(k);
+
             if (sqlt == Types.BIGINT || sqlt == Types.DECIMAL || sqlt == Types.DOUBLE
                     || sqlt == Types.FLOAT || sqlt == Types.INTEGER || sqlt == Types.NUMERIC
                     || sqlt == Types.TINYINT || sqlt == Types.SMALLINT)
                 col.setNumberType(true);
+
             desc.getColumns().add(col);
             colIndex++;
         }
         //next all metrics
-        for (String s : sql.getFlatValueList()) {
+        for (String s : sql.getFlatValueList())
             for (Map.Entry<String, String> e : sql.getMetrics().entrySet()) {
                 ColumnInfo col = new ColumnInfo(sql.getFlatValueAbbrMap().get(s) + e.getValue());
                 col.setPosition(colIndex);
                 int sqlt = typeMap.get(e.getKey());
+
                 if (sqlt == Types.BIGINT || sqlt == Types.DECIMAL || sqlt == Types.DOUBLE
                         || sqlt == Types.FLOAT || sqlt == Types.INTEGER || sqlt == Types.NUMERIC
                         || sqlt == Types.TINYINT || sqlt == Types.SMALLINT)
                     col.setNumberType(true);
+
                 desc.getColumns().add(col);
                 colIndex++;
             }
-        }
+
 
         resList.setColumnDescriptor(desc);
         int rowCnt = 0;
@@ -144,9 +163,10 @@ public class ResultListUtil {
         ResultRow row = null;
         while (rs.next()) {
             String[] newkeys = new String[sql.getKeyList().size()];
-            for (int i = 0; i < sql.getKeyList().size(); ++i) {
+
+            for (int i = 0; i < sql.getKeyList().size(); ++i)
                 newkeys[i] = rs.getString(sql.getKeyList().get(i));
-            }
+
             if (!isSame(prevkeys, newkeys))//start a new row
             {
                 row = new ResultRow();
@@ -155,8 +175,10 @@ public class ResultListUtil {
                 //initialize it
                 for (int i = 0; i < cols.size(); i++)
                     row.getColumns().add("");
+
                 resList.addRow(row);
                 rowCnt++;
+
                 for (int i = 0; i < sql.getKeyList().size(); ++i) {
                     String val = newkeys[i];
 
@@ -164,6 +186,7 @@ public class ResultListUtil {
                         val = "0" + val;//prefix Oracle float number with 0 if starting with "."
                     else if (cols.get(i).isNumberType() && val != null && val.startsWith("-."))
                         val = val.replace("-.", "-0.");//prefix Oracle float number with 0 if starting with "."
+
                     row.getColumns().set(i, val);
                 }
 
@@ -173,9 +196,11 @@ public class ResultListUtil {
             //check its index
             int idx = flatkeyIdx.get(flatVal.toUpperCase());
             int mi = 0;
+
             for (String s : sql.getMetrics().keySet()) {
                 String val = rs.getString(s);
                 int colIdx = sql.getKeyList().size() + idx * sql.getMetrics().size() + mi;
+
                 if (cols.get(colIdx).isNumberType() && val != null && val.startsWith("."))
                     val = "0" + val;//prefix Oracle float number with 0 if starting with "."
                 else if (cols.get(colIdx).isNumberType() && val != null && val.startsWith("-."))
@@ -184,7 +209,9 @@ public class ResultListUtil {
                 row.getColumns().set(colIdx, val);
                 mi++;
             }
+
             prevkeys = newkeys;
+
             if (maxCount > 0 && rowCnt >= maxCount)
                 break;
         }
@@ -201,8 +228,10 @@ public class ResultListUtil {
      */
     public static ResultList expandSqlResultSet(Sql sql, ResultSet rs) throws SQLException {
         ResultList resList = new ResultList();
+
         if (rs == null)
             return resList;
+
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.addColumn("NAME", false, 1);
         desc.addColumn("VALUE", false, 2);
@@ -220,8 +249,10 @@ public class ResultListUtil {
                 row.addColumn("");
                 resList.addRow(row);
             }
+
             for (int i = 1; i <= colCnt; i++) {
                 ResultRow row = new ResultRow();
+
                 if (rowCnt > 0)
                     row.addColumn(meta.getColumnName(i) + "(" + (rowCnt + 1) + ")");
                 else
@@ -230,6 +261,7 @@ public class ResultListUtil {
                 row.addColumn(rs.getString(i));
                 resList.addRow(row);
             }
+
             rowCnt++;
         }
         return resList;
@@ -273,9 +305,10 @@ public class ResultListUtil {
             sb.append(",\"request\":{");
             sb.append("\"group\":\"").append(qps.getGroup()).append("\"");
             sb.append(",\"host\":\"").append(qps.getHost()).append("\"");
-            for (Map.Entry<String, String> e : qps.getSqlParams().entrySet()) {
+
+            for (Map.Entry<String, String> e : qps.getSqlParams().entrySet())
                 sb.append(",\"").append(e.getKey()).append("\":\"").append(e.getValue()).append("\"");
-            }
+
             sb.append("}");
         }
         //for(String key: resultMap.keySet())
@@ -290,9 +323,12 @@ public class ResultListUtil {
             sb.append("\"columns\":[");
             {
                 boolean first = true;
+
                 for (int i = 0; i < cols.size(); i++) {
+
                     if (!first)
                         sb.append(",");
+
                     first = false;
                     sb.append("\"").append(cols.get(i).getName() + "\"");
                 }
@@ -300,30 +336,42 @@ public class ResultListUtil {
             sb.append("],");
             boolean firstRow = true;
             sb.append("\"results\":[");
+
             for (ResultRow row : rs.getRows()) {
+
                 if (!firstRow)
                     sb.append(",");
+
                 int len = row.getColumns().size();
                 boolean first = true;
                 sb.append("{");
+
                 for (int i = 0; i < len; i++) {
+
                     if (!first)
                         sb.append(",");
+
                     sb.append("\"").append(escapeJson(cols.get(i).getName())).append("\":");
-                    if (cols.get(i).isNumberType()) {
+
+                    if (cols.get(i).isNumberType())
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
                             sb.append("\"\"");
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
-                    } else
+
+                     else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
+
                     first = false;
                 }
+
                 sb.append("}");
                 firstRow = false;
             }
+
             sb.append("]}");
         }
+
         sb.append("}}");
 
         return sb.toString();
@@ -332,11 +380,13 @@ public class ResultListUtil {
     public static String toJSONString(ResultList rs, QueryParameters qps, int status, String message) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"resp\":{\"status\":").append(status);//start and status
+
         if (rs != null && rs.getTotalResponseTime() > 0) {
             sb.append(",\"totalTime\":\"").append(rs.getTotalResponseTime()).append("ms\"");
             sb.append(",\"execTime\":\"").append(rs.getTotalExecutionTime()).append("ms\"");
             sb.append(",\"fetchTime\":\"").append(rs.getTotalFetchTime()).append("ms\"");
         }
+
         sb.append(",\"message\":\"").append(escapeJson(message)).append("\"");//message line
 
         //requests
@@ -346,9 +396,10 @@ public class ResultListUtil {
             sb.append(",\"host\":\"").append(qps.getHost()).append("\"");
             //sb.append(",\"port\":\"").append(qps.getPort()).append("\"");
             sb.append(",\"sql\":\"").append(qps.getSql()).append("\"");
-            for (Map.Entry<String, String> e : qps.getSqlParams().entrySet()) {
+
+            for (Map.Entry<String, String> e : qps.getSqlParams().entrySet())
                 sb.append(",\"").append(e.getKey()).append("\":\"").append(e.getValue()).append("\"");
-            }
+
             sb.append("}\r\n");
         }
 
@@ -361,47 +412,63 @@ public class ResultListUtil {
             sb.append("\"columns\":[");
             {
                 boolean first = true;
+
                 for (int i = 0; i < cols.size(); i++) {
+
                     if (!first)
                         sb.append(",");
+
                     first = false;
                     sb.append("\"").append(cols.get(i).getName().toUpperCase() + "\"");
                 }
             }
             sb.append("],\r\n");
-            if (rs.getCustomObjects() != null && rs.getCustomObjects().size() > 0) {
+
+            if (rs.getCustomObjects() != null && rs.getCustomObjects().size() > 0)
                 for (Map.Entry<String, CustomResultObject> e : rs.getCustomObjects().entrySet()) {
                     sb.append("\"").append(e.getKey()).append("\":");
                     sb.append(e.getValue().getValueJsonString());
                     sb.append(",\r\n");
                 }
-            }
+
             boolean firstRow = true;
             sb.append("\"results\":[");
+
             for (ResultRow row : rs.getRows()) {
+
                 if (!firstRow)
                     sb.append(",");
+
                 int len = row.getColumns().size();
                 boolean first = true;
                 sb.append("{");
+
                 for (int i = 0; i < len; i++) {
+
                     if (!first)
                         sb.append(",");
+
                     sb.append("\"").append(escapeJson(cols.get(i).getName().toUpperCase())).append("\":");
-                    if (cols.get(i).isNumberType()) {
+
+                    if (cols.get(i).isNumberType())
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
                             sb.append("\"\"");
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
-                    } else
+
+                     else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
+
                     first = false;
                 }
+
                 sb.append("}\r\n");
                 firstRow = false;
             }
+
             sb.append("]}");
         }
+
         sb.append("}}");
         return sb.toString();
     }
@@ -415,6 +482,7 @@ public class ResultListUtil {
      * @return
      */
     public static String[] getDistinctKeys(String keyColumn, ResultList rlist) {
+
         if (rlist == null || rlist.getRows().size() == 0
                 || keyColumn == null || keyColumn.isEmpty()
                 || rlist.getColumnIndex(keyColumn) < 0)
@@ -423,6 +491,7 @@ public class ResultListUtil {
         int idx = rlist.getColumnIndex(keyColumn);
         int rows = rlist.getRows().size();
         Map<String, Integer> keys = new TreeMap<>();
+
         for (int i = 0; i < rows; i++)
             keys.put(rlist.getRows().get(i).getColumns().get(idx), 1);
 
@@ -443,20 +512,24 @@ public class ResultListUtil {
      */
     public static String toMetricsJSONStringWithMultiRowsKeys(ResultList rs, String keyColumn, String[] groupByColumns, String metricName, QueryParameters qps, int status, String message) {
         String[] keys = getDistinctKeys(keyColumn, rs);
+
         if (keys == null || keys.length == 0 || groupByColumns == null || groupByColumns.length == 0) //we don't want to bother about the case without multiple key values
             return toJSONString(rs, qps, status, message);
 
         Map<String, String> keyMap = new HashMap<>(keys.length);
+
         for (int i = 0; i < keys.length; i++)
             keyMap.put(keys[i], "k" + i);
 
         StringBuilder sb = new StringBuilder();
         sb.append("{\"resp\":{\"status\":").append(status);//start and status
+
         if (rs != null && rs.getTotalResponseTime() > 0) {
             sb.append(",\"totalTime\":\"").append(rs.getTotalResponseTime()).append("ms\"");
             sb.append(",\"execTime\":\"").append(rs.getTotalExecutionTime()).append("ms\"");
             sb.append(",\"fetchTime\":\"").append(rs.getTotalFetchTime()).append("ms\"");
         }
+
         sb.append(",\"message\":\"").append(escapeJson(message)).append("\"");//message line
 
         //requests
@@ -466,9 +539,10 @@ public class ResultListUtil {
             sb.append(",\"host\":\"").append(qps.getHost()).append("\"");
             //sb.append(",\"port\":\"").append(qps.getPort()).append("\"");
             sb.append(",\"sql\":\"").append(qps.getSql()).append("\"");
-            for (Map.Entry<String, String> e : qps.getSqlParams().entrySet()) {
+
+            for (Map.Entry<String, String> e : qps.getSqlParams().entrySet())
                 sb.append(",\"").append(e.getKey()).append("\":\"").append(e.getValue()).append("\"");
-            }
+
             sb.append("}\r\n");
         }
 
@@ -481,6 +555,7 @@ public class ResultListUtil {
             sb.append("\"columns\":[");
             {
                 boolean first = true;
+
                 for (int i = 0; i < cols.size(); i++) {
                     //ignore key column
                     if (keyColumn.equalsIgnoreCase(cols.get(i).getName()))
@@ -488,6 +563,7 @@ public class ResultListUtil {
 
                     if (!first)
                         sb.append(",");
+
                     first = false;
                     sb.append("\"").append(cols.get(i).getName() + "\"");
                 }
@@ -495,112 +571,146 @@ public class ResultListUtil {
             sb.append("],\r\n");
             //add keys
             sb.append("\"keys\":[");
+
             for (int i = 0; i < keys.length; i++) {
+
                 if (i > 0)
                     sb.append(",");
+
                 sb.append("{")
                         .append("\"name\":\"").append(keys[i]).append("\", ")
                         .append("\"shortName\":\"").append("k").append(i).append("\"")
                         .append("}");
             }
+
             sb.append("],\r\n");
-            if (rs.getCustomObjects() != null && rs.getCustomObjects().size() > 0) {
+
+            if (rs.getCustomObjects() != null && rs.getCustomObjects().size() > 0)
                 for (Map.Entry<String, CustomResultObject> e : rs.getCustomObjects().entrySet()) {
                     sb.append("\"").append(e.getKey()).append("\":");
                     sb.append(e.getValue().getValueJsonString());
                     sb.append(",\r\n");
                 }
-            }
+
             boolean firstRow = true;
             String[] prevGrpKey = new String[groupByColumns.length];
             String[] newGrpKey = new String[groupByColumns.length];
             int keyIdx = rs.getColumnIndex(keyColumn);
             int mtrIdx = rs.getColumnIndex(metricName);
             int[] grpKeyIdx = new int[groupByColumns.length];
+
             for (int i = 0; i < groupByColumns.length; i++) {
                 prevGrpKey[i] = null;
                 newGrpKey[i] = null;
                 grpKeyIdx[i] = rs.getColumnIndex(groupByColumns[i]);//don't expect invalid
             }
+
             sb.append("\"results\":[");
             Map<String, String> valueMap = new TreeMap<>();//to store values temporarily
+
             for (ResultRow row : rs.getRows()) {
-                for (int i = 0; i < groupByColumns.length; i++) {
+
+                for (int i = 0; i < groupByColumns.length; i++)
                     newGrpKey[i] = row.getColumns().get(grpKeyIdx[i]);
-                }
+
                 //if we have a new group by key, we should generate output for previous one
                 // and clear the temp storage
                 if (valueMap.size() > 0 && isDiff(prevGrpKey, newGrpKey)) {
+
                     if (!firstRow)
                         sb.append(",");
+
                     firstRow = false;
                     sb.append("{");
-                    for (int i = 0; i < groupByColumns.length; i++) {
+
+                    for (int i = 0; i < groupByColumns.length; i++)
                         sb.append("\"").append(groupByColumns[i]).append("\":").append(prevGrpKey[i]).append(",");
-                    }
+
                     sb.append("\"").append(metricName).append("\":{");
                     boolean firstKey = true;
+
                     for (Map.Entry<String, String> e : valueMap.entrySet()) {
+
                         if (e.getValue() == null)
                             continue;
+
                         String jkey = keyMap.get(e.getKey());
+
                         if (!firstKey)
                             sb.append(",");
+
                         firstKey = false;
                         sb.append("\"").append(jkey).append("\":").append(e.getValue());
                     }
+
                     sb.append("}");//end metric
                     sb.append("}");//end the row
                     valueMap.clear();
                 }
                 //otherwise, just store it
                 valueMap.put(row.getColumns().get(keyIdx), row.getColumns().get(mtrIdx));
-                for (int i = 0; i < groupByColumns.length; i++) {
+
+                for (int i = 0; i < groupByColumns.length; i++)
                     prevGrpKey[i] = newGrpKey[i];
-                }
+
             }
             //todo: output last group
             if (!firstRow)
                 sb.append(",");
             {
                 sb.append("{");
-                for (int i = 0; i < groupByColumns.length; i++) {
+
+                for (int i = 0; i < groupByColumns.length; i++)
                     sb.append("\"").append(groupByColumns[i]).append("\":").append(newGrpKey[i]).append(",");
-                }
+
                 sb.append("\"").append(metricName).append("\":{");
                 boolean firstKey = true;
+
                 for (Map.Entry<String, String> e : valueMap.entrySet()) {
+
                     if (e.getValue() == null)
                         continue;
+
                     String jkey = keyMap.get(e.getKey());
+
                     if (!firstKey)
                         sb.append(",");
+
                     firstKey = false;
                     sb.append("\"").append(jkey).append("\":").append(e.getValue());
                 }
+
                 sb.append("}");//end metric
                 sb.append("}");//end the row
             }
             sb.append("]}");
         }
+
         sb.append("}}");
         return sb.toString();
     }
 
     //compare tow arrays if the same
     public static boolean isDiff(String[] arr1, String[] arr2) {
+
         if (arr1 == null && arr2 == null)
             return false;
+
         if (arr1 == null || arr2 == null)
             return true;
+
         if (arr1.length != arr2.length)
             return true;
+
         for (int i = 0; i < arr1.length; i++) {
+
             if (arr1[i] != null && !arr1[i].equals(arr2[i]))
                 return true;
+
             if (arr2[i] != null && !arr2[i].equals(arr1[i]))
                 return true;
         }
+
         return false;
     }
 
@@ -617,18 +727,22 @@ public class ResultListUtil {
      */
     public static String toJSONStringSubset(ResultList rs, QueryParameters qps, int status, String message, String[] subset) {
         HashSet<String> ms = new HashSet<>();
+
         if (subset != null)
             for (int i = 0; i < subset.length; i++)
                 ms.add(subset[i]);
+
         boolean filter = ms.size() > 0;
 
         StringBuilder sb = new StringBuilder();
         sb.append("{\"resp\":{\"status\":").append(status);//start and status
+
         if (rs != null && rs.getTotalResponseTime() > 0) {
             sb.append(",\"totalTime\":\"").append(rs.getTotalResponseTime()).append("ms\"");
             sb.append(",\"execTime\":\"").append(rs.getTotalExecutionTime()).append("ms\"");
             sb.append(",\"fetchTime\":\"").append(rs.getTotalFetchTime()).append("ms\"");
         }
+
         sb.append(",\"message\":\"").append(escapeJson(message)).append("\"");//message line
 
         //requests
@@ -638,9 +752,10 @@ public class ResultListUtil {
             sb.append(",\"host\":\"").append(qps.getHost()).append("\"");
             //sb.append(",\"port\":\"").append(qps.getPort()).append("\"");
             sb.append(",\"sql\":\"").append(qps.getSql()).append("\"");
-            for (Map.Entry<String, String> e : qps.getSqlParams().entrySet()) {
+
+            for (Map.Entry<String, String> e : qps.getSqlParams().entrySet())
                 sb.append(",\"").append(e.getKey()).append("\":\"").append(e.getValue()).append("\"");
-            }
+
             sb.append("}\r\n");
         }
 
@@ -653,11 +768,15 @@ public class ResultListUtil {
             sb.append("\"columns\":[");
             {
                 boolean first = true;
+
                 for (int i = 0; i < cols.size(); i++) {
+
                     if (filter && !ms.contains(cols.get(i).getName()))
                         continue;
+
                     if (!first)
                         sb.append(",");
+
                     first = false;
                     sb.append("\"").append(cols.get(i).getName().toUpperCase() + "\"");
                 }
@@ -665,32 +784,45 @@ public class ResultListUtil {
             sb.append("],\r\n");
             boolean firstRow = true;
             sb.append("\"results\":[");
+
             for (ResultRow row : rs.getRows()) {
+
                 if (!firstRow)
                     sb.append(",");
+
                 int len = row.getColumns().size();
                 boolean first = true;
                 sb.append("{");
+
                 for (int i = 0; i < len; i++) {
+
                     if (filter && !ms.contains(cols.get(i).getName()))
                         continue;
+
                     if (!first)
                         sb.append(",");
+
                     sb.append("\"").append(escapeJson(cols.get(i).getName().toUpperCase())).append("\":");
-                    if (cols.get(i).isNumberType()) {
+
+                    if (cols.get(i).isNumberType())
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
                             sb.append("\"\"");
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
-                    } else
+
+                     else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
+
                     first = false;
                 }
+
                 sb.append("}\r\n");
                 firstRow = false;
             }
+
             sb.append("]}");
         }
+
         sb.append("}}");
         return sb.toString();
     }
@@ -702,37 +834,46 @@ public class ResultListUtil {
 
         //requests
         sb.append(",\"request\":{");
+
         if (qpsA != null) {
             sb.append("\"a_group\":\"").append(qpsA.getGroup()).append("\"");
             sb.append(",\"a_host\":\"").append(qpsA.getHost()).append("\"");
             //sb.append(",\"port\":\"").append(qps.getPort()).append("\"");
             sb.append(",\"a_sql\":\"").append(qpsA.getSql()).append("\"");
-            for (Map.Entry<String, String> e : qpsA.getSqlParams().entrySet()) {
+
+            for (Map.Entry<String, String> e : qpsA.getSqlParams().entrySet())
                 sb.append(",\"a_").append(e.getKey()).append("\":\"").append(e.getValue()).append("\"");
-            }
+
             if (qpsB != null)
                 sb.append(",");
         }
+
         if (qpsB != null) {
             sb.append("\"b_group\":\"").append(qpsB.getGroup()).append("\"");
             sb.append(",\"b_host\":\"").append(qpsB.getHost()).append("\"");
             //sb.append(",\"port\":\"").append(qps.getPort()).append("\"");
             sb.append(",\"b_sql\":\"").append(qpsB.getSql()).append("\"");
-            for (Map.Entry<String, String> e : qpsB.getSqlParams().entrySet()) {
+
+            for (Map.Entry<String, String> e : qpsB.getSqlParams().entrySet())
                 sb.append(",\"b_").append(e.getKey()).append("\":\"").append(e.getValue()).append("\"");
-            }
+
         }
+
         sb.append("}\r\n");
 
         int cnt = 0;
         List<ColumnInfo> cols = null;
+
         if (rsA != null || rsB != null) {
+
             if (rsA != null) {
                 cnt += rsA.getRows().size();
                 cols = rsA.getColumnDescriptor().getColumns();
             }
+
             if (rsB != null) {
                 cnt += rsB.getRows().size();
+
                 if (cols == null)
                     cols = rsB.getColumnDescriptor().getColumns();
             }
@@ -752,50 +893,64 @@ public class ResultListUtil {
         }
 
         boolean firstRow = true;
-        if (rsA != null) {
+
+        if (rsA != null)
             for (ResultRow row : rsA.getRows()) {
+
                 if (!firstRow)
                     sb.append(",");
+
                 int len = row.getColumns().size();
                 sb.append("{\"DB\":\"A\"");
+
                 for (int i = 0; i < len; i++) {
                     sb.append(",");
                     sb.append("\"").append(escapeJson(cols.get(i).getName())).append("\":");
-                    if (cols.get(i).isNumberType()) {
+
+                    if (cols.get(i).isNumberType())
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
                             sb.append("\"\"");
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
-                    } else
+
+                     else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
                 }
+
                 sb.append("}\r\n");
                 firstRow = false;
             }
-        }
-        if (rsB != null) {
+
+        if (rsB != null)
             for (ResultRow row : rsB.getRows()) {
+
                 if (!firstRow)
                     sb.append(",");
+
                 int len = row.getColumns().size();
                 sb.append("{\"DB\":\"B\"");
+
                 for (int i = 0; i < len; i++) {
                     sb.append(",");
                     sb.append("\"").append(escapeJson(cols.get(i).getName())).append("\":");
-                    if (cols.get(i).isNumberType()) {
+
+                    if (cols.get(i).isNumberType())
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
                             sb.append("\"\"");
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
-                    } else
+
+                     else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
                 }
+
                 sb.append("}\r\n");
                 firstRow = false;
             }
-        }
+
         if (rsA != null || rsB != null)
             sb.append("]}");
+
         sb.append("}}");
         return sb.toString();
     }
@@ -819,28 +974,33 @@ public class ResultListUtil {
 
         //requests
         sb.append(",\"request\":{");
+
         if (qpsA != null)//parameter from a
         {
             sb.append("\"a_group\":\"").append(qpsA.getGroup()).append("\"");
             sb.append(",\"a_host\":\"").append(qpsA.getHost()).append("\"");
             //sb.append(",\"port\":\"").append(qps.getPort()).append("\"");
             sb.append(",\"a_sql\":\"").append(qpsA.getSql()).append("\"");
-            for (Map.Entry<String, String> e : qpsA.getSqlParams().entrySet()) {
+
+            for (Map.Entry<String, String> e : qpsA.getSqlParams().entrySet())
                 sb.append(",\"a_").append(e.getKey()).append("\":\"").append(e.getValue()).append("\"");
-            }
+
             if (qpsB != null)
                 sb.append(",");
         }
+
         if (qpsB != null)//parameter from b
         {
             sb.append("\"b_group\":\"").append(qpsB.getGroup()).append("\"");
             sb.append(",\"b_host\":\"").append(qpsB.getHost()).append("\"");
             //sb.append(",\"port\":\"").append(qps.getPort()).append("\"");
             sb.append(",\"b_sql\":\"").append(qpsB.getSql()).append("\"");
-            for (Map.Entry<String, String> e : qpsB.getSqlParams().entrySet()) {
+
+            for (Map.Entry<String, String> e : qpsB.getSqlParams().entrySet())
                 sb.append(",\"b_").append(e.getKey()).append("\":\"").append(e.getValue()).append("\"");
-            }
+
         }
+
         sb.append("}\r\n");//end of request
 
         int cnt = combined != null ? combined.getRows().size() : 0;
@@ -850,45 +1010,60 @@ public class ResultListUtil {
         sb.append("\"total\":\"").append(cnt).append("\",");//end of count
         //column names
         sb.append("\"columns\":[");//start of column names
+
         if (cols != null) {
             boolean first = true;
+
             for (int i = 0; i < cols.size(); i++) {
+
                 if (!first)
                     sb.append(",");
                 else first = false;
+
                 sb.append("\"").append(cols.get(i).getName() + "\"");
             }
         }
+
         sb.append("],\r\n");//end of column names
         boolean firstRow = true;
         sb.append("\"results\":[");//start of the result list
+
         if (combined != null)
             for (ResultRow row : combined.getRows()) {
+
                 if (!firstRow)
                     sb.append(",");
+
                 int len = row.getColumns().size();
                 boolean first = true;
                 sb.append("{");//start of one row
+
                 for (int i = 0; i < len; i++) {
+
                     if (!first)
                         sb.append(",");
+
                     sb.append("\"").append(escapeJson(cols.get(i).getName())).append("\":");
-                    if (cols.get(i).isNumberType()) {
+
+                    if (cols.get(i).isNumberType())
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
                             sb.append("\"\"");
-                        else {
+                        else
                             if (row.getColumns().get(i).startsWith("-."))
                                 sb.append(row.getColumns().get(i).replace("-.", "-0."));
                             else
                                 sb.append(escapeJson(row.getColumns().get(i)));
-                        }
-                    } else
+
+                     else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
+
                     first = false;
                 }
+
                 sb.append("}\r\n");//end of one row
                 firstRow = false;
             }
+
         sb.append("]");//end of result list
         sb.append("}");//end of outer results
         sb.append("}");//end of resp
@@ -898,12 +1073,16 @@ public class ResultListUtil {
     }
 
     public static String escapeJson(String str) {
+
         if (str == null)
             return "";
+
         StringBuilder sb = new StringBuilder(str.length());
         char[] carray = str.toCharArray();
+
         for (int i = 0; i < carray.length; i++) {
             char c = carray[i];
+
             if (c == '\"')
                 sb.append("\\u0022");
             else if (c == '\n')
@@ -921,28 +1100,36 @@ public class ResultListUtil {
                 //skip it
             } else sb.append(c);
         }
+
         return sb.toString();
 
     }
 
     private static boolean isSame(String[] s1, String[] s2) {
+
         if (s1 == null && s2 == null)
             return true;
         else if (s1 == null && s2 != null) return false;
         else if (s1 != null && s2 == null) return false;
         else if (s1.length != s2.length) return false;
+
         for (int i = 0; i < s1.length; i++) {
             String ss1 = s1[i];
             String ss2 = s2[i];
+
             if (ss1 == null && ss2 == null)
                 continue;
+
             if (ss1 == null && ss2 != null)
                 return false;
+
             if (ss1 != null && ss2 == null)
                 return false;
+
             if (!ss1.equalsIgnoreCase(ss2))
                 return false;
         }
+
         return true;
     }
 
@@ -952,16 +1139,21 @@ public class ResultListUtil {
      * @param rList
      */
     public static void updateColumnWidth(ResultList rList) {
+
         if (rList == null || rList.getColumnDescriptor() == null || rList.getRows().size() == 0)
             return;
+
         List<ColumnInfo> cols = rList.getColumnDescriptor().getColumns();
-        for (ColumnInfo col : cols) {
+
+        for (ColumnInfo col : cols)
             col.setMaxLength(col.getName().length());
-        }
+
         for (ResultRow row : rList.getRows()) {
             List<String> l = row.getColumns();
+
             for (int i = 0; i < l.size(); i++) {
                 String s = l.get(i);
+
                 if (s != null && s.length() > cols.get(i).getMaxLength())
                     cols.get(i).setMaxLength(s.length());
             }
@@ -970,19 +1162,23 @@ public class ResultListUtil {
 
     public static String paddingOrTrim(String s, int len) {
         StringBuilder sb = new StringBuilder();
-        if (s != null && s.length() > len) {
+
+        if (s != null && s.length() > len)
             sb.append(s.substring(0, len));
-        } else {
+         else {
             int l = 0;
+
             if (s != null) {
                 sb.append(s);
                 l = s.length();
             }
+
             while (l < len) {
                 sb.append(' ');
                 l++;
             }
         }
+
         return sb.toString();
     }
 
@@ -1002,8 +1198,10 @@ public class ResultListUtil {
 
 
     private static List<BindVariable> parseBinds(String binds, XMLInputFactory inputFactory) {
+
         if (binds == null)
             return null;
+
         List<BindVariable> vars = new ArrayList<>();
         //<binds><bind name=":1" pos="1" dty="1" dtystr="VARCHAR2(2000)" maxlen="2000" csid="873" len="15">Billing Contact</bind></binds>
 
@@ -1013,34 +1211,42 @@ public class ResultListUtil {
             while (reader.hasNext()) {
                 //loop till one sql tag is found
                 int evtType = reader.next();
+
                 if (evtType != XMLStreamConstants.START_ELEMENT)
                     continue;
+
                 String tagName = reader.getLocalName();
+
                 if (!"bind".equals(tagName))
                     continue;
+
                 BindVariable var = new BindVariable();
                 int attrCount = reader.getAttributeCount();
+
                 for (int i = 0; i < attrCount; i++) {
                     String attrName = reader.getAttributeLocalName(i);
                     String attrValue = reader.getAttributeValue(i);
+
                     if ("name".equals(attrName))
                         var.name = attrValue;
                     else if ("pos".equals(attrName))
                         var.pos = attrValue;
                     else if ("dtystr".equalsIgnoreCase(attrName))
                         var.dtystr = attrValue;
-                    else if ("maxlen".equalsIgnoreCase(attrName)) {
+                    else if ("maxlen".equalsIgnoreCase(attrName))
                         var.maxLen = attrValue;
-                    } else if ("len".equalsIgnoreCase(attrName)) {
+                     else if ("len".equalsIgnoreCase(attrName))
                         var.len = attrValue;
-                    }
+
                 }
+
                 var.value = reader.getElementText();
                 vars.add(var);
             }
         } catch (Exception ex) {
 
         } finally {
+
             if (reader != null) try {
                 reader.close();
                 reader = null;
@@ -1052,15 +1258,20 @@ public class ResultListUtil {
     }
 
     public static ResultList paserBindList(ResultList rList) {
+
         if (rList != null && rList.getRows().size() > 0) {
             log.debug("BindController returns " + rList.getRows().size());
             ResultList newList = new ResultList();
             ColumnDescriptor desc = new ColumnDescriptor();
+
             for (ColumnInfo col : rList.getColumnDescriptor().getColumns()) {
+
                 if ("binds_xml".equalsIgnoreCase(col.getName()))
                     continue;
+
                 desc.addColumn(col.getName(), col.isNumberType(), desc.getColumns().size());
             }
+
             desc.addColumn("NAME", false, desc.getColumns().size());
             desc.addColumn("POS", false, desc.getColumns().size());
             desc.addColumn("DTYSTR", false, desc.getColumns().size());
@@ -1071,6 +1282,7 @@ public class ResultListUtil {
 
             int idx = rList.getColumnDescriptor().getColumnIndex("BINDS_XML");
             XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+
             for (ResultRow row : rList.getRows()) {
                 //log.info("binds_xml.idx="+idx+", "+ row.getColumns().size());
                 List<BindVariable> binds = null;
@@ -1083,11 +1295,15 @@ public class ResultListUtil {
                     ResultRow newRow = new ResultRow();
                     newRow.setColumnDescriptor(desc);
                     List<String> cols = new ArrayList<>(row.getColumns().size() + 5);
+
                     for (int i = 0; i < row.getColumns().size(); i++) {
+
                         if (i == idx)
                             continue;
+
                         cols.add(row.getColumns().get(i));
                     }
+
                     cols.add(null);
                     cols.add(null);
                     cols.add(null);
@@ -1096,16 +1312,20 @@ public class ResultListUtil {
                     cols.add(null);
                     newRow.setColumns(cols);
                     newList.addRow(newRow);
-                } else {
+                } else
                     for (BindVariable var : binds) {
                         ResultRow newRow = new ResultRow();
                         newRow.setColumnDescriptor(desc);
                         List<String> cols = new ArrayList<>(row.getColumns().size() + 5);
+
                         for (int i = 0; i < row.getColumns().size(); i++) {
+
                             if (i == idx)
                                 continue;
+
                             cols.add(row.getColumns().get(i));
                         }
+
                         cols.add(var.name);
                         cols.add(var.pos);
                         cols.add(var.dtystr);
@@ -1115,10 +1335,12 @@ public class ResultListUtil {
                         newRow.setColumns(cols);
                         newList.addRow(newRow);
                     }
-                }
+
             }
+
             return newList;
         }
+
         return null;
     }
 
@@ -1131,9 +1353,10 @@ public class ResultListUtil {
             sb.append(",\"request\":{");
             sb.append("\"group\":\"").append(qps.getGroup()).append("\"");
             sb.append(",\"host\":\"").append(qps.getHost()).append("\"");
-            for (Map.Entry<String, String> e : qps.getSqlParams().entrySet()) {
+
+            for (Map.Entry<String, String> e : qps.getSqlParams().entrySet())
                 sb.append(",\"").append(e.getKey()).append("\":\"").append(e.getValue()).append("\"");
-            }
+
             sb.append("}");
         }
         //for(String key: resultMap.keySet())
@@ -1148,9 +1371,12 @@ public class ResultListUtil {
             sb.append("\"columns\":[");
             {
                 boolean first = true;
+
                 for (int i = 0; i < cols.size(); i++) {
+
                     if (!first)
                         sb.append(",");
+
                     first = false;
                     sb.append("\"").append(cols.get(i).getName().toUpperCase() + "\"");
                 }
@@ -1158,30 +1384,42 @@ public class ResultListUtil {
             sb.append("],");
             boolean firstRow = true;
             sb.append("\"results\":[");
+
             for (ResultRow row : rs.getRows()) {
+
                 if (!firstRow)
                     sb.append(",");
+
                 int len = row.getColumns().size();
                 boolean first = true;
                 sb.append("{");
+
                 for (int i = 0; i < len; i++) {
+
                     if (!first)
                         sb.append(",");
+
                     sb.append("\"").append(escapeJson(cols.get(i).getName().toUpperCase())).append("\":");
-                    if (cols.get(i).isNumberType()) {
+
+                    if (cols.get(i).isNumberType())
                         if (row.getColumns().get(i) == null || row.getColumns().get(i).trim().length() == 0)
                             sb.append("\"\"");
                         else
                             sb.append(escapeJson(row.getColumns().get(i)));
-                    } else
+
+                     else
                         sb.append("\"").append(escapeJson(row.getColumns().get(i))).append("\"");
+
                     first = false;
                 }
+
                 sb.append("}");
                 firstRow = false;
             }
+
             sb.append("]}");
         }
+
         sb.append("}}");
 
         return sb.toString();

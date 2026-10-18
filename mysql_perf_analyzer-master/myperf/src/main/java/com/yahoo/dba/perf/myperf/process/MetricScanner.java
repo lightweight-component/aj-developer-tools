@@ -47,11 +47,12 @@ public class MetricScanner {
         try {
             startDate = new Date();
             snap_id = this.frameworkContext.getMetricDb().getNextSnapshotId(Long.parseLong(sdf.format(startDate)));
+
             if (snap_id >= 0)
                 scan(snap_id);
-            else {
+            else
                 log.error("Error to generate valid snap_id, got " + snap_id);
-            }
+
         } catch (Exception ex) {
             log.error("Exception", ex);
         }
@@ -82,6 +83,7 @@ public class MetricScanner {
                 Map<String, MetricsBuffer> bufs = buffer.get(dbinfo.getDbGroupName() + ":" + dbinfo.getHostName());
 
                 if (mg.getSubGroups() != null && mg.getSubGroups().size() > 0) { //sub groups
+
                     for (MetricsGroup subGrp : mg.getSubGroups()) {
                         String subGrpName = mg.getGroupName() + "." + subGrp.getGroupName();
 
@@ -93,7 +95,9 @@ public class MetricScanner {
                             bufs.put(subGrpName, buf);
                         }
                     }
+
                 } else {//top level
+
                     if (!bufs.containsKey(mg.getGroupName())) {
                         //MetricsBuffer buf = new MetricsBuffer(mg, this.recordCount+20);
                         MetricsBuffer buf = new MetricsBuffer(mg);//no more cache
@@ -121,6 +125,7 @@ public class MetricScanner {
 
         for (String cl : clusternames) {
             DBCredential cred = DBUtils.findDBCredential(frameworkContext, cl, appUser);
+
             if (cred == null) {
                 log.info("No credential for group " + cl + ", skip it");
                 continue;//log the error
@@ -171,15 +176,17 @@ public class MetricScanner {
     }
 
     public void shutdown() {
-        if (this.metricsScannerRunners != null) {
-            for (MetricScannerRunner runner : this.metricsScannerRunners) {
+
+        if (this.metricsScannerRunners != null)
+            for (MetricScannerRunner runner : this.metricsScannerRunners)
                 if (runner != null)
                     runner.shutdown();
-            }
-        }
+
+
     }
 
     public void setThreadCount(int threadCount) {
+
         if (threadCount <= 0)
             threadCount = 1;
         else

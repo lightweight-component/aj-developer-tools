@@ -69,8 +69,10 @@ public class MySQLMetricsDb extends MetricsDbBase implements Serializable, Runna
         Connection conn = null;
         try {
             conn = DriverManager.getConnection(this.getConnectionString(), this.getUsername(), this.getPassword());
+
             if (!autocommit)
                 conn.setAutoCommit(false);
+
             return conn;
         } catch (Exception ex) {
             log.error("Exception when connect to " + this.getConnectionString() + " as " + this.getUsername(), ex);
@@ -84,19 +86,24 @@ public class MySQLMetricsDb extends MetricsDbBase implements Serializable, Runna
         MetricsGroup mg = this.metricsGroups.get(s);
         StringBuilder sb = new StringBuilder();
         String targetTable = mg != null ? mg.getTargetTable() : null;
+
         if (targetTable == null || targetTable.isEmpty())
             targetTable = "METRIC_GENERIC";
+
         sb.append("INSERT INTO " + targetTable + " (DBID, METRIC_ID, SNAP_ID, TS, VALUE) VALUES");
         try (Statement stmt = conn.createStatement()) {
             int cnt = 0;
             //hard coded for now
             int batchSize = 100;
+
             for (MetricsData dbuf : q2) {
                 ByteBuffer buf = dbuf.data;
                 int idx = 1;
                 int pos = 0;
+
                 if (cnt > 0)
                     sb.append(",");
+
                 sb.append("(");
                 sb.append(buf.getInt(pos));
                 pos += 4;
@@ -113,6 +120,7 @@ public class MySQLMetricsDb extends MetricsDbBase implements Serializable, Runna
                 sb.append(",").append(df.format(buf.getDouble(pos))).append(")");
                 idx++;
                 cnt++;
+
                 if (cnt >= batchSize) {
                     //log.info("Batch statement: "+sb.toString());
                     stmt.execute(sb.toString());

@@ -131,28 +131,35 @@ public abstract class MetricsDbBase implements Runnable {
     public void setMetricsGroups(MetricsDefManager metricsDef) {
         synchronized (metricsDefLock) {
             String[] groupNames = metricsDef.getGroupNames();
+
             for (String grpName : groupNames) {
                 MetricsGroup group = metricsDef.getGroupByName(grpName);
+
                 if (group == null)
                     continue; //not supposed to be so
+
                 List<MetricsGroup> mgs = new ArrayList<>();
+
                 if (group.getSubGroups().size() == 0) //no sub group, add self
                 {
                     mgs.add(group);
-                } else {
+                } else
                     for (MetricsGroup g : group.getSubGroups())
                         mgs.add(g);
-                }
+
                 for (MetricsGroup g : mgs) {
                     String sinkName = g.getSinkTableName();
                     this.metricsGroups.put(sinkName, g);
                     this.dataQueues.put(sinkName, new ArrayBlockingQueue<>(10000));//2014-02-14, change size to 10K
+
                     if (!g.isStoreInCommonTable())
                         this.insertSQL.put(sinkName, this.insertSQL(g));
                     else {
                         String targetTable = g.getTargetTable();
+
                         if (targetTable == null || targetTable.isEmpty())
                             targetTable = "METRIC_GENERIC";
+
                         this.insertSQL.put((g.getDbType() + "_" + g.getGroupName()), "INSERT INTO " + targetTable + " (DBID, METRIC_ID, SNAP_ID, TS, VALUE) VALUES(?,?,?,?,?)");
                     }
 
@@ -161,8 +168,10 @@ public abstract class MetricsDbBase implements Runnable {
 
             for (Map.Entry<String, UserDefinedMetrics> entry : metricsDef.getUdmManager().getUdms().entrySet()) {
                 MetricsGroup group = entry.getValue().getMetricsGroup();
+
                 if (group == null)
                     continue; //not supposed to be so
+
                 String sinkName = group.getSinkTableName();
                 this.metricsGroups.put(sinkName, group);
                 this.dataQueues.put(sinkName, new ArrayBlockingQueue<>(10000));//2014-02-14, change size to 10K
@@ -173,13 +182,18 @@ public abstract class MetricsDbBase implements Runnable {
 
 
     public boolean addNewUDM(UserDefinedMetrics udm) {
+
         if (udm == null)
             return false;
+
         MetricsGroup mg = udm.getMetricsGroup();
+
         if (!createMetricsTable(mg))
             return false;
+
         String tblName = mg.getSinkTableName();
         synchronized (metricsDefLock) {
+
             if (!this.metricsGroups.containsKey(tblName)) {
                 this.metricsGroups.put(tblName, mg);
                 this.dataQueues.put(tblName,
@@ -192,11 +206,14 @@ public abstract class MetricsDbBase implements Runnable {
     }
 
     public boolean removeUDM(UserDefinedMetrics udm) {
+
         if (udm == null)
             return false;
+
         MetricsGroup mg = udm.getMetricsGroup();
         String tblName = mg.getSinkTableName();
         synchronized (metricsDefLock) {
+
             if (this.metricsGroups.containsKey(tblName)) {
                 this.metricsGroups.remove(tblName);
                 this.dataQueues.remove(tblName);
@@ -216,30 +233,38 @@ public abstract class MetricsDbBase implements Runnable {
     private String insertSQL(MetricsGroup mg) {
         StringBuilder sb = new StringBuilder();
         sb.append("insert ignore into ");
+
         if (mg.isUdmFlagged())
             sb.append("UDM");
         else
             sb.append(mg.getDbType().toUpperCase());
+
         sb.append("_")
                 .append(mg.getGroupName().toUpperCase()).append(" (")
                 .append("DBID, SNAP_ID");
+
         if (mg.getKeyColumn() != null && !mg.getKeyColumn().isEmpty()) {
             //add additional column to store key
             sb.append(", KEY_COLUMN");
         }
+
         sb.append(", TS, SQL_TIME");
+
         for (Metric m : mg.getMetrics()) {
             sb.append(",");
             sb.append(m.getName().toUpperCase());
         }
+
         sb.append(") values (?,?,?,?");
+
         if (mg.getKeyColumn() != null && !mg.getKeyColumn().isEmpty()) {
             //add additional column to store key
             sb.append(",?");
         }
-        for (Metric m : mg.getMetrics()) {
+
+        for (Metric m : mg.getMetrics())
             sb.append(",?");
-        }
+
         sb.append(")");
         return sb.toString();
     }
@@ -298,14 +323,18 @@ public abstract class MetricsDbBase implements Runnable {
         sb.append(tblName);
         sb.append(" (")
                 .append("DBID INT, SNAP_ID INT");
+
         if (mg.getKeyColumn() != null && !mg.getKeyColumn().isEmpty()) {
             //add additional column to store key
             sb.append(", KEY_COLUMN VARCHAR(255)");
         }
+
         sb.append(", TS BIGINT, SQL_TIME INT");
+
         for (Metric m : mg.getMetrics()) {
             sb.append(",");
             sb.append(m.getName().toUpperCase()).append(" ");
+
             if (m.getDataType() == MetricDataType.BYTE)
                 sb.append("TINYINT");
             else if (m.getDataType() == MetricDataType.SHORT)
@@ -319,10 +348,12 @@ public abstract class MetricsDbBase implements Runnable {
             else if (m.getDataType() == MetricDataType.DOUBLE)
                 sb.append("DECIMAL(22,7)");
         }
+
         if (mg.getKeyColumn() != null && !mg.getKeyColumn().isEmpty())
             sb.append(", PRIMARY KEY(DBID, SNAP_ID, KEY_COLUMN))");
         else
             sb.append(", PRIMARY KEY(DBID, SNAP_ID))");
+
         return sb.toString();
     }
 
@@ -338,6 +369,7 @@ public abstract class MetricsDbBase implements Runnable {
 
     private void createMetricsTable(MetricsGroup mg, Connection conn) throws SQLException {
         String tblName = mg.getSinkTableName();
+
         if (!DBUtils.hasTable(conn, schemaName, tblName)) {
             try (Statement stmt = conn.createStatement()) {
                 String ddl = this.buildDDL(mg);
@@ -350,12 +382,16 @@ public abstract class MetricsDbBase implements Runnable {
 
     private void createTables() {
         try (Connection conn = this.createConnection(false)) {
+
             for (Map.Entry<String, MetricsGroup> e : this.metricsGroups.entrySet()) {
+
                 if (e.getValue().isStoreInCommonTable())
                     //skip it. It will use generic table
                     continue;
+
                 createMetricsTable(e.getValue(), conn);
             }
+
             if (!DBUtils.hasTable(conn, schemaName, "METRIC_CODE")) {
                 try (Statement stmt = conn.createStatement()) {
                     String ddl = this.buildMetricCodeDDL();
@@ -365,9 +401,11 @@ public abstract class MetricsDbBase implements Runnable {
                 }
                 log.info("Created metric table METRIC_CODE");
             }
+
             if (!DBUtils.hasTable(conn, schemaName, "METRIC_GENERIC")) {
                 try (Statement stmt = conn.createStatement()) {
                     String[] ddls = this.buildGenericMetricDDL();
+
                     for (String ddl : ddls) {
                         log.info("Create metric table METRIC_GENERIC: " + ddl);
                         stmt.execute(ddl);
@@ -375,9 +413,11 @@ public abstract class MetricsDbBase implements Runnable {
                 }
                 log.info("Created metric table METRIC_GENERIC");
             }
+
             if (!DBUtils.hasTable(conn, schemaName, "SNAPSHOTS")) {
                 try (Statement stmt = conn.createStatement()) {
                     String[] ddls = this.buildSnapshotDDL();
+
                     for (String ddl : ddls) {
                         log.info("Create metric table SNAPSHOTS: " + ddl);
                         stmt.execute(ddl);
@@ -385,6 +425,7 @@ public abstract class MetricsDbBase implements Runnable {
                 }
                 log.info("Created metric table METRIC_GENERIC");
             }
+
             if (!DBUtils.hasTable(conn, schemaName, "ALERT")) {
                 try (Statement stmt = conn.createStatement()) {
                     String ddl = this.buildAlertDDL();
@@ -394,9 +435,11 @@ public abstract class MetricsDbBase implements Runnable {
                 }
                 log.info("Created alert table ALERT");
             }
+
             if (!DBUtils.hasTable(conn, schemaName, "ALERT_SUBSCRIPT")) {
                 try (Statement stmt = conn.createStatement()) {
                     String[] ddls = this.buildAlertSubScriptionDDL();
+
                     for (String ddl : ddls) {
                         log.info("Create metric table ALERT_SUBSCRIPT: " + ddl);
                         stmt.execute(ddl);
@@ -404,9 +447,11 @@ public abstract class MetricsDbBase implements Runnable {
                 }
                 log.info("Created metric table ALERT_SUBSCRIPT");
             }
+
             if (!DBUtils.hasTable(conn, schemaName, "METRICS_SUBSCRIPT")) {
                 try (Statement stmt = conn.createStatement()) {
                     String[] ddls = this.buildMetricsSubscrptionDDL();
+
                     for (String ddl : ddls) {
                         log.info("Create metric table METRICS_SUBSCRIPT: " + ddl);
                         stmt.execute(ddl);
@@ -418,6 +463,7 @@ public abstract class MetricsDbBase implements Runnable {
             if (!DBUtils.hasTable(conn, schemaName, "ALERT_NOTIFICATION")) {
                 try (Statement stmt = conn.createStatement()) {
                     String[] ddls = this.buildAlertNotificationDDL();
+
                     for (String ddl : ddls) {
                         log.info("Create metric table ALERT_NOTIFICATION: " + ddl);
                         stmt.execute(ddl);
@@ -425,28 +471,31 @@ public abstract class MetricsDbBase implements Runnable {
                 }
                 log.info("Created metric table ALERT_NOTIFICATION");
             }
-            if (!DBUtils.hasTable(conn, schemaName, DBINFO_TABLENAME)) {
+
+            if (!DBUtils.hasTable(conn, schemaName, DBINFO_TABLENAME))
                 try (Statement stmt = conn.createStatement()) {
-                    for (String ddl : this.buildHostDDL()) {
+
+                    for (String ddl : this.buildHostDDL())
                         if (ddl != null && !ddl.isEmpty()) {
                             log.info("Create dbhost table:  " + ddl);
                             stmt.execute(ddl);
                             log.info("Created dbhost table " + DBINFO_TABLENAME);
                         }
-                    }
+
                 }
-            }
-            if (!DBUtils.hasTable(conn, schemaName, ALERTSETTING_TABLENAME)) {
+
+            if (!DBUtils.hasTable(conn, schemaName, ALERTSETTING_TABLENAME))
                 try (Statement stmt = conn.createStatement()) {
-                    for (String ddl : this.buildAlertSettingDDL()) {
+
+                    for (String ddl : this.buildAlertSettingDDL())
                         if (ddl != null && !ddl.isEmpty()) {
                             log.info("Create table:  " + ddl);
                             stmt.execute(ddl);
                             log.info("Created table " + ALERTSETTING_TABLENAME);
                         }
-                    }
+
                 }
-            }
+
         } catch (Exception ex) {
             log.error("Failed to check or create metric db", ex);
         }
@@ -458,8 +507,10 @@ public abstract class MetricsDbBase implements Runnable {
      * @param dbInfoManager
      */
     public void syncHosts(List<DBInstanceInfo> dbInfos) {
+
         if (dbInfos == null || dbInfos.size() == 0)
             return;//nothing to sync
+
         MetaHostSyncer syncer = new MetaHostSyncer();
         syncer.setDbList(dbInfos);
         new Thread(syncer).start();//let it run on itself
@@ -473,18 +524,22 @@ public abstract class MetricsDbBase implements Runnable {
      * @return
      */
     public boolean syncHosts(DBInstanceInfo dbInfo, String action) {
+
         if (dbInfo == null)
             return false;
 
         try (Connection conn = this.createConnection(true)) {
-            if ("delete".equalsIgnoreCase(action)) {
+
+            if ("delete".equalsIgnoreCase(action))
                 if (dbInfo.getHostName() == null || "all".equalsIgnoreCase(dbInfo.getHostName()))
                     //remove a whole group
                     return this.removeDbGroup(conn, dbInfo.getDbGroupName());
                 else
                     return this.removeDBInfo(conn, dbInfo.getDbGroupName(), dbInfo.getHostName());
-            } else
+
+             else
                 return this.upsertDBInfo(conn, dbInfo, "new".equals(action));
+
         } catch (Exception ex) {
             log.info("Failed to remove host from metrics db (" + dbInfo.getDbGroupName() + ", " + dbInfo.getHostName());
         }
@@ -540,12 +595,14 @@ public abstract class MetricsDbBase implements Runnable {
 
     protected void store() {
         try {
+
             for (String s : this.dataQueues.keySet()) {
                 ArrayBlockingQueue<MetricsData> q = this.dataQueues.get(s);
                 List<MetricsData> q2 = new ArrayList<>(50);
 
                 while (true) {
                     MetricsData bufData = q.poll();
+
                     if (//if nothing there, go to next queue.
                     bufData == null)
                         break;
@@ -584,6 +641,7 @@ public abstract class MetricsDbBase implements Runnable {
 
                         //for(MetricsData mdata:q2)
                         try (PreparedStatement stmt = storeConnection.prepareStatement(sql)) {
+
                             for (MetricsData mdata : q2) {
                                 ByteBuffer buf = mdata.data;
                                 int idx = 1;
@@ -595,12 +653,12 @@ public abstract class MetricsDbBase implements Runnable {
                                 //snap_id
                                 pos += 4;
 
-                                if (mg.getKeyColumn() != null && !mg.getKeyColumn().isEmpty()) {
+                                if (mg.getKeyColumn() != null && !mg.getKeyColumn().isEmpty())
                                     if (mdata.dataKey == null)
                                         stmt.setNull(idx++, Types.VARCHAR);
                                     else
                                         stmt.setString(idx++, mdata.dataKey);
-                                }
+
 
                                 stmt.setString(idx++, sdf.format(new Date(buf.getLong(pos))));
                                 //timestamp
@@ -611,7 +669,7 @@ public abstract class MetricsDbBase implements Runnable {
                                 List<Metric> ms = mg.getMetrics();
                                 int len = ms.size();
 
-                                for (Metric m : ms) {
+                                for (Metric m : ms)
                                     if (m.getDataType() == MetricDataType.BYTE) {
                                         stmt.setInt(idx++, buf.get(pos));
                                         pos++;
@@ -631,7 +689,7 @@ public abstract class MetricsDbBase implements Runnable {
                                         stmt.setString(idx++, df.format(buf.getDouble(pos)));
                                         pos += 8;
                                     }
-                                }
+
 
                                 //one row
                                 stmt.execute();
@@ -653,14 +711,16 @@ public abstract class MetricsDbBase implements Runnable {
                     log.debug("Stored " + q2.size() + " " + s + " metric records.");
                 }
             }
+
         } catch (Exception ex) {
             log.warn("Exception when store metrics", ex);
-            if (storeConnection != null) {
+
+            if (storeConnection != null)
                 try {
                     storeConnection.rollback();
                 } catch (Exception ignored) {
                 }
-            }
+
         }
     }
 
@@ -675,6 +735,7 @@ public abstract class MetricsDbBase implements Runnable {
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             int cnt = 0;
+
             for (MetricsData mdata : q2) {
                 ByteBuffer buf = mdata.data;
                 int idx = 1;
@@ -694,6 +755,7 @@ public abstract class MetricsDbBase implements Runnable {
                 stmt.setString(idx++, df.format(buf.getDouble(pos)));
                 stmt.addBatch();
                 cnt++;
+
                 if (cnt == 20) {
                     stmt.executeBatch();
                     cnt = 0;
@@ -702,10 +764,10 @@ public abstract class MetricsDbBase implements Runnable {
                 }
             }
             //for loop
-            if (cnt > 0) {
+            if (cnt > 0)
                 stmt.executeBatch();
                 //conn.commit();
-            }
+
         }
     }
 
@@ -746,6 +808,7 @@ public abstract class MetricsDbBase implements Runnable {
         //no data
         if (snaps == null)
             return;
+
         String sql = "delete from " + metricGroupName + " where dbid=? and snap_id<=?";
         //log.info("To purge metrics "+metricGroupName+" for db "+dbid+" up to " +endDate);
         try (Connection conn = createConnection(true)) {
@@ -775,18 +838,22 @@ public abstract class MetricsDbBase implements Runnable {
         //TODO make it configurable
         int batchSize = 10000;
         String sql = "delete from " + metricGroupName + " where dbid=? limit " + batchSize;
+
         if (!this.isLimitSupport())
             sql = "delete from " + metricGroupName + " where dbid=?";
+
         if (this.isLimitSupport())
             log.info("To purge metrics " + metricGroupName + " for db " + dbid + " using batch of " + batchSize);
         else
             log.info("To purge metrics " + metricGroupName + " for db " + dbid);
+
         try (Connection conn = createConnection(true)) {
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 while (true) {
                     stmt.setInt(1, dbid);
                     stmt.execute();
                     int total = stmt.getUpdateCount();
+
                     if (total <= 0 || !this.isLimitSupport())
                         break;
                     else
@@ -846,6 +913,7 @@ public abstract class MetricsDbBase implements Runnable {
         //no data
         if (snaps == null)
             return null;
+
         if (//not specify the metrics? Get all
         metrics == null || metrics.length == 0)
             return retrieveMetrics(metricGroupName, dbid, startDate, endDate);
@@ -854,13 +922,17 @@ public abstract class MetricsDbBase implements Runnable {
         //build select list
         StringBuilder sb = new StringBuilder();
         sb.append("SNAP_ID");
+
         if (hasKeyColumn)
             sb.append(", KEY_COLUMN");
+
         sb.append(", TS");
+
         for (String me : metrics) {
             sb.append(", ");
             sb.append(me);
         }
+
         String sql = "select " + sb.toString() + " from " + metricGroupName + " where dbid=? and snap_id between ? and ? order by dbid, snap_id";
         //String sql = "select * from "+metricGroupName+" where dbid=?";
         log.info("To retrieve metrics " + metricGroupName + ", metrics (" + sb.toString() + ") for db " + dbid + " with time range (" + startDate + ", " + endDate + "), snap (" + snaps[0] + ", " + snaps[1] + ")");
@@ -882,14 +954,18 @@ public abstract class MetricsDbBase implements Runnable {
 
     public ResultList retrieveMetrics(String metricGroupName, Metric[] metrics, boolean hasKeyColumn, int dbid, long startDate, long endDate, boolean agg) {
         String[] ms = new String[metrics.length];
+
         for (int i = 0; i < metrics.length; i++)
             ms[i] = metrics[i].getName();
+
         if (!agg)
             return retrieveMetrics(metricGroupName, ms, hasKeyColumn, dbid, startDate, endDate);
+
         int[] snaps = this.getSnapshostRange(startDate, endDate);
         //no data
         if (snaps == null)
             return null;
+
         if (//not specify the metrics? Get all
         metrics == null || metrics.length == 0)
             return retrieveMetrics(metricGroupName, dbid, startDate, endDate);
@@ -901,13 +977,17 @@ public abstract class MetricsDbBase implements Runnable {
         StringBuilder grpBy = new StringBuilder();
         sb.append("SNAP_ID");
         sb.append(", TS");
+
         for (Metric me : metrics) {
+
             if (me.isIncremental())
                 sb.append(", sum(");
             else
                 sb.append(", avg(");
+
             sb.append(me.getName()).append(") ").append(me.getName());
         }
+
         String sql = "select " + sb.toString() + " from " + metricGroupName + " where dbid=? and snap_id between ? and ? group by snap_id, ts order by snap_id";
         //String sql = "select * from "+metricGroupName+" where dbid=?";
         log.info("To retrieve metrics " + metricGroupName + ", metrics (" + sb.toString() + ") for db " + dbid + " with time range (" + startDate + ", " + endDate + "), snap (" + snaps[0] + ", " + snaps[1] + ")");
@@ -944,12 +1024,14 @@ public abstract class MetricsDbBase implements Runnable {
         //later, connection pooling
         ResultList rList = null;
         int code = 0;
-        if (this.metricCodeMap.containsKey(metric)) {
+
+        if (this.metricCodeMap.containsKey(metric))
             code = this.metricCodeMap.get(metric);
-        } else {
+         else {
             log.warn("Failed to find metrics code for " + metric + ", " + this.metricCodeMap);
             return null;
         }
+
         String sql = "select SNAP_ID, TS, METRIC_ID, VALUE from METRIC_GENERIC where dbid=? and snap_id between ? and ? and METRIC_ID=? order by dbid, METRIC_ID, snap_id";
         //String sql = "select * from "+metricGroupName+" where dbid=?";
         log.info("To retrieve " + metric + ", " + code + " on db " + dbid + " with time range (" + startDate + ", " + endDate + "), using " + sql);
@@ -962,8 +1044,10 @@ public abstract class MetricsDbBase implements Runnable {
             stmt.setInt(3, snaps[1]);
             stmt.setLong(4, code);
             try (ResultSet rs = stmt.executeQuery()) {
+
                 if (rs == null)
                     return rList;
+
                 rList = new ResultList();
                 //java.sql.ResultSetMetaData meta =  rs.getMetaData();
                 ColumnDescriptor desc = new ColumnDescriptor();
@@ -984,6 +1068,7 @@ public abstract class MetricsDbBase implements Runnable {
                     row.setColumns(cols2);
                     rList.addRow(row);
                     rowCnt++;
+
                     if (rowCnt >= 5000)
                         break;
                 }
@@ -1048,8 +1133,10 @@ public abstract class MetricsDbBase implements Runnable {
         else //add one
         {
             synchronized (this.codeLock) {
+
                 if (this.metricCodeMap.containsKey(name))
                     return this.metricCodeMap.get(name);
+
                 String sql = "insert into METRIC_CODE (NAME) values (?)";
                 try (Connection conn = createConnection(true)) {
                     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -1059,9 +1146,10 @@ public abstract class MetricsDbBase implements Runnable {
                     try (PreparedStatement stmt = conn.prepareStatement("select NAME, CODE_ID from METRIC_CODE where NAME=?")) {
                         stmt.setString(1, name);
                         try (ResultSet rs = stmt.executeQuery()) {
-                            if (rs != null && rs.next()) {
+
+                            if (rs != null && rs.next())
                                 this.metricCodeMap.put(rs.getString("NAME"), rs.getInt("CODE_ID"));
-                            }
+
                         }
                     }
                 } catch (Exception ex) {
@@ -1071,6 +1159,7 @@ public abstract class MetricsDbBase implements Runnable {
             if (this.metricCodeMap.containsKey(name))
                 return this.metricCodeMap.get(name);
         }
+
         return -1;
     }
 
@@ -1157,17 +1246,23 @@ public abstract class MetricsDbBase implements Runnable {
         rList.setColumnDescriptor(desc);
         StringBuilder sb = new StringBuilder();
         sb.append("select * from ALERT where ts between ").append(startTs).append(" and ").append(endTs);
+
         if (filteredDbs != null && filteredDbs.size() >= 1) {
             sb.append(" and dbid in (");
             boolean isFirst = true;
+
             for (Integer id : filteredDbs) {
+
                 if (!isFirst)
                     sb.append(",");
+
                 sb.append(id);
                 isFirst = false;
             }
+
             sb.append(")");
         }
+
         sb.append(" order by ts desc");
         String sql = sb.toString();
         log.info("Retrieve alerts: " + sql);
@@ -1179,9 +1274,11 @@ public abstract class MetricsDbBase implements Runnable {
                 //DBID, TS, END_TS, ALERT_TYPE, ALERT_REASON
                 while (rs != null && rs.next()) {
                     int dbid = rs.getInt("DBID");
+
                     if (!dbs.containsKey(dbid))
                         //no db records, ignore
                         continue;
+
                     DBInstanceInfo dbinfo = dbs.get(dbid);
                     ResultRow row = new ResultRow();
                     row.setColumnDescriptor(desc);
@@ -1239,17 +1336,23 @@ public abstract class MetricsDbBase implements Runnable {
         startTs = sdf.format(c.getTime());
         StringBuilder sb = new StringBuilder();
         sb.append("select DBID, ALERT_TYPE, COUNT(*) AS TOTAL from ALERT where ts >= ").append(startTs);
+
         if (filteredDbs != null && filteredDbs.size() >= 1) {
             sb.append(" and dbid in (");
             boolean isFirst = true;
+
             for (Integer id : filteredDbs) {
+
                 if (!isFirst)
                     sb.append(",");
+
                 sb.append(id);
                 isFirst = false;
             }
+
             sb.append(")");
         }
+
         sb.append(" GROUP By DBID, ALERT_TYPE");
         String sql = sb.toString();
         log.info("Retrieve alerts summary: " + sql);
@@ -1260,6 +1363,7 @@ public abstract class MetricsDbBase implements Runnable {
                 int dbid = rs.getInt("DBID");
                 String alertType = rs.getString("ALERT_TYPE");
                 int acount = rs.getInt(3);
+
                 if (!resMap.containsKey(dbid)) {
                     AlertSummary sum = new AlertSummary();
                     sum.dbid = dbid;
@@ -1267,6 +1371,7 @@ public abstract class MetricsDbBase implements Runnable {
                 }
                 {
                     AlertSummary sum = resMap.get(dbid);
+
                     if ("CPU".equalsIgnoreCase(alertType))
                         sum.cpuAlerts = acount;
                     else if ("LOADAVG".equalsIgnoreCase(alertType))
@@ -1295,6 +1400,7 @@ public abstract class MetricsDbBase implements Runnable {
 
     private String formatDatetime(String str) {
         try {
+
             if (str != null && str.length() == 14) {
                 StringBuilder sb = new StringBuilder();
                 sb.append(str.substring(0, 4))
@@ -1310,6 +1416,7 @@ public abstract class MetricsDbBase implements Runnable {
                         .append(str.substring(12, 14));
                 return sb.toString();
             }
+
         } catch (Exception ex) {
         }
 
@@ -1362,8 +1469,10 @@ public abstract class MetricsDbBase implements Runnable {
      * @param dbinfo
      */
     public boolean upsertDBInfo(Connection conn, DBInstanceInfo dbinfo, boolean insert) {
+
         if (dbinfo == null)
             return false;
+
         String sql2 = "update " + DBINFO_TABLENAME + " set dbgroupname=?, hostname=?, dbtype=?,instance=?, port=?, database_name=?,USE_SSHTUNNEL=?, LOCAL_HOSTNAME=?, LOCAL_PORT=?, CONNECTION_VERIFIED=?, VIRTUAL_HOST=?, OWNER=? where DBID=?";
         String sql3 = "insert into " + DBINFO_TABLENAME + " (dbgroupname,hostname,dbtype,instance, port, database_name,USE_SSHTUNNEL, LOCAL_HOSTNAME, LOCAL_PORT,CONNECTION_VERIFIED,VIRTUAL_HOST, OWNER, DBID) values(?,?,?,?,?,?,?,?,?,?,?,?,?)";
         log.info("Store or update db " + dbinfo.toString());
@@ -1377,17 +1486,21 @@ public abstract class MetricsDbBase implements Runnable {
                 pstmt.setString(idx++, dbinfo.getHostName().toLowerCase());
                 pstmt.setString(idx++, dbinfo.getDbType());
                 pstmt.setString(idx++, String.valueOf(dbinfo.getInstance()));
+
                 if (dbinfo.getPortShort() != 0)
                     pstmt.setShort(idx++, dbinfo.getPortShort());
                 else
                     pstmt.setNull(idx++, Types.SMALLINT);
+
                 pstmt.setString(idx++, dbinfo.getDatabaseName());
                 pstmt.setString(idx++, dbinfo.isUseTunneling() ? "1" : "0");
                 pstmt.setString(idx++, dbinfo.getLocalHostName());
+
                 if (dbinfo.getLocalPortShort() != 0)
                     pstmt.setShort(idx++, dbinfo.getLocalPortShort());
                 else
                     pstmt.setNull(idx++, Types.SMALLINT);
+
                 pstmt.setString(idx++, dbinfo.isConnectionVerified() ? "1" : "0");
                 pstmt.setString(idx++, dbinfo.isVirtualHost() ? "1" : "0");
                 pstmt.setString(idx++, dbinfo.getOwner());
@@ -1397,11 +1510,13 @@ public abstract class MetricsDbBase implements Runnable {
             }
         } catch (Exception ex) {
             log.info("Failed to save " + dbinfo.toString() + ", " + ex.getMessage());
+
             if (conn != null)
                 try {
                     conn.rollback();
                 } catch (Exception iex) {
                 }
+
             return false;
         }
     }
@@ -1409,6 +1524,7 @@ public abstract class MetricsDbBase implements Runnable {
     public void renameDbGroup(String oldName, String newName) {
         String[] renameDbinfoSql = new String[] { "update " + DBINFO_TABLENAME + " set dbgroupname=? where dbgroupname=?", "update " + ALERTSETTING_TABLENAME + " set dbgroupname=? where dbgroupname=?", "update ALERT_SUBSCRIPT set DBGROUP=? where DBGROUP=?", "update METRICS_SUBSCRIPT set DBGROUP=? where DBGROUP=?" };
         try (Connection conn = this.createConnection(true)) {
+
             for (int i = 0; i < renameDbinfoSql.length; i++) {
                 log.info("Rename dbgroup: " + renameDbinfoSql[i]);
                 try (PreparedStatement stmt = conn.prepareStatement(renameDbinfoSql[i])) {
@@ -1417,6 +1533,7 @@ public abstract class MetricsDbBase implements Runnable {
                     stmt.execute();
                 }
             }
+
         } catch (Exception ex) {
             log.warn("Failed to rename dbgroup " + oldName + " to " + newName, ex);
             throw new RuntimeException(ex);
@@ -1464,21 +1581,27 @@ public abstract class MetricsDbBase implements Runnable {
         @Override
         public void run() {
         Map<Integer, DBInstanceInfo> metaHosts = new HashMap<>(dbList.size());
+
         for (DBInstanceInfo info : dbList)
             metaHosts.put(info.getDbid(), info);
+
         try {
             log.info("Start to sync meta DB host info with metrics DB host info");
             try (Connection conn = createConnection(true)) {
                 Map<Integer, DBInstanceInfo> metricsHosts = loadDbInfo(conn);
+
                 for (DBInstanceInfo info : dbList) {
                     int dbid = info.getDbid();
-                    if (!metricsHosts.containsKey(dbid)) {
+
+                    if (!metricsHosts.containsKey(dbid))
                         upsertDBInfo(conn, info, true);
-                    } else {
+                     else {
                         DBInstanceInfo info2 = metricsHosts.get(dbid);
                         try {
+
                             if (!info2.getDbGroupName().equals(info.getDbGroupName()) || !info2.getHostName().equals(info.getHostName()))
                                 upsertDBInfo(conn, info, false);
+
                         } catch (Exception ex) {
                         }
                     }
@@ -1502,8 +1625,10 @@ public abstract class MetricsDbBase implements Runnable {
      */
     public boolean removeDBInfo(String dbGroupName, String hostName, String owner, boolean force) {
         try (Connection conn = this.createConnection(true)) {
+
             if (removeDBInfo(conn, dbGroupName, hostName, owner, force))
                 return this.removeAlertSetting(conn, dbGroupName, hostName);
+
             return false;
         } catch (Exception ex) {
             log.error("Exception", ex);
@@ -1513,13 +1638,17 @@ public abstract class MetricsDbBase implements Runnable {
 
     private boolean removeDBInfo(Connection conn, String dbGroupName, String hostName, String owner, boolean force) {
         String sql = "delete from " + DBINFO_TABLENAME + " where dbgroupname=? and hostname=?";
+
         if (!force)
             sql = "delete from " + DBINFO_TABLENAME + " where dbgroupname=? and hostname=? and owner=?";
+
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, dbGroupName.toLowerCase());
             pstmt.setString(2, hostName.toLowerCase());
+
             if (!force)
                 pstmt.setString(3, owner);
+
             pstmt.execute();
             log.info("Removed the database host : (" + dbGroupName + ", " + hostName + "), owenr " + owner + ", force " + force);
             return pstmt.getUpdateCount() > 0;
@@ -1569,12 +1698,16 @@ public abstract class MetricsDbBase implements Runnable {
 
     public boolean removeDbGroup(Connection conn, String dbGroupName, String owner, boolean force) {
         String sql = "delete from " + DBINFO_TABLENAME + " where dbgroupname=?";
+
         if (!force)
             sql = "delete from " + DBINFO_TABLENAME + " where dbgroupname=? and owner=?";
+
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, dbGroupName.toLowerCase());
+
             if (!force)
                 pstmt.setString(2, owner);
+
             pstmt.execute();
             log.info("Removed the database host : (" + dbGroupName + ")");
             return pstmt.getUpdateCount() > 0;
@@ -1606,6 +1739,7 @@ public abstract class MetricsDbBase implements Runnable {
             pstmt.setString(1, dbGroupName.toLowerCase());
             pstmt.setString(2, hostName.toLowerCase());
             try (ResultSet rs = pstmt.executeQuery()) {
+
                 if (rs != null && rs.next()) {
                     DBInstanceInfo dbinfo = new DBInstanceInfo();
                     dbinfo.setDbid(rs.getInt("DBID"));
@@ -1639,8 +1773,10 @@ public abstract class MetricsDbBase implements Runnable {
      * @param dbinfo
      */
     public void upsertDBInfo(DBInstanceInfo dbinfo) {
+
         if (dbinfo == null)
             return;
+
         String sql2 = "update " + DBINFO_TABLENAME + " set dbtype=?,instance=?, port=?, database_name=?,USE_SSHTUNNEL=?, LOCAL_HOSTNAME=?, LOCAL_PORT=?, CONNECTION_VERIFIED=?, VIRTUAL_HOST=? where DBGROUPNAME=? and HOSTNAME=?";
         String sql3 = "insert into " + DBINFO_TABLENAME + " (dbgroupname,hostname,dbtype,instance, port, database_name,USE_SSHTUNNEL, LOCAL_HOSTNAME, LOCAL_PORT,CONNECTION_VERIFIED,VIRTUAL_HOST, OWNER) values(?,?,?,?,?,?,?,?,?,?,?,?)";
         log.info("Store or update db " + dbinfo.toString());
@@ -1649,26 +1785,32 @@ public abstract class MetricsDbBase implements Runnable {
             try {
                 //first, check if we have record
                 findOne = this.retrieveDBInfo(conn, dbinfo.getDbGroupName().toLowerCase(), dbinfo.getHostName().toLowerCase()) != null;
+
                 if (findOne) {
                     //conn.commit();
                     try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                         int idx = 1;
                         pstmt.setString(idx++, dbinfo.getDbType());
                         pstmt.setString(idx++, String.valueOf(dbinfo.getInstance()));
+
                         if (dbinfo.getPortShort() != 0)
                             pstmt.setShort(idx++, dbinfo.getPortShort());
                         else
                             pstmt.setNull(idx++, Types.SMALLINT);
+
                         pstmt.setString(idx++, dbinfo.getDatabaseName());
                         pstmt.setString(idx++, dbinfo.isUseTunneling() ? "1" : "0");
+
                         if (dbinfo.getLocalHostName() != null)
                             pstmt.setString(idx++, dbinfo.getLocalHostName().toLowerCase());
                         else
                             pstmt.setNull(idx++, Types.VARCHAR);
+
                         if (dbinfo.getLocalPortShort() != 0)
                             pstmt.setShort(idx++, dbinfo.getLocalPortShort());
                         else
                             pstmt.setNull(idx++, Types.SMALLINT);
+
                         pstmt.setString(idx++, dbinfo.isConnectionVerified() ? "1" : "0");
                         pstmt.setString(idx++, dbinfo.isVirtualHost() ? "1" : "0");
                         pstmt.setString(idx++, dbinfo.getDbGroupName().toLowerCase());
@@ -1683,29 +1825,36 @@ public abstract class MetricsDbBase implements Runnable {
                         pstmt.setString(idx++, dbinfo.getHostName().toLowerCase());
                         pstmt.setString(idx++, dbinfo.getDbType());
                         pstmt.setString(idx++, String.valueOf(dbinfo.getInstance()));
+
                         if (dbinfo.getPortShort() != 0)
                             pstmt.setShort(idx++, dbinfo.getPortShort());
                         else
                             pstmt.setNull(idx++, Types.SMALLINT);
+
                         pstmt.setString(idx++, dbinfo.getDatabaseName());
                         pstmt.setString(idx++, dbinfo.isUseTunneling() ? "1" : "0");
                         pstmt.setString(idx++, dbinfo.getLocalHostName());
+
                         if (dbinfo.getLocalPortShort() != 0)
                             pstmt.setShort(idx++, dbinfo.getLocalPortShort());
                         else
                             pstmt.setNull(idx++, Types.SMALLINT);
+
                         pstmt.setString(idx++, dbinfo.isConnectionVerified() ? "1" : "0");
                         pstmt.setString(idx++, dbinfo.isVirtualHost() ? "1" : "0");
                         pstmt.setString(idx++, dbinfo.getOwner());
                         pstmt.execute();
                     }
                 }
+
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -1726,9 +1875,10 @@ public abstract class MetricsDbBase implements Runnable {
                     pstmt.setString(1, dbgroup);
                     pstmt.setString(2, dbhost);
                     try (ResultSet rs = pstmt.executeQuery()) {
-                        if (rs != null && rs.next()) {
+
+                        if (rs != null && rs.next())
                             findOne = true;
-                        }
+
                     }
                 }
                 if (findOne) {
@@ -1737,10 +1887,12 @@ public abstract class MetricsDbBase implements Runnable {
                         int idx = 1;
                         pstmt.setString(idx++, alertType);
                         pstmt.setFloat(idx++, threshold);
+
                         if (comments != null && !comments.isEmpty())
                             pstmt.setString(idx++, comments);
                         else
                             pstmt.setNull(idx++, Types.VARCHAR);
+
                         pstmt.setString(idx++, dbgroup);
                         pstmt.setString(idx++, dbhost);
                         pstmt.execute();
@@ -1753,19 +1905,24 @@ public abstract class MetricsDbBase implements Runnable {
                         pstmt.setString(idx++, dbhost);
                         pstmt.setString(idx++, alertType);
                         pstmt.setFloat(idx++, threshold);
+
                         if (comments != null && !comments.isEmpty())
                             pstmt.setString(idx++, comments);
                         else
                             pstmt.setNull(idx++, Types.VARCHAR);
+
                         pstmt.execute();
                     }
                 }
+
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -1786,9 +1943,10 @@ public abstract class MetricsDbBase implements Runnable {
                     pstmt.setString(1, dbgroup);
                     pstmt.setString(2, dbhost);
                     try (ResultSet rs = pstmt.executeQuery()) {
-                        if (rs != null && rs.next()) {
+
+                        if (rs != null && rs.next())
                             findOne = true;
-                        }
+
                     }
                 }
                 if (findOne) {
@@ -1810,12 +1968,15 @@ public abstract class MetricsDbBase implements Runnable {
                         pstmt.execute();
                     }
                 }
+
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -1867,25 +2028,31 @@ public abstract class MetricsDbBase implements Runnable {
      */
     public boolean enableSnmp(String dbGroup, String hostname, boolean enabled, String owner, boolean force) {
         String sql2 = "update " + DBINFO_TABLENAME + " set SNMP_ENABLED=? where DBGROUPNAME=? and HOSTNAME=?";
+
         if (!force)
             sql2 = "update " + DBINFO_TABLENAME + " set SNMP_ENABLED=? where DBGROUPNAME=? and HOSTNAME=? AND OWNER=?";
+
         log.info("Update snmp metrics gathering for " + dbGroup + ", " + hostname);
         try (Connection conn = this.createConnection(true)) {
             try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                 pstmt.setInt(1, enabled ? 1 : 0);
                 pstmt.setString(2, dbGroup);
                 pstmt.setString(3, hostname);
+
                 if (!force)
                     pstmt.setString(4, owner);
+
                 pstmt.execute();
                 //conn.commit();
                 return pstmt.getUpdateCount() > 0;
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -1897,25 +2064,31 @@ public abstract class MetricsDbBase implements Runnable {
 
     public boolean enableMetrics(String dbGroup, String hostname, boolean enabled, String owner, boolean force) {
         String sql2 = "update " + DBINFO_TABLENAME + " set METRICS_ENABLED=? where DBGROUPNAME=? and HOSTNAME=?";
+
         if (!force)
             sql2 = "update " + DBINFO_TABLENAME + " set METRICS_ENABLED=? where DBGROUPNAME=? and HOSTNAME=? AND OWNER=?";
+
         log.info("Update metrics gathering for " + dbGroup + ", " + hostname);
         try (Connection conn = this.createConnection(true)) {
             try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                 pstmt.setInt(1, enabled ? 1 : 0);
                 pstmt.setString(2, dbGroup);
                 pstmt.setString(3, hostname);
+
                 if (!force)
                     pstmt.setString(4, owner);
+
                 pstmt.execute();
                 //conn.commit();
                 return pstmt.getUpdateCount() > 0;
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -1927,25 +2100,31 @@ public abstract class MetricsDbBase implements Runnable {
 
     public boolean enableAlerts(String dbGroup, String hostname, boolean enabled, String owner, boolean force) {
         String sql2 = "update " + DBINFO_TABLENAME + " set ALERT_ENABLED=? where DBGROUPNAME=? and HOSTNAME=?";
+
         if (!force)
             sql2 = "update " + DBINFO_TABLENAME + " set ALERT_ENABLED=? where DBGROUPNAME=? and HOSTNAME=? AND OWNER=?";
+
         log.info("Update alert gathering for " + dbGroup + ", " + hostname);
         try (Connection conn = this.createConnection(true)) {
             try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                 pstmt.setInt(1, enabled ? 1 : 0);
                 pstmt.setString(2, dbGroup);
                 pstmt.setString(3, hostname);
+
                 if (!force)
                     pstmt.setString(4, owner);
+
                 pstmt.execute();
                 //conn.commit();
                 return pstmt.getUpdateCount() > 0;
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -1965,12 +2144,14 @@ public abstract class MetricsDbBase implements Runnable {
      */
     public List<DBInstanceInfo> SearchDbInfo(String keyword) {
         String sql = null;
+
         if (keyword == null || keyword.isEmpty() || "%".equals(keyword.trim()))
             sql = "select * from " + DBINFO_TABLENAME + " order by dbtype, dbgroupname, hostname";
         else {
             keyword = keyword.trim();
             sql = "select * from " + DBINFO_TABLENAME + " where hostname like '%" + keyword.toLowerCase() + "%' or lower(database_name) like '%" + keyword.toLowerCase() + "%' or lower(dbgroupname) like '%" + keyword.toLowerCase() + "%' order by dbtype, dbgroupname, hostname";
         }
+
         log.info("Excute: " + sql);
         ArrayList<DBInstanceInfo> dbList = new ArrayList<>();
         try (Connection conn = this.createConnection(true);
@@ -2018,9 +2199,10 @@ public abstract class MetricsDbBase implements Runnable {
             try (PreparedStatement stmt = conn.prepareStatement(retrieveSQL)) {
                 stmt.setLong(1, ts);
                 try (ResultSet rs = stmt.executeQuery()) {
-                    if (rs != null && rs.next()) {
+
+                    if (rs != null && rs.next())
                         return rs.getInt(1);
-                    }
+
                 }
             }
         } catch (Exception ex) {
@@ -2043,9 +2225,10 @@ public abstract class MetricsDbBase implements Runnable {
             stmt.setLong(1, startTs);
             stmt.setLong(2, endTs);
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs != null && rs.next()) {
+
+                if (rs != null && rs.next())
                     return new int[] { rs.getInt(1), rs.getInt(2) };
-                }
+
             }
         } catch (Exception ex) {
         }
@@ -2097,55 +2280,68 @@ public abstract class MetricsDbBase implements Runnable {
             try {
                 try (PreparedStatement pstmt = conn.prepareStatement("select ID from " + ALERT_SUBSCRIPT + " where DBGROUP=? and HOSTNAME=? and ALERT_NAME=?")) {
                     pstmt.setString(1, sub.group);
+
                     if (sub.host != null && !sub.host.isEmpty())
                         pstmt.setString(2, sub.host);
                     else
                         pstmt.setNull(2, Types.VARCHAR);
+
                     pstmt.setString(3, sub.alertName);
                     try (ResultSet rs = pstmt.executeQuery()) {
-                        if (rs != null && rs.next()) {
+
+                        if (rs != null && rs.next())
                             findOne = true;
-                        }
+
                     }
                 }
-                if (findOne) {
+                if (findOne)
                     try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                         String s = sub.paramToJSON();
+
                         if (s != null)
                             pstmt.setString(1, sub.paramToJSON());
                         else
                             pstmt.setNull(1, Types.VARCHAR);
+
                         pstmt.setString(2, sub.group);
+
                         if (sub.host != null && !sub.host.isEmpty())
                             pstmt.setString(3, sub.host);
                         else
                             pstmt.setNull(3, Types.VARCHAR);
+
                         pstmt.setString(4, sub.alertName);
                         pstmt.execute();
                     }
-                } else {
+                 else
                     try (PreparedStatement pstmt = conn.prepareStatement(sql3)) {
                         pstmt.setString(1, sub.group);
+
                         if (sub.host != null && !sub.host.isEmpty())
                             pstmt.setString(2, sub.host);
                         else
                             pstmt.setNull(2, Types.VARCHAR);
+
                         pstmt.setString(3, sub.alertName);
                         String s = sub.paramToJSON();
+
                         if (s != null)
                             pstmt.setString(4, sub.paramToJSON());
                         else
                             pstmt.setNull(4, Types.VARCHAR);
+
                         pstmt.execute();
                     }
-                }
+
                 return true;
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -2161,19 +2357,23 @@ public abstract class MetricsDbBase implements Runnable {
         try (Connection conn = this.createConnection(true)) {
             try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                 pstmt.setString(1, sub.group);
+
                 if (sub.host != null && !sub.host.isEmpty())
                     pstmt.setString(2, sub.host);
                 else
                     pstmt.setNull(2, Types.VARCHAR);
+
                 pstmt.setString(3, sub.alertName);
                 pstmt.execute();
                 return true;
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception iex) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -2222,21 +2422,26 @@ public abstract class MetricsDbBase implements Runnable {
                         pstmt.setString(4, sub.mSubGroup);
                     else
                         pstmt.setNull(4, Types.VARCHAR);
+
                     try (ResultSet rs = pstmt.executeQuery()) {
-                        if (rs != null && rs.next()) {
+
+                        if (rs != null && rs.next())
                             findOne = true;
-                        }
+
                     }
                 }
 
-                if (!findOne) {
+                if (!findOne)
                     try (PreparedStatement pstmt = conn.prepareStatement(sql3)) {
                         pstmt.setString(1, sub.group);
+
                         if (sub.host != null && !sub.host.isEmpty())
                             pstmt.setString(2, sub.host);
                         else
                             pstmt.setNull(2, Types.VARCHAR);
+
                         pstmt.setString(3, sub.mGroup);
+
                         if (sub.mSubGroup != null)
                             pstmt.setString(4, sub.mSubGroup);
                         else
@@ -2244,15 +2449,17 @@ public abstract class MetricsDbBase implements Runnable {
 
                         pstmt.execute();
                     }
-                }
+
 
                 return true;
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception ignored) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {
@@ -2269,23 +2476,29 @@ public abstract class MetricsDbBase implements Runnable {
         try (Connection conn = this.createConnection(true)) {
             try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                 pstmt.setString(1, sub.group);
+
                 if (sub.host != null && !sub.host.isEmpty())
                     pstmt.setString(2, sub.host);
                 else
                     pstmt.setNull(2, Types.VARCHAR);
+
                 pstmt.setString(3, sub.mGroup);
+
                 if (sub.mSubGroup != null)
                     pstmt.setString(4, sub.mSubGroup);
                 else
                     pstmt.setNull(4, Types.VARCHAR);
+
                 pstmt.execute();
                 return true;
             } catch (Exception transactionException) {
+
                 if (conn != null)
                     try {
                         conn.rollback();
                     } catch (Exception ignored) {
                     }
+
                 throw transactionException;
             }
         } catch (Exception ex) {

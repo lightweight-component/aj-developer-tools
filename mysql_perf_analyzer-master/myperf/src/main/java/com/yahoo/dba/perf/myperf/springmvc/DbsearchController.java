@@ -27,10 +27,11 @@ public class DbsearchController extends MyPerfBaseController {
         List<String> mydbs = this.frameworkContext.getDbInfoManager()
                 .listDbsByUserInfo(WebAppUtil.findUserFromRequest(req), retrieveAppUser(req).isRestrictedUser());
         HashSet<String> mydbSet = new HashSet<>();
-        if (mydbs != null) {
+
+        if (mydbs != null)
             for (String s : mydbs)
                 mydbSet.add(s);
-        }
+
         ResultList rList = new ResultList();
         {
             String keyword = req.getParameter("keyword");
@@ -46,8 +47,10 @@ public class DbsearchController extends MyPerfBaseController {
             desc.addColumn("DATABASENAME", false, idx++);
 
             for (DBInstanceInfo urp : dbList) {
+
                 if (!mydbSet.contains(urp.getDbGroupName()))
                     continue;
+
                 ResultRow row = new ResultRow();
                 List<String> cols = new ArrayList<>(8);
                 row.setColumnDescriptor(desc);

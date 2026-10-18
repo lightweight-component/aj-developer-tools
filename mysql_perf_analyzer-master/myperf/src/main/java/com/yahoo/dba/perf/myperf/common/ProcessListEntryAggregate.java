@@ -43,10 +43,12 @@ public class ProcessListEntryAggregate implements Serializable, Comparable<Proce
         @Override
         public int compare(ProcessListEntryAggregate obj1,
                            ProcessListEntryAggregate obj2) {
+
             if (obj1 == null && obj2 == null)
                 return 0;
             else if (obj1 == null) return 1;
             else if (obj2 == null) return -1;
+
             return obj2.getCount() - obj1.getCount();//reverse order
         }
 
@@ -57,6 +59,7 @@ public class ProcessListEntryAggregate implements Serializable, Comparable<Proce
     }
 
     public float getAverage() {
+
         if (this.count == 0)
             return 0;
         else
@@ -71,26 +74,32 @@ public class ProcessListEntryAggregate implements Serializable, Comparable<Proce
     public void record(int time_sec) {
         this.count++;
         this.total_time_sec += time_sec;
+
         if (this.min_time_sec < 0)
             this.min_time_sec = time_sec;
         else
             this.min_time_sec = Math.min(this.min_time_sec, time_sec);
+
         this.max_time_sec = Math.max(this.max_time_sec, time_sec);
     }
 
     @Override
     public int compareTo(ProcessListEntryAggregate obj) {
+
         if (obj == null)
             return -1;
+
         return obj.getTotal_time_sec() - this.getTotal_time_sec();
     }
 
     public static void updateDataMap(Map<String, ProcessListEntryAggregate> m, String sql, int time_sec) {
+
         if (m == null)
             return;
-        if (m.containsKey(sql)) {
+
+        if (m.containsKey(sql))
             m.get(sql).record(time_sec);
-        } else {
+         else {
             ProcessListEntryAggregate e = new ProcessListEntryAggregate(sql);
             e.setChecksum(generateDigest(sql));
             e.record(time_sec);
@@ -105,17 +114,20 @@ public class ProcessListEntryAggregate implements Serializable, Comparable<Proce
      * @return
      */
     public static String generateDigest(String str) {
+
         if (str == null || str.isEmpty())
             return "00000000";
+
         try {
             MessageDigest md = MessageDigest.getInstance("SHA1");
             md.update(str.getBytes());
             byte[] digest = md.digest();
             StringBuilder sb = new StringBuilder();
-            for (byte b : digest) {
+
+            for (byte b : digest)
                 sb.append(HEXES[(b & 0xF0) >> 4])
                         .append(HEXES[(b & 0x0F)]);
-            }
+
             return sb.toString();
         } catch (Exception ex) {
 

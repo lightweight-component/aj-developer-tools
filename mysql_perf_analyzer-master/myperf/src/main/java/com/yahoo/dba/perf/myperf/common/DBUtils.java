@@ -33,8 +33,10 @@ public class DBUtils {
         try (Statement stmt = conn.createStatement()) {
             stmt.setQueryTimeout(180);
             try (ResultSet rs = stmt.executeQuery(sql)) {
+
                 if (rs != null && rs.next())
                     return true;
+
                 return false;
             }
         } catch (Exception ex) {
@@ -43,6 +45,7 @@ public class DBUtils {
     }
 
     public static void close(Statement stmt) {
+
         if (stmt != null) try {
             stmt.close();
         } catch (Exception ex) {
@@ -50,6 +53,7 @@ public class DBUtils {
     }
 
     public static void close(ResultSet rs) {
+
         if (rs != null) try {
             rs.close();
         } catch (Exception ex) {
@@ -57,6 +61,7 @@ public class DBUtils {
     }
 
     public static void close(Connection conn) {
+
         if (conn != null) try {
             conn.close();
         } catch (Exception ex) {
@@ -88,22 +93,25 @@ public class DBUtils {
                 if (conn != null) {
                     dbinfo.setConnectionVerified(true);
                     log.info("Connection test succeeded to (" + dbinfo + ")");
-                    if (testRWPermission) {
+
+                    if (testRWPermission)
                         try (Statement stmt = conn.createStatement()) {
                             //create table
                             stmt.execute("create table mtr_test (id int auto_increment, v varchar(30), primary key(id))");
                             stmt.execute("insert into mtr_test (v) values('123')");
                             try (ResultSet rs = stmt.executeQuery("select v from mtr_test")) {
                                 String testData = null;
+
                                 if (rs != null && rs.next())
                                     testData = rs.getString(1);
+
                                 if (!"123".equals(testData))
                                     return "Failed insert/select test. Expect 123, got " + testData + ".";
                             }
                             stmt.execute("delete from mtr_test where v='123'");
                             stmt.execute("drop table mtr_test");
                         }
-                    }
+
                     return null;
                 } else {
                     log.error("Connection test failed: reason null.");
@@ -124,6 +132,7 @@ public class DBUtils {
             log.info("Test connection to (" + dbinfo + "): " + url);
             DriverManager.setLoginTimeout(60);
             try (Connection conn = DriverManager.getConnection(url, username, password)) {
+
                 if (conn != null) {
                     dbinfo.setConnectionVerified(true);
                     log.info("Connection test succeeded to (" + dbinfo + ")");
@@ -142,6 +151,7 @@ public class DBUtils {
     public static boolean hasTable(Connection conn, String schemaName, String tableName) {
         try (ResultSet rs = conn.getMetaData().getTables(null, schemaName, tableName.toUpperCase(), null)) {
             while (rs.next()) {
+
                 if (tableName.equalsIgnoreCase(rs.getString("TABLE_NAME")))
                     return true;
             }
@@ -152,14 +162,17 @@ public class DBUtils {
 
     public static DBCredential findDBCredential(MyPerfContext ctx, String dbid, AppUser appUser) {
         DBCredential cred = null;
+
         if (appUser == null)
             return null;
+
         try {
             //first, check if the user has his own credential
             cred = ctx.getMetaDb().retrieveDBCredential(appUser.getName(), dbid);
-            if (cred != null && !appUser.getName().equalsIgnoreCase(cred.getAppUser())) {
+
+            if (cred != null && !appUser.getName().equalsIgnoreCase(cred.getAppUser()))
                 log.info(appUser.getName() + ": get cred for " + cred.getUsername());
-            }
+
         } catch (Exception ex) {
             log.warn(appUser.getName() + ": failed to get cred for " + cred.getUsername());
         }

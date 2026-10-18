@@ -70,6 +70,7 @@ public class AutoScanner {
     private long maxScanIdleTime = 3600000L;
 
     synchronized public void init() {
+
         if (!this.initialized) {
             // Read and verify configuration. Especially the user
             if (!this.context.getMyperfConfig().isConfigured()) {
@@ -109,6 +110,7 @@ public class AutoScanner {
     }
 
     synchronized public void start() {
+
         if (!this.initialized)
             return;
 
@@ -169,8 +171,10 @@ public class AutoScanner {
         int secOfTheDay = getCurrentSeconds();
         int interval = context.getMyperfConfig().getScannerIntervalSeconds();
         maxScanIdleTime = interval * 3000L;
+
         if (maxScanIdleTime < 300000L)
             maxScanIdleTime = 300000L;//minimum check time 5 minutes
+
         log.info("maximun alowed hange time: " + maxScanIdleTime);
 
         int configDelay = (int) Math.ceil(((double) secOfTheDay) / (720 * 60)) * 720 * 60 - secOfTheDay;
@@ -235,16 +239,21 @@ public class AutoScanner {
 
     synchronized public void forceStopScheduler(String name) {
         ScheduledExecutorService svc = null;
+
         if (SCHEDULER_METRICS.equals(name))
             svc = this.metricsScheduler;
         else if (SCHEDULER_ALERT.equals(name))
             svc = this.alertScheduler;
+
         if (SCHEDULER_RETENTION.equals(name))
             svc = this.scheduler2;
+
         if (SCHEDULER_MONITOR.equals(name))
             svc = this.monitorScheduler;
+
         if (svc == null)
             return;
+
         try {
             log.info("Shutdown scheduler " + name);
             svc.shutdownNow();
@@ -264,10 +273,11 @@ public class AutoScanner {
     }
 
     public MetricsBuffer getBufferByDB(String dbName, String hostName, String metricGroupName) {
-        if (this.buffer.containsKey(dbName + ":" + hostName)) {
+
+        if (this.buffer.containsKey(dbName + ":" + hostName))
             if (this.buffer.get(dbName + ":" + hostName).containsKey(metricGroupName))
                 return this.buffer.get(dbName + ":" + hostName).get(metricGroupName);
-        }
+
 
         return null;
     }
@@ -297,6 +307,7 @@ public class AutoScanner {
         }
 
         public void shutdown() {
+
             if (this.scanner != null)
                 this.scanner.shutdown();
         }
@@ -324,11 +335,14 @@ public class AutoScanner {
     private final class MonitorTask implements Runnable {
         public void run() {
             long currentTime = System.currentTimeMillis();
+
             if (currentTime - lastScanTime >= maxScanIdleTime) {//if the last run is 3 times of an interval
 
                 log.error("Metrics Scanner hangs, shut it down.");
+
                 if (metricsTask != null)
                     metricsTask.shutdown();
+
                 forceStopScheduler(SCHEDULER_METRICS);
                 try {
                     Thread.sleep(60000L);

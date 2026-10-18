@@ -17,10 +17,13 @@ import java.text.SimpleDateFormat;
  */
 public class CommonUtils {
     public static long getMapValueLong(Map<String, String> map, String key, long def) {
+
         if (map == null)
             return def;
+
         if (!map.containsKey(key))
             return def;
+
         try {
             return Long.parseLong(map.get(key));
         } catch (Exception ex) {
@@ -29,10 +32,13 @@ public class CommonUtils {
     }
 
     public static float getMapValueFloat(Map<String, String> map, String key, float def) {
+
         if (map == null)
             return def;
+
         if (!map.containsKey(key))
             return def;
+
         try {
             return Float.parseFloat(map.get(key));
         } catch (Exception ex) {
@@ -41,12 +47,16 @@ public class CommonUtils {
     }
 
     public static String escapeJsonHTML(String str) {
+
         if (str == null)
             return "";
+
         StringBuilder sb = new StringBuilder(str.length());
         char[] carray = str.toCharArray();
+
         for (int i = 0; i < carray.length; i++) {
             char c = carray[i];
+
             if (c == '\"')
                 sb.append("\\u0022");
             else if (c == '\n')
@@ -64,16 +74,21 @@ public class CommonUtils {
                 //skip it
             } else sb.append(c);
         }
+
         return sb.toString();
     }
 
     public static String escapeJson(String str) {
+
         if (str == null)
             return "";
+
         StringBuilder sb = new StringBuilder(str.length());
         char[] carray = str.toCharArray();
+
         for (int i = 0; i < carray.length; i++) {
             char c = carray[i];
+
             if (c == '\"')
                 sb.append("\\\"");
             else if (c == '\n')
@@ -88,6 +103,7 @@ public class CommonUtils {
                 //skip it
             } else sb.append(c);
         }
+
         return sb.toString();
     }
 

@@ -43,15 +43,21 @@ public class ReplLagQueryProcessor implements CustomQueryProcessor {
         rList = context.getQueryEngine().executeQueryGeneric(qps2, connWrapper, qps.getMaxRows());
         String master = null;
         String port = null;
+
         if (rList != null) {
             LinkedHashMap<String, String> kvPairs = new LinkedHashMap<>(rList.getRows().size());
+
             for (ResultRow row : rList.getRows()) {
+
                 if (row.getColumns() == null || row.getColumns().size() < 2)
                     continue;
+
                 kvPairs.put(row.getColumns().get(0), row.getColumns().get(1));
             }
+
             master = kvPairs.get("Master_Host");
             port = kvPairs.get("Master_Port");
+
             if (master != null && !master.isEmpty() && port != null && !port.isEmpty()) {
                 log.info("Query master status from (" + master + ":" + port + ")");
                 DBInstanceInfo dbinfo2 = new DBInstanceInfo();
@@ -61,20 +67,24 @@ public class ReplLagQueryProcessor implements CustomQueryProcessor {
                 dbinfo2.setDbType("mysql");
                 String url = dbinfo2.getConnectionString();
                 DBCredential cred = null;
-                if (appUser != null) {
+
+                if (appUser != null)
                     try {
                         //first, check if the user has his own credential
                         cred = context.getMetaDb().retrieveDBCredential(appUser, dbinfo.getDbGroupName());
-                        if (cred != null) {
+
+                        if (cred != null)
                             try {
                                 DriverManager.setLoginTimeout(60);
                                 try (Connection conn = DriverManager.getConnection(url, cred.getUsername(), cred.getPassword())) {
-                                    if (conn != null) {
+
+                                    if (conn != null)
                                         try (Statement stmt = conn.createStatement();
                                             ResultSet rs = stmt.executeQuery("show master status")) {
                                             //TODO rearrange order
                                             ResultList rList2 = new ResultList();
                                             rList2.setColumnDescriptor(rList.getColumnDescriptor());
+
                                             for (String e : SLAVE_LAG_ENTRIES) {
                                                 ResultRow row = new ResultRow();
                                                 row.setColumnDescriptor(rList.getColumnDescriptor());
@@ -83,6 +93,7 @@ public class ReplLagQueryProcessor implements CustomQueryProcessor {
                                                 rList2.addRow(row);
                                                 kvPairs.remove(e);
                                             }
+
                                             while (rs != null && rs.next()) {
                                                 ResultRow row = new ResultRow();
                                                 row.setColumnDescriptor(rList.getColumnDescriptor());
@@ -113,18 +124,20 @@ public class ReplLagQueryProcessor implements CustomQueryProcessor {
                                                 row.addColumn(e.getValue());
                                                 rList2.addRow(row);
                                             }
+
                                             return rList2;
                                         }
-                                    }
+
                                 }
                             } catch (Exception ex) {
                             }
-                        }
+
                     } catch (Exception ex) {
                     }
-                }
+
             }
         }
+
         return rList;
     }
 

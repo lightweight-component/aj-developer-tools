@@ -101,10 +101,11 @@ public class MetricsGroup {
     }
 
     public MetricsGroup getSubGroupByName(String name) {
-        for (MetricsGroup grp : this.subGroups) {
+
+        for (MetricsGroup grp : this.subGroups)
             if (grp.getGroupName().equals(name))
                 return grp;
-        }
+
 
         return null;
     }
@@ -127,6 +128,7 @@ public class MetricsGroup {
     }
 
     public void addSubGroups(MetricsGroup subGroup) {
+
         if (subGroup == null)
             return;
 
@@ -140,17 +142,20 @@ public class MetricsGroup {
      * @return
      */
     public String getSinkTableName() {
-        if (this.isStoreInCommonTable()) {
+
+        if (this.isStoreInCommonTable())
             if (this.targetTable != null)
                 return this.targetTable;
             else return "METRIC_GENERIC";
-        } else if (this.udmFlagged)
+
+         else if (this.udmFlagged)
             return "UDM_" + this.groupName.toUpperCase();
 
         return (this.dbType + "_" + this.groupName).toUpperCase();
     }
 
     public String getMetricFullName(String metricName) {
+
         if (!this.metricsNameMap.containsKey(metricName))
             return null;
 

@@ -36,22 +36,30 @@ public class MetricsController extends MyPerfBaseController {
     private Map<String, String> parseURL(HttpServletRequest req) {
         Map<String, String> reqParams = new HashMap<>();
         String path = req.getServletPath();
+
         if (path != null) {
             String[] paths = path.split("/");
+
             if (paths.length > 2) {
                 reqParams.put(Constants.URL_PATH_CMD, paths[2]);
+
                 if (paths.length > 3)
                     reqParams.put(Constants.URL_PATH_DBGROUP, paths[3]);
+
                 if (paths.length > 4)
                     reqParams.put(Constants.URL_PATH_DBHOST, paths[4]);
+
                 if (paths.length > 5)
                     reqParams.put(Constants.URL_PATH_METRICS, paths[5]);
+
                 if (paths.length > 6)
                     reqParams.put(Constants.URL_PATH_START_TS, paths[6]);
+
                 if (paths.length > 7)
                     reqParams.put(Constants.URL_PATH_END_TS, paths[7]);
             }
         }
+
         return reqParams;
     }
 
@@ -64,10 +72,12 @@ public class MetricsController extends MyPerfBaseController {
     private DBInstanceInfo retrieveDBInfoFromPath(Map<String, String> pathParameters) {
         DBInstanceInfo dbinfo = null;
         String dbgroup = pathParameters.get(Constants.URL_PATH_DBGROUP);
+
         if (dbgroup == null || dbgroup.isEmpty())
             return null;
 
         String dbhost = pathParameters.get(Constants.URL_PATH_DBHOST);
+
         if (dbhost == null || dbhost.isEmpty())
             return null;
 
@@ -81,15 +91,19 @@ public class MetricsController extends MyPerfBaseController {
 
 
     private void prefixMetricGroupName(String mg, ResultList rs) {
+
         if (mg == null || "globalstatus".equals(mg) || mg.isEmpty() || rs == null)
             return;
+
         for (ColumnInfo col : rs.getColumnDescriptor().getColumns()) {
             String name = col.getName();
+
             if ("TS".equals(name) || "SNAP_ID".equals(name))
                 continue;
-            if (!name.startsWith(mg + ".")) {
+
+            if (!name.startsWith(mg + "."))
                 col.setName(mg + "." + name);
-            }
+
         }
     }
 
@@ -102,54 +116,70 @@ public class MetricsController extends MyPerfBaseController {
         String[] metricsList = null;//used when useKeyColumn is true
         DBInstanceInfo dbinfo = retrieveDBInfoFromPath(pathParameters);
         do {
+
             if (dbinfo == null) {
                 status = Constants.STATUS_BAD;
                 message = "There is no record for DB (" + pathParameters.get(Constants.URL_PATH_DBGROUP) + ", " + pathParameters.get(Constants.URL_PATH_DBHOST) + "), please add it to the system first.";
                 break;
             }
+
             String m = pathParameters.get(Constants.URL_PATH_METRICS);
+
             if (m == null) {
                 status = Constants.STATUS_BAD;
                 message = "No valid meteic name is provided.";
                 break;
             }
+
             String startTime = pathParameters.get(Constants.URL_PATH_START_TS);
             String endTime = pathParameters.get(Constants.URL_PATH_END_TS);
             String[] ms = m.split(",");
             String[] dateRange = MyPerfBaseController.getDateRange(startTime, endTime);
             HashMap<String, HashMap<String, ArrayList<String>>> metricsByGroup = new HashMap<>();
+
             for (String s : ms) {   //all name should be in the form of {group}.{subgrp}.{metric name}
                 String[] cmp = s.split("\\."); //retrieve name component
+
                 if (cmp.length != 3)
                     continue; //invalid name, ignore
+
                 if (cmp[2] == null || cmp[2].isEmpty())
                     continue;//invalid name, ignore
+
                 String mg = cmp[0];
                 String subGrpName = cmp[1];
                 String metricName = cmp[2];
+
                 if (mg == null || mg.isEmpty())
                     mg = "STATUS";
+
                 if ("UDM".equals(mg))//need special processing for UDM
                     mg = "UDM_" + subGrpName;
+
                 if (!metricsByGroup.containsKey(mg))
                     metricsByGroup.put(mg, new HashMap<>());
+
                 HashMap<String, ArrayList<String>> subGrp = metricsByGroup.get(mg);
+
                 if (!subGrp.containsKey(subGrpName))
                     subGrp.put(subGrpName, new ArrayList<>());
+
                 subGrp.get(subGrpName).add(metricName);
             }
 
             for (String mg : metricsByGroup.keySet()) {
                 //check if metrics has key column
                 MetricsGroup mGroup = null;
-                if (mg.startsWith("UDM_")) {
+
+                if (mg.startsWith("UDM_"))
                     try {
                         mGroup = this.frameworkContext.getMetricsDef().getUdmManager()
                                 .getUDMByName(mg.substring(mg.indexOf('_') + 1)).getMetricsGroup();
                     } catch (Exception ex) {
                     }
-                } else
+                 else
                     mGroup = this.frameworkContext.getMetricsDef().getGroupByName(mg);
+
                 if (mGroup == null) {
                     log.info("Failed to find metris definition for " + mg);
                     continue;
@@ -159,6 +189,7 @@ public class MetricsController extends MyPerfBaseController {
                     //if we have only one metric group and it has additional key
                     //Now we need retrieve this group with additional key
                     metricsList = metricsByGroup.get(mg).get("_").toArray(new String[0]);
+
                     if (metricsList.length <= 1)//we only want to handle one metric now.
                     {
                         rlist = retrieveMetricsWithKey(metricsList, mg, null, dbinfo, dateRange[0], dateRange[1], false);
@@ -166,28 +197,35 @@ public class MetricsController extends MyPerfBaseController {
                         break;
                     }
                 }
+
                 HashMap<String, ArrayList<String>> subGroups = metricsByGroup.get(mg);
+
                 for (String subGrpName : subGroups.keySet()) {
                     ResultList tmpList = null;
-                    if (mGroup != null && mGroup.isStoreInCommonTable()) {
+
+                    if (mGroup != null && mGroup.isStoreInCommonTable())
                         tmpList = retrieveGenericMetrics(subGroups.get(subGrpName).toArray(new String[0]), mGroup, dbinfo, dateRange[0], dateRange[1]);
-                    } else if (mGroup != null && mGroup.getKeyColumn() != null && !mGroup.getKeyColumn().isEmpty())
+                     else if (mGroup != null && mGroup.getKeyColumn() != null && !mGroup.getKeyColumn().isEmpty())
                         tmpList = retrieveMetricsWithKey(subGroups.get(subGrpName).toArray(new String[0]), mg, subGrpName, dbinfo, dateRange[0], dateRange[1], true);
                     else
                         tmpList = retrieveMetrics(subGroups.get(subGrpName).toArray(new String[0]), mg, subGrpName, dbinfo, dateRange[0], dateRange[1]);
                     //if(mGroup == null || !mGroup.isStoreInCommonTable())
                     {
                         String prefix = mg + ".";
+
                         if (subGrpName != null)
                             prefix += subGrpName;
+
                         if (mg.startsWith("UDM_"))
                             prefix = "UDM." + subGrpName;
+
                         prefixMetricGroupName(prefix, tmpList);
                     }
                     if (rlist == null && tmpList != null) {
                         log.info("Return list size: " + tmpList.getRows().size());
                         rlist = tmpList;
                     } else if (tmpList != null) rlist = this.mergeResultList(rlist, tmpList);
+
                     if (rlist != null)
                         log.info("End list size after merge: " + rlist.getRows().size());
                 }
@@ -199,46 +237,59 @@ public class MetricsController extends MyPerfBaseController {
         ModelAndView mv = null;
 
         mv = new ModelAndView(this.jsonView);
+
         if (status == Constants.STATUS_BAD) {
+
             if (req.getParameter("callback") != null && req.getParameter("callback").trim().length() > 0)
                 mv.addObject("callback", req.getParameter("callback"));//YUI datasource binding
+
             mv.addObject("json_result", ResultListUtil.toJSONString(null, null, status, message));
         } else {
 
             if (rlist != null && rlist.getCustomObjects() != null) {
                 HashMap<String, String> metricsMapping = new HashMap<>(rlist.getCustomObjects().size());
                 int idx = 0;
-                for (CustomResultObject obj : rlist.getCustomObjects().values()) {
+
+                for (CustomResultObject obj : rlist.getCustomObjects().values())
                     if (obj instanceof MetricsResultObject) {
                         MetricsResultObject mco = MetricsResultObject.class.cast(obj);
+
                         for (Metric m : mco.getMetrics()) {
+
                             if (!useKeyColumn)
                                 m.setShortName("M_" + idx);
                             else
                                 m.setShortName(m.getName().substring(m.getName().lastIndexOf(".") + 1));
+
                             metricsMapping.put(m.getName(), m.getShortName());
                             idx++;
                         }
                     }
-                }
+
 
                 //fix column def
                 log.info("short name mapping: " + metricsMapping);
+
                 for (ColumnInfo col : rlist.getColumnDescriptor().getColumns()) {
                     String shortName = metricsMapping.get(col.getName());
+
                     if (shortName != null)
                         col.setName(shortName);
                 }
             }
+
             mv = new ModelAndView(this.jsonView);
+
             if (req.getParameter("callback") != null && req.getParameter("callback").trim().length() > 0)
                 mv.addObject("callback", req.getParameter("callback"));//YUI datasource binding
+
             QueryParameters qps = new QueryParameters();
             qps.setGroup(dbinfo.getDbGroupName());
             qps.setHost(dbinfo.getHostName());
             mv.addObject("json_result", useKeyColumn ? ResultListUtil.toMetricsJSONStringWithMultiRowsKeys(rlist, "KEY_COLUMN", new String[]{"SNAP_ID", "TS"}, metricsList[0], qps, status, message)
                     : ResultListUtil.toJSONString(rlist, qps, status, message));
         }
+
         return mv;
     }
 
@@ -248,9 +299,11 @@ public class MetricsController extends MyPerfBaseController {
         String cmd = null;//enable and disable metrics, otherwise retrieve/get
 
         Map<String, String> pathParameters = this.parseURL(req);
+
         if (pathParameters.containsKey(Constants.URL_PATH_CMD)) {
             cmd = pathParameters.get(Constants.URL_PATH_CMD);
             log.info("Receive command: " + cmd);
+
             if ("get".equalsIgnoreCase(cmd))
                 return getMetrics(pathParameters, req, resp);
         }
@@ -276,8 +329,10 @@ public class MetricsController extends MyPerfBaseController {
         ResultList rList = null;
         try {
             String tblName = subGroup;
+
             if (tblName == null || tblName.isEmpty() || tblName.equals("_"))
                 tblName = metricgroup;
+
             if (metricgroup.startsWith("UDM_"))
                 tblName = metricgroup;
             else tblName = "MYSQL_" + tblName;
@@ -290,14 +345,17 @@ public class MetricsController extends MyPerfBaseController {
             //add back metrics definition
             MetricsResultObject mrs = new MetricsResultObject();
             String prefix = metricgroup + ".";
+
             if (metricgroup.startsWith("UDM_"))
                 prefix = "UDM." + subGroup + ".";
             else if (subGroup == null || subGroup.isEmpty())
                 prefix += "_.";
             else
                 prefix += subGroup + ".";
+
             for (Metric m : mtrs)
                 m.setName(prefix + m.getName());//prefix name with group/sub group name
+
             mrs.setMetrics(mtrs);
             rList.addCustomeObject(mrs);
         } catch (Throwable th)//don't want to throw exception back to the user
@@ -313,11 +371,14 @@ public class MetricsController extends MyPerfBaseController {
         try {
             {
                 String tblName = subGroup;
+
                 if (tblName == null || tblName.isEmpty() || tblName.equals("_"))
                     tblName = metricgroup;
+
                 if (metricgroup.startsWith("UDM_"))
                     tblName = metricgroup;
                 else tblName = "MYSQL_" + tblName;
+
                 long sqlStartTime = System.currentTimeMillis();
                 rList = this.frameworkContext.getMetricDb().retrieveMetrics(tblName.toUpperCase(), metrics, false,
                         dbinfo.getDbid(), Long.parseLong(startDate), Long.parseLong(endDate));
@@ -326,14 +387,17 @@ public class MetricsController extends MyPerfBaseController {
                 MetricsResultObject mrs = new MetricsResultObject();
                 List<Metric> mtrs = this.frameworkContext.getMetricsDef().getMetrics(metricgroup, subGroup, metrics);
                 String prefix = metricgroup + ".";
+
                 if (metricgroup.startsWith("UDM_"))
                     prefix = "UDM." + subGroup + ".";
                 else if (subGroup == null || subGroup.isEmpty())
                     prefix += "_.";
                 else
                     prefix += subGroup + ".";
+
                 for (Metric m : mtrs)
                     m.setName(prefix + m.getName());//prefix name with group/sub group name
+
                 mrs.setMetrics(mtrs);
                 rList.addCustomeObject(mrs);
             }
@@ -347,15 +411,20 @@ public class MetricsController extends MyPerfBaseController {
 
     private ResultList retrieveGenericMetrics(String[] metrics, MetricsGroup mg, DBInstanceInfo dbinfo, String startDate, String endDate) {
         ResultList rList = null;
-        for (String mname : metrics) {
+
+        for (String mname : metrics)
             try {
                 String metricFullName = mg.getMetricFullName(mname);
+
                 if (metricFullName == null)
                     continue;
+
                 ResultList tmpList = this.frameworkContext.getMetricDb().retrieveUDMMetrics(metricFullName,
                         dbinfo.getDbid(), Long.parseLong(startDate), Long.parseLong(endDate));
+
                 if (tmpList == null)
                     continue;
+
                 Metric m = mg.getMetricByName(mname).copy();
                 m.setName(metricFullName);
                 List<Metric> mtrs = new ArrayList<>(1);
@@ -363,13 +432,15 @@ public class MetricsController extends MyPerfBaseController {
                 MetricsResultObject mrs = new MetricsResultObject();
                 mrs.setMetrics(mtrs);
                 tmpList.addCustomeObject(mrs);
+
                 if (rList == null)
                     rList = tmpList;
                 else rList = this.mergeResultList(rList, tmpList);
+
             } catch (Exception ex) {
 
             }
-        }
+
         return rList;
     }
 
@@ -378,14 +449,15 @@ public class MetricsController extends MyPerfBaseController {
         ResultList rList = new ResultList();
         ColumnDescriptor desc = new ColumnDescriptor();
         int idx = 0;
-        for (ColumnInfo c : rList1.getColumnDescriptor().getColumns()) {
-            desc.addColumn(c.getName(), c.isNumberType(), idx++);
-        }
 
-        for (ColumnInfo c : rList2.getColumnDescriptor().getColumns()) {
+        for (ColumnInfo c : rList1.getColumnDescriptor().getColumns())
+            desc.addColumn(c.getName(), c.isNumberType(), idx++);
+
+
+        for (ColumnInfo c : rList2.getColumnDescriptor().getColumns())
             if (!"TS".equalsIgnoreCase(c.getName()) && !"SNAP_ID".equalsIgnoreCase(c.getName()))
                 desc.addColumn(c.getName(), c.isNumberType(), idx++);
-        }
+
         rList.setColumnDescriptor(desc);
 
         //we have use the same timestamp and data are sorted, ignore if we have any missing data in one list
@@ -396,14 +468,18 @@ public class MetricsController extends MyPerfBaseController {
         while (idx1 < n1 && idx2 < n2) {
             ResultRow row1 = rList1.getRows().get(idx1);
             ResultRow row2 = rList2.getRows().get(idx2);
+
             if (row1.getColumns().get(0).equals(row2.getColumns().get(0)))//same timestamp, accept it
             {
                 ResultRow row = new ResultRow();
                 row.setColumnDescriptor(desc);
+
                 for (int i = 0; i < row1.getColumns().size(); i++)
                     row.addColumn(row1.getColumns().get(i));
+
                 for (int i = 2; i < row2.getColumns().size(); i++)//skip TS and SNAP_ID
                     row.addColumn(row2.getColumns().get(i));
+
                 rList.addRow(row);
                 idx1++;
                 idx2++;
@@ -412,24 +488,27 @@ public class MetricsController extends MyPerfBaseController {
             else idx2++;//advance the second rList
         }
         MetricsResultObject mrs = new MetricsResultObject();
+
         if (rList1.getCustomObjects() != null)
-            for (CustomResultObject obj : rList1.getCustomObjects().values()) {
+            for (CustomResultObject obj : rList1.getCustomObjects().values())
                 if (obj instanceof MetricsResultObject) {
                     MetricsResultObject mco = MetricsResultObject.class.cast(obj);
-                    for (Metric m : mco.getMetrics()) {
+
+                    for (Metric m : mco.getMetrics())
                         mrs.addMetric(m);
-                    }
+
                 }
-            }
+
         if (rList2.getCustomObjects() != null)
-            for (CustomResultObject obj : rList2.getCustomObjects().values()) {
+            for (CustomResultObject obj : rList2.getCustomObjects().values())
                 if (obj instanceof MetricsResultObject) {
                     MetricsResultObject mco = MetricsResultObject.class.cast(obj);
-                    for (Metric m : mco.getMetrics()) {
+
+                    for (Metric m : mco.getMetrics())
                         mrs.addMetric(m);
-                    }
+
                 }
-            }
+
         rList.addCustomeObject(mrs);
         return rList;
     }

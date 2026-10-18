@@ -66,6 +66,7 @@ public class InstanceStatesManager implements Serializable {
     }
 
     synchronized public InstanceStates getStates(int dbid) {
+
         if (statesMap.containsKey(dbid))
             return statesMap.get(dbid);
 
@@ -74,16 +75,20 @@ public class InstanceStatesManager implements Serializable {
 
 
     synchronized public void addInstanceStates(int dbid) {
+
         if (statesMap.containsKey(dbid))
             return;
+
         this.statesMap.put(dbid, new InstanceStates());
     }
 
     synchronized public boolean removeInstanceStates(int dbid) {
+
         if (statesMap.containsKey(dbid)) {
             statesMap.remove(dbid);
             return true;
         }
+
         return false;
     }
 
@@ -95,6 +100,7 @@ public class InstanceStatesManager implements Serializable {
     public void init(MyPerfContext context) {
         log.info("Initialize InstanceStatesManager");
         File root = new File(new File(this.rootPath), STORAGE_DIR);
+
         if (!root.exists())
             root.mkdirs();
 
@@ -103,18 +109,19 @@ public class InstanceStatesManager implements Serializable {
         if (objFile.exists()) {
             log.info("Load saved status");
             Map<Integer, InstanceStates> savedState = readObject(objFile);
-            if (savedState != null) {
+
+            if (savedState != null)
                 for (Map.Entry<Integer, InstanceStates> e : savedState.entrySet())
                     this.statesMap.put(e.getKey(), e.getValue());
-            }
+
         }
 
-        for (Map.Entry<String, DBGroupInfo> e : context.getDbInfoManager().getClusters().entrySet()) {
-            for (DBInstanceInfo dbinfo : e.getValue().getInstances()) {
+        for (Map.Entry<String, DBGroupInfo> e : context.getDbInfoManager().getClusters().entrySet())
+            for (DBInstanceInfo dbinfo : e.getValue().getInstances())
                 if (!this.statesMap.containsKey(dbinfo.getDbid()))
                     this.statesMap.put(dbinfo.getDbid(), new InstanceStates());
-            }
-        }
+
+
         log.info("Initialized InstanceStatesManager");
     }
 

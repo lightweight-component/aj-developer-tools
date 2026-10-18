@@ -33,8 +33,10 @@ public class ResultRow implements Serializable {
      * @param s
      */
     public void addColumn(String s) {
+
         if (this.columns == null)
             this.columns = new ArrayList<>();
+
         this.columns.add(s);
     }
 }

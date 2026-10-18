@@ -42,6 +42,7 @@ public class LogoutController extends MyPerfBaseController {
         }
 
         public void run() {
+
             if (conns != null) {
                 conns.setValid(false);
                 conns.close();

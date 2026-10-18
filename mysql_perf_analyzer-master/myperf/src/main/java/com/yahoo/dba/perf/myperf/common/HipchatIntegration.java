@@ -44,14 +44,17 @@ public class HipchatIntegration {
         }
         this.hipchatURL = ctx.getMyperfConfig().getHipchatUrl();
         this.authToken = ctx.getMyperfConfig().getHipchatAuthToken();
+
         if (authToken != null && !authToken.isEmpty()
                 && hipchatURL != null && !hipchatURL.isEmpty()) this.enabled = true;
+
         if (this.enabled) {
             //do a test
             this.enabled = this.sendMessage("MySQL Perf Analzyer Hipchat Integration Initiated on " + this.hostname);
-            if (this.enabled) {
+
+            if (this.enabled)
                 log.info("Hipchat integration is enabed.");
-            }
+
         }
     }
 
@@ -61,10 +64,12 @@ public class HipchatIntegration {
      * @param mgs
      */
     public boolean sendMessage(String msg) {
+
         if (!this.enabled) {
             log.info("Hichat is not enabled, ignore.");
             return false;
         }
+
         String url = this.hipchatURL + "auth_token=" + this.authToken;
         try {
 

@@ -29,10 +29,11 @@ public class DBGroupInfo implements Serializable {
     }
 
     public DBInstanceInfo getInstance(int instanceNumber) {
-        for (DBInstanceInfo inst : instances) {
+
+        for (DBInstanceInfo inst : instances)
             if (instanceNumber == inst.getInstance())
                 return inst;
-        }
+
         return null;
     }
 
@@ -42,23 +43,26 @@ public class DBGroupInfo implements Serializable {
      * @return
      */
     public boolean canAccessDirectly() {
-        for (DBInstanceInfo inst : instances) {
+
+        for (DBInstanceInfo inst : instances)
             if (!inst.isConnectionVerified())
                 return false;
-        }
+
         return true;
     }
 
     public DBInstanceInfo findInstanceByHost(String hostname) {
-        for (DBInstanceInfo dbinfo : this.instances) {
+
+        for (DBInstanceInfo dbinfo : this.instances)
             if (hostname.equalsIgnoreCase(dbinfo.getHostName()))
                 return dbinfo;
-        }
+
         return null;
     }
 
     public void addOrUpdateInstance(DBInstanceInfo dbinfo) {
         DBInstanceInfo db = findInstanceByHost(dbinfo.getHostName());
+
         if (db == null)
             this.instances.add(dbinfo);
         else {

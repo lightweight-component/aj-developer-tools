@@ -39,6 +39,7 @@ public class VardiffController extends MyPerfBaseController {
         String host2 = req.getParameter("p_2");
         //validation input
         String validation = qps.validate();
+
         if (validation == null || validation.isEmpty()) {
             //do we have such query?
             try {
@@ -47,28 +48,35 @@ public class VardiffController extends MyPerfBaseController {
                 validation = ex.getMessage();
             }
         }
+
         if (validation != null && !validation.isEmpty())
             return this.respondFailure(validation, req);
 
         dbinfo = this.frameworkContext.getDbInfoManager().findDB(qps.getGroup(), qps.getHost());
+
         if (dbinfo == null)
             return this.respondFailure("Cannot find record for DB (" + qps.getGroup() + ", " + qps.getHost() + ")", req);
+
         dbinfo2 = this.frameworkContext.getDbInfoManager().findDB(group2, host2);
+
         if (dbinfo2 == null)
             return this.respondFailure("Cannot find record for DB (" + group2 + ", " + host2 + ")", req);
 
         try {
             connWrapper = WebAppUtil.getDBConnection(req, this.frameworkContext, dbinfo);
+
             if (connWrapper == null) {
                 status = Constants.STATUS_BAD;
                 message = "failed to connect to target db (" + dbinfo + ")";
             } else {
                 connWrapper2 = WebAppUtil.getDBConnection(req, this.frameworkContext, dbinfo2);
+
                 if (connWrapper2 == null) {
                     status = Constants.STATUS_BAD;
                     message = "failed to connect to target db (" + dbinfo2 + ")";
                 }
             }
+
         } catch (Throwable th) {
             log.error("Exception", th);
             status = Constants.STATUS_BAD;
@@ -92,23 +100,27 @@ public class VardiffController extends MyPerfBaseController {
             WebAppUtil.closeDBConnection(req, connWrapper2, false, this.getFrameworkContext().getMyperfConfig().isReuseMonUserConnction());
         } catch (Throwable ex) {
             log.error("Exception", ex);
+
             if (ex instanceof SQLException) {
                 SQLException sqlEx = SQLException.class.cast(ex);
                 String msg = ex.getMessage();
                 log.info(sqlEx.getSQLState() + ", " + sqlEx.getErrorCode() + ", " + msg);
                 //check if the connection is still good
-                if (!DBUtils.checkConnection(connWrapper.getConnection())) {
+                if (!DBUtils.checkConnection(connWrapper.getConnection()))
                     WebAppUtil.closeDBConnection(req, connWrapper, true, false);
-                } else
+                 else
                     WebAppUtil.closeDBConnection(req, connWrapper, true, false);
-                if (!DBUtils.checkConnection(connWrapper2.getConnection())) {
+
+                if (!DBUtils.checkConnection(connWrapper2.getConnection()))
                     WebAppUtil.closeDBConnection(req, connWrapper2, true, false);
-                } else
+                 else
                     WebAppUtil.closeDBConnection(req, connWrapper2, true, false);
+
             } else {
                 WebAppUtil.closeDBConnection(req, connWrapper, false, this.getFrameworkContext().getMyperfConfig().isReuseMonUserConnction());
                 WebAppUtil.closeDBConnection(req, connWrapper2, false, this.getFrameworkContext().getMyperfConfig().isReuseMonUserConnction());
             }
+
             status = Constants.STATUS_BAD;
             message = "Exception: " + ex.getMessage();
         }
@@ -118,12 +130,13 @@ public class VardiffController extends MyPerfBaseController {
 
         HashMap<String, String> param1 = new HashMap<>(rList.getRows().size());
         HashMap<String, String> param2 = new HashMap<>(rList2.getRows().size());
-        for (ResultRow r : rList.getRows()) {
+
+        for (ResultRow r : rList.getRows())
             param1.put(r.getColumns().get(0).toUpperCase(), r.getColumns().get(1));
-        }
-        for (ResultRow r : rList2.getRows()) {
+
+        for (ResultRow r : rList2.getRows())
             param2.put(r.getColumns().get(0).toUpperCase(), r.getColumns().get(1));
-        }
+
         ColumnDescriptor desc = new ColumnDescriptor();
         desc.addColumn("VARIABLE_NAME", false, 1);
         desc.addColumn("DB1", false, 2);
@@ -133,18 +146,24 @@ public class VardiffController extends MyPerfBaseController {
         fList.setColumnDescriptor(desc);
 
         HashSet<String> diffSet = new HashSet<>();
+
         for (Map.Entry<String, String> e : param1.entrySet()) {
             String k = e.getKey();
             String v = e.getValue();
+
             if (v != null)
                 v = v.trim();
             else v = "";
+
             String v2 = null;
+
             if (param2.containsKey(k))
                 v2 = param2.get(k);
+
             if (v2 != null)
                 v2 = v2.trim();
             else v2 = "";
+
             if (!v.equals(v2)) {
                 ResultRow row = new ResultRow();
                 List<String> cols = new ArrayList<>();
@@ -161,10 +180,13 @@ public class VardiffController extends MyPerfBaseController {
         for (Map.Entry<String, String> e : param2.entrySet()) {
             String k = e.getKey();
             String v = e.getValue();
+
             if (v == null || v.isEmpty())
                 continue;
+
             if (diffSet.contains(k) || param1.containsKey(k))
                 continue;
+
             ResultRow row = new ResultRow();
             List<String> cols = new ArrayList<>();
             cols.add(k);
@@ -176,6 +198,7 @@ public class VardiffController extends MyPerfBaseController {
         }
 
         mv = new ModelAndView(this.jsonView);
+
         if (req.getParameter("callback") != null && req.getParameter("callback").trim().length() > 0)
             mv.addObject("callback", req.getParameter("callback"));//YUI datasource binding
 

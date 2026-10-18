@@ -36,22 +36,31 @@ public class ResultRowKeyComparator implements Comparator<ResultRow>, Serializab
 
 
     public int compare(ResultRow o1, ResultRow o2) {
+
         if (o1 == null && o2 == null)
             return 0;
+
         if (o1 == null)
             return -1;
+
         if (o2 == null)
             return 1;
+
         for (int i = 0; i < this.keyList.size(); i++) {
             String valA = this.index1List.get(i) >= 0 ? o1.getColumns().get(this.index1List.get(i)) : null;
             String valB = this.index2List.get(i) >= 0 ? o2.getColumns().get(this.index2List.get(i)) : null;
+
             if (valA == null && valB == null)
                 return 0;
+
             if (valA == null)
                 return -1;
+
             if (valB == null)
                 return 1;
+
             int c = valA.trim().compareTo(valB.trim());
+
             if (c != 0)
                 return c;
         }

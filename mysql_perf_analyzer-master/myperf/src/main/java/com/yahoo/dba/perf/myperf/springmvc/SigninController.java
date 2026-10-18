@@ -47,6 +47,7 @@ public class SigninController extends AbstractController {
         boolean failed = false;
         String message = null;
         String username = request.getParameter("name");
+
         if (username != null) {
             username = username.trim().toLowerCase();
             //find the user from the system cache
@@ -65,16 +66,19 @@ public class SigninController extends AbstractController {
                     failed = true;
                     message = "Your signup has not been confirmed by any administrator user yet.";
                 }
+
                 if (!failed) {
                     log.info(appUser.getName() + " login, redirect to " + view);
                     return new ModelAndView(new RedirectView(view));
                 }
+
             }//if(appUser!=null && appUser.match(request.getParameter("pd"))
             else {
                 failed = true;
                 message = DEFAULT_ERROR;
 
             }
+
         }//if(username!=null)
 
         //not authenticated? Try again
@@ -83,8 +87,10 @@ public class SigninController extends AbstractController {
         int seed = (int) (Math.random() * Integer.MAX_VALUE);
         ModelAndView mv = new ModelAndView(getLoginFormView());
         mv.addObject("name", username);
+
         if (failed)
             mv.addObject("message", message);
+
         mv.addObject("help_key", "start");
         mv.addObject("server_ts", server_ts);
         mv.addObject("ars", seed);//ars: authentication random seed

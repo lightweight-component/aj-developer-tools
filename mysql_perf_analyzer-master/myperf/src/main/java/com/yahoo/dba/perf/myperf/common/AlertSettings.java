@@ -56,8 +56,10 @@ public class AlertSettings {
         private String notificationEmails; //emails to alert if something happens
 
         public Float getThreshold(String alertType) {
+
             if (thresholds.containsKey(alertType))
                 return thresholds.get(alertType);
+
             return null;
         }
 
@@ -75,12 +77,15 @@ public class AlertSettings {
         private String notificationEmails; //emails to alert if something happens
 
         public HostSettings getHostSettings(String dbhost) {
+
             if (this.hostSettings.containsKey(dbhost))
                 return this.hostSettings.get(dbhost);
+
             return null;
         }
 
         public Float getGroupDefaultThreshold(String alertType) {
+
             if (this.groupThresholds.containsKey(alertType))
                 return this.groupThresholds.get(alertType);
             else
@@ -92,14 +97,18 @@ public class AlertSettings {
         }
 
         public void updateHostThreshold(String dbhost, String alertType, Float threshold) {
+
             if (!this.hostSettings.containsKey(dbhost))
                 this.hostSettings.put(dbhost, new HostSettings());
+
             this.hostSettings.get(dbhost).updateThreshold(alertType, threshold);
         }
 
         public void updateHostNotificationEmails(String dbhost, String emails) {
+
             if (!this.hostSettings.containsKey(dbhost))
                 this.hostSettings.put(dbhost, new HostSettings());
+
             this.hostSettings.get(dbhost).setNotificationEmails(emails);
         }
 
@@ -119,22 +128,27 @@ public class AlertSettings {
     synchronized public float getAlertThreshold(String dbgroup, String dbhost, String alertType) {
         alertType = alertType.toUpperCase();
         //do we have group?
-        if (!this.groupSettings.containsKey(dbgroup)) {
+        if (!this.groupSettings.containsKey(dbgroup))
             if (DEFAULT_THRESHOLD.containsKey(alertType))
                 return DEFAULT_THRESHOLD.get(alertType);
             else return Float.MAX_VALUE;
-        }
+
         GroupSettings grpSetting = groupSettings.get(dbgroup);
         HostSettings hostSetting = grpSetting.getHostSettings(dbhost);
         Float threshold = null;
+
         if (hostSetting != null)
             threshold = hostSetting.getThreshold(alertType);
+
         if (threshold == null)
             threshold = grpSetting.getGroupDefaultThreshold(alertType);
+
         if (threshold == null && DEFAULT_THRESHOLD.containsKey(alertType))
             return DEFAULT_THRESHOLD.get(alertType);
+
         if (threshold == null)
             threshold = Float.MAX_VALUE;
+
         return threshold;
 
     }
@@ -147,12 +161,16 @@ public class AlertSettings {
         GroupSettings grpSetting = groupSettings.get(dbgroup);
         HostSettings hostSetting = grpSetting.getHostSettings(dbhost);
         String emails = null;
+
         if (hostSetting != null)
             emails = hostSetting.getNotificationEmails();
+
         if (emails == null || emails.isEmpty())
             emails = grpSetting.getNotificationEmails();
+
         if (emails != null && !emails.isEmpty())
             return emails;
+
         return this.context.getMyperfConfig().getAlertNotificationEmails();
     }
 
@@ -167,43 +185,57 @@ public class AlertSettings {
     synchronized public boolean updateAlertThreshold(String dbgroup, String dbhost, String alertType, Float threshold, boolean save) {
         String alertSettingString = "(" + dbgroup + ", " + dbhost + ", " + alertType + ", " + threshold + ", " + save + ")";
         float prevValue = getAlertThreshold(dbgroup, dbhost, alertType);
+
         if (prevValue != 0.0f && Math.abs((prevValue - threshold.floatValue()) / prevValue) < 0.01f) {
             log.info("Change too small, ignore: " + alertSettingString);
             return false;//ignore if change is less than 1%
         }
+
         if (prevValue == 0.0f && threshold.floatValue() == 0.0f)
             return false;
 
         if (dbgroup == null || dbgroup.isEmpty())
             return false;
+
         if (this.context.getDbInfoManager().findGroup(dbgroup) == null) {
             log.info("Unknow DB GROUP, ignore: " + alertSettingString);
             return false;//no such dbgroup
         }
+
         if (dbhost == null || dbhost.isEmpty())
             dbhost = "all";
+
         if (!"all".equals(dbhost) && this.context.getDbInfoManager().findDB(dbgroup, dbhost) == null) {
             log.info("Unknown DB, ignore: " + alertSettingString);
             return false;//no such db
         }
+
         if (!this.groupSettings.containsKey(dbgroup))
             this.groupSettings.put(dbgroup, new GroupSettings());
+
         GroupSettings grpSetting = this.groupSettings.get(dbgroup);
+
         if ("all".equals(dbhost)) {
+
             if (save)
                 this.context.getMetricDb().upsertAlertSetting(dbgroup, dbhost, alertType, threshold, null);
+
             grpSetting.updateDefault(alertType, threshold);
         } else {
+
             if (save)
                 this.context.getMetricDb().upsertAlertSetting(dbgroup, dbhost, alertType, threshold, null);
+
             grpSetting.updateHostThreshold(dbhost, alertType, threshold);
         }
+
         return true;
     }
 
     synchronized public boolean updateAlertNotification(String dbgroup, String dbhost, String emails, boolean save) {
         String alertSettingString = "(" + dbgroup + ", " + dbhost + ", " + emails + ", " + save + ")";
         String prevValue = getNotificationEmails(dbgroup, dbhost);
+
         if (prevValue != null && prevValue.equalsIgnoreCase(emails)) {
             log.info("No changes, ignore: " + emails);
             return false;//ignore if no changes
@@ -211,39 +243,51 @@ public class AlertSettings {
 
         if (dbgroup == null || dbgroup.isEmpty())
             return false;
+
         if (this.context.getDbInfoManager().findGroup(dbgroup) == null) {
             log.info("Unknow DB GROUP, ignore: " + emails);
             return false;//no such dbgroup
         }
+
         if (dbhost == null || dbhost.isEmpty())
             dbhost = "all";
+
         if (!"all".equals(dbhost) && this.context.getDbInfoManager().findDB(dbgroup, dbhost) == null) {
             log.info("Unknown DB, ignore: " + emails);
             return false;//no such db
         }
+
         if (!this.groupSettings.containsKey(dbgroup))
             this.groupSettings.put(dbgroup, new GroupSettings());
+
         GroupSettings grpSetting = this.groupSettings.get(dbgroup);
+
         if ("all".equals(dbhost)) {
+
             if (save)
                 this.context.getMetricDb().upsertAlertNotification(dbgroup, dbhost, emails);
+
             grpSetting.setNotificationEmails(emails);
         } else {
+
             if (save)
                 this.context.getMetricDb().upsertAlertNotification(dbgroup, dbhost, emails);
+
             grpSetting.updateHostNotificationEmails(dbhost, emails);
         }
+
         return true;
     }
 
     public boolean addAlertDefinition(AlertDefinition alertDef) {
         synchronized (this.alertDefinitions) {
             String name = alertDef.getName();
-            for (int i = this.alertDefinitions.size() - 1; i >= 0; i--) {
-                if (this.alertDefinitions.get(i).getName().equals(name)) {
+
+            for (int i = this.alertDefinitions.size() - 1; i >= 0; i--)
+                if (this.alertDefinitions.get(i).getName().equals(name))
                     return false;
-                }
-            }
+
+
             this.alertDefinitions.add(alertDef);
         }
         return true;
@@ -251,12 +295,13 @@ public class AlertSettings {
 
     public boolean removeAlertDefinition(String name) {
         synchronized (this.alertDefinitions) {
-            for (int i = this.alertDefinitions.size() - 1; i >= 0; i--) {
+
+            for (int i = this.alertDefinitions.size() - 1; i >= 0; i--)
                 if (this.alertDefinitions.get(i).getName().equals(name)) {
                     this.alertDefinitions.remove(i);
                     return true;
                 }
-            }
+
         }
         return false;
     }

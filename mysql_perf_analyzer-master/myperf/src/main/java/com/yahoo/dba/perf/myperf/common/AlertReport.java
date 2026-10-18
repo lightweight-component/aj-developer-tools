@@ -70,8 +70,10 @@ public class AlertReport implements Serializable {
         try {
             String ts = sdf.format(new Date(this.timestamp));
             File dir = new File(this.rootPath, sdf2.format(new Date(this.timestamp)));
+
             if (!dir.exists())
                 dir.mkdirs();
+
             dest = new File(dir, this.alertReason + "_" + this.dbGroupName + "_" + this.dbHostName + "_" + ts + ".txt");
             try (PrintWriter pw = new PrintWriter(new FileWriter(dest))) {
                 pw.println("Report Time:        " + sdf.format(new Date(this.reportTimestamp)));
@@ -79,8 +81,10 @@ public class AlertReport implements Serializable {
                 pw.println("DB Group:    " + this.dbGroupName);
                 pw.println("DB Host:     " + this.dbHostName);
                 pw.println("Alert Type:  " + this.alertReason);
+
                 if (alertValue != null)
                     pw.println("Alert Value:  " + this.alertValue);
+
                 pw.println("");
 
                 if (this.processListSummary != null)
@@ -89,9 +93,10 @@ public class AlertReport implements Serializable {
                 if (this.replicationSummary != null && this.replicationSummary.size() > 0) {
                     pw.println();
                     pw.println("------SLAVE STATUS------");
-                    for (Map.Entry<String, String> e : this.replicationSummary.entrySet()) {
+
+                    for (Map.Entry<String, String> e : this.replicationSummary.entrySet())
                         pw.println(String.format("%40s: %s", e.getKey(), e.getValue()));
-                    }
+
                 }
 
                 if (this.userDefinedAlertData != null)
@@ -109,17 +114,21 @@ public class AlertReport implements Serializable {
     public static void printList(PrintWriter pw, ResultList rList) {
         int colcnt = rList.getColumnDescriptor().getColumns().size();
         int[] colsize = new int[colcnt];
+
         for (int i = 0; i < colcnt; i++)
             colsize[i] = rList.getColumnDescriptor().getColumns().get(i).getName().length();
+
         for (ResultRow row : rList.getRows()) {
             List<String> cols = row.getColumns();
-            for (int i = 0; i < cols.size(); i++) {
+
+            for (int i = 0; i < cols.size(); i++)
                 if (cols.get(i) != null && cols.get(i).length() > colsize[i])
                     colsize[i] = cols.get(i).length();
-            }
+
         }
 
         StringBuilder sb = new StringBuilder();
+
         for (int i = 0; i < colcnt; i++)
             sb.append(String.format("%" + colsize[i] + "s ", rList.getColumnDescriptor().getColumns().get(i).getName()));
 
@@ -128,9 +137,10 @@ public class AlertReport implements Serializable {
         for (ResultRow row : rList.getRows()) {
             sb.setLength(0);
             List<String> cols = row.getColumns();
-            for (int i = 0; i < cols.size(); i++) {
+
+            for (int i = 0; i < cols.size(); i++)
                 sb.append(String.format("%" + colsize[i] + "s ", row.getColumns().get(i)));
-            }
+
             pw.println(sb);
         }
     }

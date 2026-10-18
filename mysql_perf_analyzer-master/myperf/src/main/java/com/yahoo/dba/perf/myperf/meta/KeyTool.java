@@ -21,8 +21,10 @@ import javax.crypto.NoSuchPaddingException;
 public class KeyTool {
     private static void maskFileReadonly(String filename) {
         try {
+
             if ((new File(filename)).exists())
                 Runtime.getRuntime().exec("chmod 400 " + filename);
+
             log.info("Execute shell command to change file permission");
         } catch (Exception ex) {
             log.info("Faild to execute shell command", ex);
@@ -73,6 +75,7 @@ public class KeyTool {
                         log.error("Exception", e);
                     }
                 }
+
                 ecipher = Cipher.getInstance("DES");
                 dcipher = Cipher.getInstance("DES");
                 ecipher.init(Cipher.ENCRYPT_MODE, key);
@@ -137,28 +140,36 @@ public class KeyTool {
             }
             do {
                 c = (b0 & 0xfc) >>> 2;
+
                 if (notleading || c != 0) {
                     sb.append(base64Table[c]);
                     notleading = true;
                 }
+
                 c = ((b0 & 3) << 4) | ((b1 & 0xf0) >>> 4);
+
                 if (notleading || c != 0) {
                     sb.append(base64Table[c]);
                     notleading = true;
                 }
+
                 c = ((b1 & 0xf) << 2) | ((b2 & 0xc0) >>> 6);
+
                 if (notleading || c != 0) {
                     sb.append(base64Table[c]);
                     notleading = true;
                 }
+
                 c = b2 & 0x3f;
+
                 if (notleading || c != 0) {
                     sb.append(base64Table[c]);
                     notleading = true;
                 }
+
                 if (pos >= len)
                     break;
-                else {
+                else
                     try {
                         b0 = buffer[pos++];
                         b1 = buffer[pos++];
@@ -166,7 +177,7 @@ public class KeyTool {
                     } catch (ArrayIndexOutOfBoundsException e) {
                         break;
                     }
-                }
+
             } while (true);
 
             if (notleading)
@@ -177,6 +188,7 @@ public class KeyTool {
 
         public static byte[] fromb64(String str) throws NumberFormatException {
             int len = str.length();
+
             if (len == 0)
                 throw new NumberFormatException("Empty Base64 string");
 
@@ -187,8 +199,10 @@ public class KeyTool {
             for (i = 0; i < len; ++i) {
                 c = str.charAt(i);
                 try {
+
                     for (j = 0; c != base64Table[j]; ++j)
                         ;
+
                 } catch (Exception e) {
                     throw new NumberFormatException("Illegal Base64 character");
                 }
@@ -200,18 +214,24 @@ public class KeyTool {
             try {
                 while (true) {
                     a[j] = a[i];
+
                     if (--i < 0)
                         break;
+
                     a[j] |= (a[i] & 3) << 6;
                     --j;
                     a[j] = (byte) ((a[i] & 0x3c) >>> 2);
+
                     if (--i < 0)
                         break;
+
                     a[j] |= (a[i] & 0xf) << 4;
                     --j;
                     a[j] = (byte) ((a[i] & 0x30) >>> 4);
+
                     if (--i < 0)
                         break;
+
                     a[j] |= (a[i] << 2);
 
                     // Nasty, evil bug in Microsloth's Java interpreter under

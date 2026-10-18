@@ -22,24 +22,28 @@ public class SettingsController extends MyPerfBaseController {
                                              HttpServletResponse resp) throws Exception {
         AppUser appUser = AppUser.class.cast(req.getSession().getAttribute(AppUser.SESSION_ATTRIBUTE));
         String task = req.getParameter("task");
-        if (!appUser.isAdminUser() && task != null && !task.isEmpty()) {
+
+        if (!appUser.isAdminUser() && task != null && !task.isEmpty())
             return this.respondFailure("Only admin user can change auto scan configuration or start/stop scanner.", req);
-        }
-        if ("update".equalsIgnoreCase(task)) {
+
+        if ("update".equalsIgnoreCase(task))
             return handleUpdate(req, resp);
-        } else if ("updatesnmp".equalsIgnoreCase(task)) {
+         else if ("updatesnmp".equalsIgnoreCase(task))
             return handleUpdateSNMP(req, resp);
-        } else if ("fetchsnmp".equalsIgnoreCase(task)) {
+         else if ("fetchsnmp".equalsIgnoreCase(task))
             return handleFetchSNMP(req, resp);
-        } else if (("start".equalsIgnoreCase(task) || "restart".equalsIgnoreCase(task)) && appUser.isAdminUser()) {
+         else if (("start".equalsIgnoreCase(task) || "restart".equalsIgnoreCase(task)) && appUser.isAdminUser()) {
             log.info("To start/restart scanner");
             //need reconfig
             this.frameworkContext.getMyperfConfig().init(this.frameworkContext);
 
             AutoScanner scanner = this.frameworkContext.getAutoScanner();
+
             if (scanner.isRunning())
                 scanner.stop();
+
             if (this.frameworkContext.getMyperfConfig().isConfigured()) {
+
                 if ("start".equalsIgnoreCase(task)) {
                     log.info("To start/restart metricsdb");
                     this.frameworkContext.initMetricsDB();
@@ -47,18 +51,23 @@ public class SettingsController extends MyPerfBaseController {
                     this.frameworkContext.getMetricsDef().getUdmManager().loadSubscriptions(this.frameworkContext);
                     this.frameworkContext.getMetricDb().loadAlertSetting(this.frameworkContext.getAlertSettings());
                 }
+
                 scanner.init();//re-init
+
                 if (!scanner.isInitialized())
                     return this.respondFailure("failed to use new configuration to initialize Auto Scanner Scheduler.", req);
+
                 scanner.start();//TODO catch any exception
                 return this.respondSuccess("Auto Scanner Scheduler has been started.", req);
-            } else {
+            } else
                 return this.respondFailure("failed to use new configuration.", req);
-            }
+
         } else if ("stop".equalsIgnoreCase(task) && appUser.isAdminUser()) {
             AutoScanner scanner = this.frameworkContext.getAutoScanner();
+
             if (scanner.isRunning())
                 scanner.stop();
+
             return this.respondSuccess("Auto Scanner Scheduler has been stopped.", req);
         }
 
@@ -77,26 +86,35 @@ public class SettingsController extends MyPerfBaseController {
         ModelAndView mv = new ModelAndView(this.jsonView);
         String community = snmpSetting == null ? SNMPSettings.SNMPSetting.DEFAULT_COMMUNITY : snmpSetting.getCommunity();
         String ver = snmpSetting == null ? SNMPSettings.SNMPSetting.DEFAULT_VERSION : snmpSetting.getVersion();
+
         if (community == null || community.isEmpty())
             community = SNMPSettings.SNMPSetting.DEFAULT_COMMUNITY;
+
         if (ver == null || ver.isEmpty())
             ver = SNMPSettings.SNMPSetting.DEFAULT_VERSION;
+
         String enabled = snmpSetting == null ? "yes" : snmpSetting.getEnabled();
         StringBuilder sb = new StringBuilder();
         sb.append("{\"status\":0,\"message\":\"OK\", \"community\":\"").append(community)
                 .append("\",\"version\":\"").append(ver)
                 .append("\",\"enabled\":\"").append(enabled).append("\"");
+
         if ("3".equals(ver)) {
+
             if (snmpSetting.getUsername() != null)
                 sb.append(",\"username\":\"").append(snmpSetting.getUsername()).append("\"");
+
             if (snmpSetting.getAuthProtocol() != null)
                 sb.append(",\"authprotocol\":\"").append(snmpSetting.getAuthProtocol()).append("\"");
+
             if (snmpSetting.getPrivacyProtocol() != null)
                 sb.append(",\"privacyprotocol\":\"").append(snmpSetting.getPrivacyProtocol()).append("\"");
+
             if (snmpSetting.getContext() != null)
                 sb.append(",\"context\":\"").append(snmpSetting.getContext()).append("\"");
             //log.info("Ommit pwd: "+snmpSetting.getPassword()+", "+snmpSetting.getPrivacyPassphrase());
         }
+
         sb.append("}");
         mv.addObject("json_result", sb.toString());
         return mv;
@@ -117,6 +135,7 @@ public class SettingsController extends MyPerfBaseController {
                 req.getParameter("context"),
                 req.getParameter("enabled")
         );
+
         if (successful)
             return this.respondSuccess("SNMP settings have been updated", req);
         else
@@ -130,20 +149,24 @@ public class SettingsController extends MyPerfBaseController {
         try {
             String username = req.getParameter("username");
             AppUser u = this.frameworkContext.getUserManager().getUser(username.toLowerCase());
+
             if (u == null)
                 u = this.frameworkContext.getMetaDb().retrieveUserInfo(username.toLowerCase());
-            if (u == null) {
+
+            if (u == null)
                 return this.respondFailure("The system cannot find the user " + username, req);
-            }
+
             if ("mysql".equalsIgnoreCase(req.getParameter("metricsDbType"))) {
                 message = this.testMetricsDB(req.getParameter("metricsDbHost"),
                         req.getParameter("metricsDbPort"),
                         req.getParameter("metricsDbName"),
                         req.getParameter("metricsDbUserName"),
                         req.getParameter("metricsDbPassword"), config);
+
                 if (message != null && !message.isEmpty())
                     return this.respondFailure(message, req);
             }
+
             config.setMetricsDbUserName(username.toLowerCase());
             config.setAdminEmail(req.getParameter("adminemail"));
             int retentionDays = 60;
@@ -153,6 +176,7 @@ public class SettingsController extends MyPerfBaseController {
             }
             if (retentionDays < 1)
                 retentionDays = 60;
+
             config.setRecordRententionDays(retentionDays);
             int scanInterval = 300;
             try {
@@ -161,6 +185,7 @@ public class SettingsController extends MyPerfBaseController {
             }
             if (scanInterval < 1)
                 scanInterval = 300;
+
             config.setScannerIntervalSeconds(scanInterval);
             int alertScanInterval = 300;
             try {
@@ -169,6 +194,7 @@ public class SettingsController extends MyPerfBaseController {
             }
             if (alertScanInterval < 60)
                 alertScanInterval = 300;
+
             config.setAlertScanIntervalSeconds(alertScanInterval);
 
             int threadCount = 4;
@@ -178,10 +204,12 @@ public class SettingsController extends MyPerfBaseController {
             }
             if (threadCount < 1)
                 threadCount = 4;
+
             config.setScannerThreadCount(threadCount);
             config.setMetricsDbType(req.getParameter("metricsDbType"));
             config.setAlertNotificationEmails(req.getParameter("notificationEmails"));
             config.setReuseMonUserConnction(!"n".equalsIgnoreCase(req.getParameter("reuseMonUserConnction")));
+
             if ("mysql".equalsIgnoreCase(config.getMetricsDbType()) && dbChanged(req)) {
                 config.setMetricsDbHost(req.getParameter("metricsDbHost"));
                 try {
@@ -191,6 +219,7 @@ public class SettingsController extends MyPerfBaseController {
                 config.setMetricsDbName(req.getParameter("metricsDbName"));
                 config.setMetricsDbUserName(req.getParameter("metricsDbUserName"));
                 String pwd = req.getParameter("metricsDbPassword");
+
                 if (pwd != null && !pwd.isEmpty())
                     config.setMetricsDbPassword(req.getParameter("metricsDbPassword"));
             }
@@ -198,24 +227,33 @@ public class SettingsController extends MyPerfBaseController {
             {
                 boolean hipchatChanged = false;
                 String hipchatUrl = req.getParameter("hipchatUrl");
+
                 if (hipchatUrl != null && !hipchatUrl.isEmpty()) {
                     hipchatUrl = hipchatUrl.trim();
+
                     if (!hipchatUrl.endsWith("?"))
                         hipchatUrl += "?";
                 }
+
                 if ((hipchatUrl == null && config.getHipchatUrl() != null)
                         || (hipchatUrl != null && !hipchatUrl.equals(config.getHipchatUrl())))
                     hipchatChanged = true;
+
                 config.setHipchatUrl(hipchatUrl);
                 //only change authtoken if provided.
                 String hipchatAuthToken = req.getParameter("hipchatAuthToken");
+
                 if (hipchatAuthToken != null)
                     hipchatAuthToken = hipchatAuthToken.trim();
+
                 if (hipchatAuthToken != null && !hipchatAuthToken.isEmpty()) {
+
                     if (!hipchatAuthToken.equals(config.getHipchatAuthToken()))
                         hipchatChanged = true;
+
                     config.setHipchatAuthToken(hipchatAuthToken);
                 }
+
                 if (hipchatChanged) {
                     log.info("HipChat configuration changed to " + config.getHipchatUrl());
                     this.frameworkContext.getHipchat().init(this.frameworkContext);
@@ -234,14 +272,19 @@ public class SettingsController extends MyPerfBaseController {
     private boolean dbChanged(HttpServletRequest req) {
         MyPerfConfiguration config = this.frameworkContext.getMyperfConfig();
         try {
+
             if (!req.getParameter("metricsDbType").equals(config.getMetricsDbType()))
                 return true;
+
             if (!req.getParameter("metricsDbHost").equals(config.getMetricsDbHost()))
                 return true;
+
             if (!req.getParameter("metricsDbPort").equals(config.getMetricsDbPort()))
                 return true;
+
             if (!req.getParameter("metricsDbName").equals(config.getMetricsDbName()))
                 return true;
+
             if (!req.getParameter("metricsDbUserName").equals(config.getMetricsDbUserName()))
                 return true;
 
@@ -253,6 +296,7 @@ public class SettingsController extends MyPerfBaseController {
 
     private String testMetricsDB(String host, String port, String schema, String user, String pwd, MyPerfConfiguration config) {
         int toTest = 0; //test if only there is a change
+
         if (config == null)
             toTest = 1;
         else if (!"mysql".equalsIgnoreCase(config.getMetricsDbType()))
@@ -267,8 +311,10 @@ public class SettingsController extends MyPerfBaseController {
             toTest = 6;
         else if (pwd != null && !pwd.isEmpty() && !pwd.equalsIgnoreCase(config.getMetricsDbPassword()))
             toTest = 7;
+
         if (toTest == 0)
             return null;
+
         log.info("MetricsDB changed, need restest. Reason: " + toTest);
         DBInstanceInfo dbinfo = new DBInstanceInfo();
         dbinfo.setDbGroupName("test_only");

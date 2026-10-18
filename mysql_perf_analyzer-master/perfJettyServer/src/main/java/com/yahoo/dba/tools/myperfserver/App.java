@@ -111,6 +111,7 @@ public class App {
     }
 
     private static void runServer(App myServer) throws Exception{
+
         if (myServer.startServer()) {
             pid = getPid();
             writePid();
@@ -122,6 +123,7 @@ public class App {
 
     private static void checksRunningOfAnotherServerInstance() {
         int historyPid = getHistoryPid();
+
         if (historyPid >= 0) {
             System.out
                     .println(new Date()
@@ -148,9 +150,11 @@ public class App {
 
     private static void checkCommandLineContainAvaliableOptions(App myServer,
                                                                 CommandLine line) {
+
         if (line.hasOption("f")) {
 
             String argument = line.getOptionValue("f");
+
             if (argument != null && !argument.trim().isEmpty()) {
                 System.out.println("Use configuration file: " + argument);
                 //if we have configuration file, load it first
@@ -160,33 +164,41 @@ public class App {
             }
         }
 
-        if (line.hasOption("p")) {
+        if (line.hasOption("p"))
             try {
                 myServer.setPort(Short.parseShort(line.getOptionValue("p")));
             } catch (Exception ex) {
             }
-        }
+
         if (line.hasOption("c")) {
             String argument = line.getOptionValue("c");
+
             if (isOptionArgumentValid(argument))
                 myServer.setContextPath(argument);
         }
+
         if (line.hasOption("l")) {
             String argument = line.getOptionValue("l");
+
             if (isOptionArgumentValid(argument))
                 myServer.setLogDirectoryPath(argument);
         }
+
         if (line.hasOption("w")) {
             String argument = line.getOptionValue("w");
+
             if (isOptionArgumentValid(argument))
                 myServer.setWarFile(argument);
         }
+
         if (line.hasOption("k")) {
             String argument = line.getOptionValue("k");
             myServer.setWorkDirectoryPath(argument);
         }
+
         if (line.hasOption("j")) {
             String argument = line.getOptionValue("j");
+
             if (isOptionArgumentValid(argument))
                 myServer.setJettyHome(argument);
         }
@@ -224,6 +236,7 @@ public class App {
     // This should be invoked before using command line options
     public void parseConfigurationFile() throws RuntimeException {
         String path = this.getConfigFilePath();
+
         if (path == null || path.isEmpty()) {
             System.out.println(new Date() + ": No configuration file specified, use command line only.");
             return;
@@ -236,43 +249,53 @@ public class App {
             }
             String useHttpsStr = props.getProperty("useHttps", "no");
             useHttpsStr = useHttpsStr.trim().toLowerCase();
+
             if (useHttpsStr.equals("yes") || useHttpsStr.equals("y") || useHttpsStr.equals("true"))
                 this.setUseHttps(true);
             else
                 this.setUseHttps(false);
+
             if (this.useHttps) {
                 this.setCertKeyStorePath(props.getProperty("certKeyStorePath", null));
                 this.setCertKeyStorePassword(props.getProperty("certKeyStorePassword", null));
             }
+
             String prop = props.getProperty("jettyHome", null);
+
             if (prop != null && !prop.isEmpty())
                 this.setJettyHome(prop.trim());
+
             prop = props.getProperty("port", null);
-            if (prop != null && !prop.isEmpty()) {
+
+            if (prop != null && !prop.isEmpty())
                 try {
                     this.setPort(Integer.parseInt(prop.trim()));
                 } catch (Exception ex) {
                 }
-            }
+
             prop = props.getProperty("webcontextroot", null);
-            if (prop != null && !prop.isEmpty()) {
+
+            if (prop != null && !prop.isEmpty())
                 this.setContextPath(prop.trim());
-            }
+
 
             prop = props.getProperty("workdir", null);
-            if (prop != null && !prop.isEmpty()) {
+
+            if (prop != null && !prop.isEmpty())
                 this.setWorkDirectoryPath(prop.trim());
-            }
+
 
             prop = props.getProperty("warfile", null);
-            if (prop != null && !prop.isEmpty()) {
+
+            if (prop != null && !prop.isEmpty())
                 this.setWarFile(prop.trim());
-            }
+
 
             prop = props.getProperty("logpath", null);
-            if (prop != null && !prop.isEmpty()) {
+
+            if (prop != null && !prop.isEmpty())
                 this.setLogDirectoryPath(prop.trim());
-            }
+
         } catch (Exception ex) {
             System.out.println(new Date() + ": Failed to load configuration file " + path);
             ex.printStackTrace();
@@ -287,9 +310,11 @@ public class App {
         String deployedApplicationPath = this.getJettyHome()
                 + File.separatorChar + "webapps" + File.separatorChar
                 + this.getWarFile();
+
         if (!(isMeetingRequirementsToRunServer(workDirectory, logDirectory,
                 deployedApplicationPath)))
             return false;
+
         WebAppContext deployedApplication = createDeployedApplicationInstance(
                 workDirectory, deployedApplicationPath);
 
@@ -332,18 +357,23 @@ public class App {
 
     private boolean isMeetingRequirementsToRunServer(File workDirectory,
                                                      File logDirectory, String deployedApplicationPath) {
+
         if (!(createValidWorkDirectory(workDirectory)))
             return false;
+
         if (!(createValidLogDirectory(logDirectory)))
             return false;
+
         System.out.println(new Date() + " Use jetty home "
                 + this.getJettyHome());
+
         if (!(new File(deployedApplicationPath).exists())) {
             System.out.println(new Date()
                     + " Cannot find war file at location "
                     + deployedApplicationPath);
             return false;
         }
+
         System.out.println(new Date() + " Use war file "
                 + deployedApplicationPath);
         System.out.println(new Date() + " Use port " + this.getPort()
@@ -352,32 +382,38 @@ public class App {
     }
 
     private boolean createValidLogDirectory(File logDirectory) {
+
         if (!logDirectory.exists()) {
             System.out.println(new Date() + " Create log directory at "
                     + logDirectory.getAbsolutePath());
             logDirectory.mkdir();
         }
+
         if (!logDirectory.exists()) {
             System.out.println(new Date() + " Invalid log directory "
                     + logDirectory.getAbsolutePath());
             return false;
         }
+
         System.out.println(new Date() + " Use log directory "
                 + logDirectory.getAbsolutePath());
         return true;
     }
 
     private boolean createValidWorkDirectory(File workDirectory) {
+
         if (!workDirectory.exists()) {
             System.out.println(new Date() + " Create working dir at "
                     + workDirectory.getAbsolutePath());
             workDirectory.mkdir();
         }
+
         if (!workDirectory.exists()) {
             System.out.println(new Date() + " Invalid working directory "
                     + workDirectory.getAbsolutePath());
             return false;
         }
+
         System.out.println(new Date() + " Use working directory "
                 + workDirectory.getAbsolutePath());
         return true;
@@ -420,22 +456,24 @@ public class App {
     private URI getServerUri(ServerConnector connector)
             throws URISyntaxException {
         String scheme = "http";
+
         for (ConnectionFactory connectFactory : connector
-                .getConnectionFactories()) {
-            if (connectFactory.getProtocol().startsWith("SSL-http")) {
+                .getConnectionFactories())
+            if (connectFactory.getProtocol().startsWith("SSL-http"))
                 scheme = "https";
-            }
-        }
+
+
         String host = connector.getHost();
-        if (host == null) {
+
+        if (host == null)
             try {
                 host = InetAddress.getLocalHost().getHostName();
             } catch (Exception ex) {
             }
-        }
-        if (host == null) {
+
+        if (host == null)
             host = "localhost";
-        }
+
         int myport = connector.getLocalPort();
         serverURI = new URI(String.format("%s://%s:%d", scheme, host, myport));
         System.out.println(new Date() + " Server URI: " + serverURI + this.contextPath);
@@ -443,6 +481,7 @@ public class App {
     }
 
     public void stop() throws Exception {
+
         if (jettyServer != null)
             jettyServer.stop();
     }
@@ -465,8 +504,10 @@ public class App {
     }
 
     private static void writePid() {
+
         if (pid < 0)
             return;// not supported
+
         try {
             try (FileWriter fw = new FileWriter(PID_FILE)) {
                 fw.write(String.valueOf(pid));
@@ -531,8 +572,10 @@ public class App {
         shutdown();
         removeShutdownFile();
         System.out.println(new Date() + " Wait for shutdown to complete");
+
         if (jettyServer != null)
             jettyServer.join(); // wait for it to complete
+
         System.out.println(new Date() + " Shutdown is completed.");
     }
 
@@ -541,11 +584,13 @@ public class App {
             // sleep 5 seconds, then check shutdown file
             try {
                 Thread.sleep(5000);
+
                 if (new File(this.shutdownFile).exists()) {
                     // we are supposed to shut down
                     System.out.println(new Date() + " Receive soft shutdown signal.");
                     break;
                 }
+
             } catch (Throwable th) {
                 System.out.println(new Date() + " Receive shutdown signal.");
                 break;

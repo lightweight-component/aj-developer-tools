@@ -109,8 +109,10 @@ public class JdbcResourceLifecycleTest extends TestCase {
         sql.setHandle("test");
         sql.setSqlText(parameterized ? "select '&p_1'" : "select 'value'");
         sql.setParamCount(parameterized ? 1 : 0);
+
         if (parameterized)
             sql.addParameter("p_1", null);
+
         sql.setReplace(replace);
         SqlManager manager = new SqlManager();
         manager.getSqlMap().put("test", sql);
@@ -124,12 +126,13 @@ public class JdbcResourceLifecycleTest extends TestCase {
         assertNull(wrapper.getCurrentStatement());
         assertEquals(Arrays.asList("result.close", "statement.close"), jdbc.events);
         assertEquals(parameterized && !replace, jdbc.preparedSql != null);
+
         if (parameterized && !replace) {
             assertEquals("select '?'", jdbc.preparedSql);
             assertEquals("value", jdbc.boundValue);
-        } else {
+        } else
             assertEquals("select 'value'", jdbc.executedSql);
-        }
+
     }
 
     public void testQueryFailureRemainsPrimaryWhenBothClosesFail() throws Exception {
@@ -233,55 +236,74 @@ public class JdbcResourceLifecycleTest extends TestCase {
         int row;
 
         final ResultSetMetaData columns = proxy(ResultSetMetaData.class, (p, m, a) -> {
+
             if ("getColumnCount".equals(m.getName()))
                 return 1;
+
             if ("getColumnName".equals(m.getName()))
                 return "value";
+
             if ("getColumnType".equals(m.getName()))
                 return Types.VARCHAR;
+
             return defaultValue(m.getReturnType());
         });
         final ResultSet result = proxy(ResultSet.class, (p, m, a) -> {
+
             if ("close".equals(m.getName())) {
                 resultOpen = false;
                 events.add("result.close");
+
                 if (resultCloseFailure != null)
                     throw resultCloseFailure;
+
             } else if ("next".equals(m.getName())) {
+
                 if (readFailure != null)
                     throw readFailure;
+
                 return row++ == 0;
             } else if ("getMetaData".equals(m.getName())) return columns;
             else if ("getString".equals(m.getName())) return "value";
+
             return defaultValue(m.getReturnType());
         });
         final PreparedStatement statement = proxy(PreparedStatement.class, (p, m, a) -> {
+
             if ("close".equals(m.getName())) {
                 events.add("statement.close");
+
                 if (statementCloseFailure != null)
                     throw statementCloseFailure;
-            } else if ("setQueryTimeout".equals(m.getName()) && configurationFailure != null) {
+
+            } else if ("setQueryTimeout".equals(m.getName()) && configurationFailure != null)
                 throw configurationFailure;
-            } else if ("setString".equals(m.getName())) boundValue = (String) a[1];
+             else if ("setString".equals(m.getName())) boundValue = (String) a[1];
             else if ("getUpdateCount".equals(m.getName())) return 1;
             else if ("executeQuery".equals(m.getName()) || "execute".equals(m.getName())) {
+
                 if (queryFailure != null)
                     throw queryFailure;
+
                 if (a != null && a.length > 0)
                     executedSql = (String) a[0];
+
                 if ("executeQuery".equals(m.getName())) {
                     assertFalse("Previous result was still open", resultOpen);
                     resultOpen = true;
                     row = 0;
                     return result;
                 }
+
                 return false;
             }
+
             return defaultValue(m.getReturnType());
         });
         final DatabaseMetaData metadata = proxy(DatabaseMetaData.class, (p, m, a) ->
                 "getTables".equals(m.getName()) ? result : defaultValue(m.getReturnType()));
         final Connection connection = proxy(Connection.class, (p, m, a) -> {
+
             if ("close".equals(m.getName())) {
                 connectionClosed = true;
                 events.add("connection.close");
@@ -290,12 +312,16 @@ public class JdbcResourceLifecycleTest extends TestCase {
                 events.add("connection.rollback");
             } else if ("getMetaData".equals(m.getName())) return metadata;
             else if ("prepareStatement".equals(m.getName()) || "createStatement".equals(m.getName())) {
+
                 if (creationFailure != null)
                     throw creationFailure;
+
                 if ("prepareStatement".equals(m.getName()))
                     preparedSql = (String) a[0];
+
                 return statement;
             }
+
             return defaultValue(m.getReturnType());
         });
     }
@@ -305,12 +331,16 @@ public class JdbcResourceLifecycleTest extends TestCase {
     }
 
     private static Object defaultValue(Class<?> type) {
+
         if (type == boolean.class)
             return false;
+
         if (type == int.class)
             return 0;
+
         if (type == long.class)
             return 0L;
+
         return null;
     }
 }

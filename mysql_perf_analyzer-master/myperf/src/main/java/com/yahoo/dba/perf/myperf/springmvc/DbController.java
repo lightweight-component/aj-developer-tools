@@ -31,20 +31,26 @@ public class DbController extends MyPerfBaseController {
         DBInstanceInfo db = new DBInstanceInfo();
         db.setDbType(request.getParameter("dbtype"));
         String grp = request.getParameter("dbGroupName");
+
         if (grp != null)
             grp = grp.trim().toLowerCase();
+
         db.setDbGroupName(grp);
         String host = request.getParameter("hostName");
+
         if (host != null)
             host = host.trim().toLowerCase();
+
         db.setHostName(host);
         db.setPort(request.getParameter("port"));
         db.setDatabaseName(request.getParameter("databaseName"));
         db.setUseTunneling("1".equals(request.getParameter("useTunneling")));
+
         if (db.isUseTunneling()) {
             db.setLocalHostName(request.getParameter("localHostName"));
             db.setLocalPort(request.getParameter("localPort"));
         }
+
         db.setStoreCredential("1".equals(request.getParameter("storeCredential")));
         db.setUsername(request.getParameter("username"));
         db.setPassword(request.getParameter("password"));
@@ -54,6 +60,7 @@ public class DbController extends MyPerfBaseController {
 
     private String validate(String cmd, DBInstanceInfo db) {
         String msg = null;
+
         if (db == null || cmd == null)
             msg = "No DB or action specified";
         else if (db.getDbGroupName() == null || db.getDbGroupName().isEmpty())
@@ -82,6 +89,7 @@ public class DbController extends MyPerfBaseController {
                                           String cmd, DBInstanceInfo db) {
         //only admin/standard user can add new dbs
         AppUser appUser = retrieveAppUser(request);
+
         if (appUser == null || appUser.isRestrictedUser())
             return this.respondFailure("Restricted user is not allowed to add or modify databases.", request);
 
@@ -94,10 +102,12 @@ public class DbController extends MyPerfBaseController {
         String groupStart = null;
         String groupEnd = null;
         String origHostName = db.getHostName();
+
         if (cmd.equals(String.valueOf(Constants.DBM_ACTION_ADD_HOST))) {
             Pattern pt = Pattern.compile("\\[(\\d+)\\-(\\d+)\\]");
             Matcher mt = pt.matcher(origHostName);
             isGroupAdd = mt.find();
+
             if (isGroupAdd) {
                 groupStart = mt.group(1);
                 groupEnd = mt.group(2);
@@ -105,22 +115,26 @@ public class DbController extends MyPerfBaseController {
         }
 
         if (db.isTestConnection()) {
+
             if (isGroupAdd)//only test first one
                 db.setHostName(origHostName.replaceFirst("\\[\\d+\\-\\d+\\]", groupStart));
 
             message = DBUtils.testConnection(db, db.getUsername(), db.getPassword());
+
             if (message == null || message.isEmpty())
                 db.setConnectionVerified(true);
             else
                 status = Constants.STATUS_BAD;
         }
+
         if (message == null || message.isEmpty()) {
             String dbNumberStr = groupStart;
             int strLen = groupStart != null ? groupStart.length() : 0;
             int startNumber = 0;
             int endNumber = 0;
             int dbNumber = 0;
-            if (isGroupAdd) {
+
+            if (isGroupAdd)
                 try {
                     startNumber = Integer.parseInt(groupStart);
                     endNumber = Integer.parseInt(groupEnd);
@@ -128,17 +142,20 @@ public class DbController extends MyPerfBaseController {
                 } catch (Exception ex) {
 
                 }
-            }
+
             int count = 0;
             do {
                 //store it
                 DBInstanceInfo db2 = db.copy();
+
                 if (isGroupAdd)
                     db2.setHostName(origHostName.replaceFirst("\\[\\d+\\-\\d+\\]", dbNumberStr));
+
                 this.frameworkContext.getDbInfoManager().upsertDBInfo(db2);
                 //now get it back
                 DBInstanceInfo dbinfo = this.frameworkContext.getDbInfoManager()
                         .retrieveDBInfo(db2.getDbGroupName(), db2.getHostName());
+
                 if (dbinfo == null) {
                     message = "Failed to add or update db server: " + db2.getHostName();
                     status = Constants.STATUS_BAD;
@@ -146,17 +163,22 @@ public class DbController extends MyPerfBaseController {
                     this.dbManager.addOrUpdateInstance(dbinfo);//update cache
                     this.frameworkContext.getInstanceStatesManager().addInstanceStates(dbinfo.getDbid());
                 }
+
                 count++;
+
                 if (!isGroupAdd)
                     break;
+
                 if (dbNumber >= endNumber || count >= 1000)
                     break;
+
                 dbNumber++;
                 dbNumberStr = String.format("%0" + strLen + "d", dbNumber);
             } while (true);
-            if (status == Constants.STATUS_OK) {
+
+            if (status == Constants.STATUS_OK)
                 message = "Database server (" + db.getDbGroupName() + ", " + origHostName + ") has been added or updated, " + count + " servers.";
-            }
+
             //store db user name or password if specified
             //or if this user has none stored
             DBCredential mycred = DBUtils.findDBCredential(this.frameworkContext, db.getDbGroupName(), WebAppUtil.retrieveUserFromRequest(request));
@@ -180,8 +202,10 @@ public class DbController extends MyPerfBaseController {
                 }
             }
         }
+
         if (message == null)
             message = "OK";
+
         return this.respondWithStatus(status, message, request);
     }
 
@@ -191,8 +215,10 @@ public class DbController extends MyPerfBaseController {
         String message = null;
         String grp = request.getParameter("dbGroupName");
         String newGrp = request.getParameter("dbNewGroupName");
+
         if (newGrp != null)
             newGrp = newGrp.trim();
+
         if (newGrp == null || newGrp.isEmpty())
             message = "Please provide new group name.";
         else if (grp == null || grp.isEmpty())
@@ -201,17 +227,18 @@ public class DbController extends MyPerfBaseController {
             message = "New Group Name is the same as old name, ignored.";
         else if (this.frameworkContext.getDbInfoManager().findGroup(newGrp) != null)
             message = "Grpup name " + newGrp + " is an existing group name. Please use different name.";
-        else {
+        else
             try {
                 this.frameworkContext.getDbInfoManager().renameDbGroup(grp, newGrp);
             } catch (Exception ex) {
                 message = "Failed to rename db group: " + ex.getMessage();
             }
-        }
+
         if (message == null) {
             message = "DB GROUP " + grp + " has been renamed. Please refresh your pages to verify.";
             status = Constants.STATUS_OK;
         }
+
         return this.respondWithStatus(status, message, request);
     }
 
@@ -222,8 +249,10 @@ public class DbController extends MyPerfBaseController {
         String grp = request.getParameter("dbGroupName");
         String username = request.getParameter("username");
         boolean visible = "1".equals(request.getParameter("visible"));
+
         if (grp != null)
             grp = grp.trim();
+
         if (grp == null || grp.isEmpty())
             message = "Please provide db group name.";
         else if (username == null || username.isEmpty())
@@ -232,26 +261,30 @@ public class DbController extends MyPerfBaseController {
             message = "Please provide a valie restricted user name";
         else if (!this.frameworkContext.getUserManager().getUser(username).isRestrictedUser())
             message = "Please provide a valie restricted user name";
-        else {
+        else
             try {
-                if (!this.frameworkContext.getDbInfoManager().updateRestricteduserAcl(username, grp, visible)) {
+
+                if (!this.frameworkContext.getDbInfoManager().updateRestricteduserAcl(username, grp, visible))
                     message = "Failed, please check log.";
-                } else if (visible) {
+                 else if (visible) {
                     //copy db credential. revoke is handled by update directly
                     AppUser appUser = retrieveAppUser(request);
                     DBCredential cred = this.frameworkContext.getMetaDb().retrieveDBCredential(appUser.getName(), grp);
+
                     if (cred != null)
                         this.frameworkContext.getDbInfoManager().copyManagedDBCredential(username, true,
                                 appUser.getName(), grp, cred.getUsername(), cred.getPassword());
                 }
+
             } catch (Exception ex) {
                 message = "Failed to update ACL for user: " + username + ", group: " + ex.getMessage();
             }
-        }
+
         if (message == null) {
             message = "ACL for user " + username + ", DB group " + grp + " has been updated.";
             status = Constants.STATUS_OK;
         }
+
         return this.respondWithStatus(status, message, request);
     }
 
@@ -260,6 +293,7 @@ public class DbController extends MyPerfBaseController {
                                              HttpServletResponse response) throws Exception {
         //check if just for page display
         String cmd = request.getParameter("dbAction");
+
         if (cmd == null || cmd.isEmpty()) {
             ModelAndView mv = new ModelAndView(this.getFormView());
             mv.addObject("help_key", "dbinfo");
@@ -267,14 +301,17 @@ public class DbController extends MyPerfBaseController {
                     .listDbsByUserInfo(WebAppUtil.findUserFromRequest(request), retrieveAppUser(request).isRestrictedUser()));
 
             AppUser appUser = retrieveAppUser(request);
+
             if (appUser == null || !appUser.isAdminUser())
                 return mv;
+
             List<String> restrictedUsers = new ArrayList<>();
             List<AppUser> userList = this.frameworkContext.getMetaDb().retrieveAllUsers();
-            for (AppUser u : userList) {
+
+            for (AppUser u : userList)
                 if (u.isRestrictedUser())
                     restrictedUsers.add(u.getName());
-            }
+
             mv.addObject("restrictedUsers", restrictedUsers);
             return mv;
         }
@@ -284,6 +321,7 @@ public class DbController extends MyPerfBaseController {
 
         log.info("action: " + cmd + ", db " + db.toString() + ", by user " + user.getName());
         String message = this.validate(cmd, db);
+
         if (message != null && !message.isEmpty())
             return this.respondFailure(message, request);
 
@@ -302,15 +340,18 @@ public class DbController extends MyPerfBaseController {
             if (this.frameworkContext.getDbInfoManager().removeDbGroup(db.getDbGroupName(),
                     user.getName(), user.isAdminUser())) {
                 List<Integer> dbidList = new ArrayList<>();
-                for (DBInstanceInfo dbinfo : this.frameworkContext.getDbInfoManager().findGroup(db.getDbGroupName()).getInstances()) {
+
+                for (DBInstanceInfo dbinfo : this.frameworkContext.getDbInfoManager().findGroup(db.getDbGroupName()).getInstances())
                     dbidList.add(dbinfo.getDbid());
-                }
+
                 this.dbManager.removeGroup(db.getDbGroupName());
                 message = "Database group " + db.getDbGroupName() + " has been removed.";
                 //now purge all metrics
                 int[] dbids = new int[dbidList.size()];
+
                 for (int dbi = 0; dbi < dbidList.size(); dbi++)
                     dbids[dbi] = dbidList.get(dbi);
+
                 this.frameworkContext.getMetricDb().purgeMetricsForDbInstance(dbids);
             } else {
                 status = Constants.STATUS_BAD;
@@ -325,8 +366,10 @@ public class DbController extends MyPerfBaseController {
                 boolean removed = false;
                 DBInstanceInfo dbInfo = this.dbManager.findDB(db.getDbGroupName(), db.getHostName());
                 int dbid = dbInfo.getDbid();
+
                 if (dbInfo != null)
                     removed = this.frameworkContext.getInstanceStatesManager().removeInstanceStates(dbInfo.getDbid());
+
                 removed = this.dbManager.removeDBHost(db.getDbGroupName(), db.getHostName());
                 message = "Database server (" + db.getDbGroupName() + ", " + db.getHostName() + ") has been removed: " + removed;
                 //purge metrics
@@ -335,6 +378,7 @@ public class DbController extends MyPerfBaseController {
                 status = Constants.STATUS_BAD;
                 message = "Failed to remove database server (" + db.getDbGroupName() + ", " + db.getHostName() + "). Only the owner or administrator can do it.";
             }
+
             return this.respondWithStatus(status, message, request);
         }
 
@@ -342,11 +386,12 @@ public class DbController extends MyPerfBaseController {
 
         ModelAndView mv = new ModelAndView(this.getFormView());
         mv.addObject(status == 0 ? "okmessage" : "message", message);
+
         if (status == 0)
             mv.addObject("db", new DBInstanceInfo());//return an empty object
-        else {
+        else
             mv.addObject("db", db);
-        }
+
         mv.addObject("help_key", "dbinfo");
         mv.addObject("dbAction", cmd);
         return mv;

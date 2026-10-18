@@ -61,9 +61,10 @@ public class ConfigHistory implements Serializable {
             String line = null;
             ConfigBlock cb = null;
             while ((line = br.readLine()) != null) {
-                if (line.isEmpty()) {
+
+                if (line.isEmpty())
                     cb = null;//end current configuration block
-                } else if (line.startsWith("[CHANGES]")) {
+                 else if (line.startsWith("[CHANGES]")) {
                     cb = new ConfigBlock();
                     this.changes.add(cb);
                 } else if (line.startsWith("[STARTING]")) {
@@ -73,10 +74,13 @@ public class ConfigHistory implements Serializable {
                     cb = new ConfigBlock();
                     this.lastCheckedConfig = cb;
                 } else if (line.startsWith("[") && line.endsWith("]")) {
+
                     if (cb != null)
                         cb.setTime(line.substring(1, line.length() - 1));
+
                 } else if (line.indexOf('=') > 0) {
                     int idx = line.indexOf('=');
+
                     if (idx < line.length() - 1)
                         cb.addVariable(line.substring(0, idx), line.substring(idx + 1));
                     else
@@ -101,35 +105,40 @@ public class ConfigHistory implements Serializable {
             for (ConfigBlock cb : this.changes) {
                 bw.println("[CHANGES]");
                 bw.println("[" + cb.getTime() + "]");
-                for (Map.Entry<String, String> e : cb.getVariables().entrySet()) {
+
+                for (Map.Entry<String, String> e : cb.getVariables().entrySet())
                     if (e.getValue() != null)
                         bw.println(e.getKey() + "=" + e.getValue());
                     else
                         bw.println(e.getKey() + "=");
-                }
+
                 bw.println();//add an empty line
 
             }
+
             if (this.startingConfig != null) {
                 bw.println("[STARTING]");
                 bw.println("[" + this.startingConfig.getTime() + "]");
-                for (Map.Entry<String, String> e : this.startingConfig.getVariables().entrySet()) {
+
+                for (Map.Entry<String, String> e : this.startingConfig.getVariables().entrySet())
                     if (e.getValue() != null)
                         bw.println(e.getKey() + "=" + e.getValue());
                     else
                         bw.println(e.getKey() + "=");
-                }
+
                 bw.println();//add an empty line
             }
+
             if (this.lastCheckedConfig != null) {
                 bw.println("[LAST]");
                 bw.println("[" + this.lastCheckedConfig.getTime() + "]");
-                for (Map.Entry<String, String> e : this.lastCheckedConfig.getVariables().entrySet()) {
+
+                for (Map.Entry<String, String> e : this.lastCheckedConfig.getVariables().entrySet())
                     if (e.getValue() != null)
                         bw.println(e.getKey() + "=" + e.getValue());
                     else
                         bw.println(e.getKey() + "=");
-                }
+
             }
         }
 
@@ -151,6 +160,7 @@ public class ConfigHistory implements Serializable {
      */
     public static ConfigHistory load(File root, DBInstanceInfo db) {
         File f = new File(root, db.getDbGroupName() + "_" + db.getHostName() + "_" + db.getPort() + ".cnf");
+
         if (!f.exists())
             return null;
 
@@ -170,8 +180,10 @@ public class ConfigHistory implements Serializable {
      * @return true if updated, false if no change
      */
     public boolean updateLast(ConfigBlock last) {
+
         if (last == null)
             return false;
+
         if (this.startingConfig == null) {
             //first time we build info
             this.startingConfig = last;
@@ -179,27 +191,33 @@ public class ConfigHistory implements Serializable {
         }
 
         ConfigBlock prev = this.lastCheckedConfig;
+
         if (prev == null)//no change history yet
             prev = this.startingConfig;
 
         Map<String, String> diffMap = new TreeMap<>();
         Map<String, String> prevMap = prev.getVariables();
         Map<String, String> lastMap = last.getVariables();
+
         for (Map.Entry<String, String> e : lastMap.entrySet()) {
             String key = e.getKey();
             String val = e.getValue();
+
             if (EXCLUDE_ENTRIES.containsKey(key))
                 continue;
+
             if (val == null)
                 val = "";//treat null as empty
 
             //1. The prev has no record
-            if (!prevMap.containsKey(key)) {
+            if (!prevMap.containsKey(key))
                 diffMap.put(key, val);
-            } else {
+             else {
                 String oldVal = prevMap.get(key);
+
                 if (oldVal == null)
                     oldVal = "";
+
                 if (!val.equals(oldVal)) {
                     diffMap.put(key, val);//record new value
                     diffMap.put("+-" + key, oldVal);//record old value with +-
@@ -210,8 +228,10 @@ public class ConfigHistory implements Serializable {
         for (Map.Entry<String, String> e : prevMap.entrySet()) {
             String key = e.getKey();
             String val = e.getValue();
+
             if (EXCLUDE_ENTRIES.containsKey(key))
                 continue;
+
             if (!lastMap.containsKey(key))
                 diffMap.put("-" + key, val);//use - to record a variable is removed
         }

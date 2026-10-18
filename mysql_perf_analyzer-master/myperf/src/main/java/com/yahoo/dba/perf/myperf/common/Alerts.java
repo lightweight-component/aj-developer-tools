@@ -30,8 +30,10 @@ public class Alerts implements Serializable {
      * @param entry
      */
     synchronized public void addAlert(AlertEntry entry) {
+
         if (this.entries.size() >= ALERT_CAPACITY)
             this.entries.remove(0);//remove first one
+
         this.entries.add(entry);
     }
 
@@ -44,15 +46,19 @@ public class Alerts implements Serializable {
     synchronized public List<AlertEntry> getEntries(long ts, int max) {
         List<AlertEntry> resList = new ArrayList<>();
         int cnt = 0;
+
         for (int i = this.entries.size() - 1; i >= 0; i--) {
             AlertEntry e = this.entries.get(i);
+
             if (e.getTs() > ts) {
                 resList.add(e);
                 cnt++;
+
                 if (max > 0 && cnt >= max)
                     break;
             }
         }
+
         return resList;
     }
 }

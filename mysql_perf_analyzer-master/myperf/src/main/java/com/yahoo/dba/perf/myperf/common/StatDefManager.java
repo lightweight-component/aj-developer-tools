@@ -38,26 +38,36 @@ public class StatDefManager implements Serializable {
     }
 
     public String getStatDescription(String category, String name) {
+
         if (category == null || category.isEmpty())
             return getStatDescription(name);
+
         if ("thead_state".equalsIgnoreCase(category)) {
 
         }
+
         return null;
     }
 
     public String getStatDescription(String name) {
+
         if (name == null)
             return null;
+
         name = name.trim().toLowerCase();
+
         if (this.statMap.containsKey(name))
             return this.statMap.get(name);
+
         if (name.startsWith("mysql_status_com_stmt"))
             return this.statMap.get("mysql_status_com_stmt_xxx");
+
         if (name.startsWith("mysql_status_com_"))
             return this.statMap.get("mysql_status_com_xxx");
+
         if (name.startsWith("mysql_status_performance_schema"))
             return this.statMap.get("mysql_status_performance_schema_xxx");
+
         return null;
     }
 
@@ -80,17 +90,23 @@ public class StatDefManager implements Serializable {
             while (reader.hasNext()) {
                 //loop till one sql tag is found
                 int evtType = reader.next();
+
                 if (evtType != XMLStreamConstants.START_ELEMENT)
                     continue;
+
                 String tagName = reader.getLocalName();
+
                 if (!"stat".equals(tagName))
                     continue;
+
                 String name = reader.getAttributeValue(null, "name");
-                if (name != null && name.trim().length() > 0) {
+
+                if (name != null && name.trim().length() > 0)
                     this.statMap.put(name.toLowerCase(), reader.getElementText());
-                }
+
             }
         } finally {
+
             if (reader != null) try {
                 reader.close();
                 reader = null;

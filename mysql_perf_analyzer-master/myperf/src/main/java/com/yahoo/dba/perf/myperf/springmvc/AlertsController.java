@@ -27,6 +27,7 @@ public class AlertsController extends MyPerfBaseController {
     @Override
     protected ModelAndView handleRequestImpl(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         String cmd = req.getParameter("cmd");
+
         if ("get_settings".equalsIgnoreCase(cmd))
             return handleRetrieveSettings(req, resp);
         else if ("update_settings".equalsIgnoreCase(cmd))
@@ -39,6 +40,7 @@ public class AlertsController extends MyPerfBaseController {
             return enableSNMP(req, resp);
         else if ("get_top".equalsIgnoreCase(cmd))
             return this.handleRetrieveNewAlerts(req, resp);
+
         int status = Constants.STATUS_OK;
         String message = "OK";
         QueryParameters qps = null;
@@ -49,14 +51,16 @@ public class AlertsController extends MyPerfBaseController {
         AppUser appUser = retrieveAppUser(req);
         HashSet<String> filteredGroups = new HashSet<>();
         boolean useFilter = false;
+
         if (appUser != null && appUser.isRestrictedUser()) {
             useFilter = true;
             Set<String> mydbs = this.frameworkContext.getDbInfoManager()
                     .getMyDatabases(appUser.getName(), appUser.isRestrictedUser()).getMyDbList();
-            if (mydbs != null) {
+
+            if (mydbs != null)
                 for (String s : mydbs)
                     filteredGroups.add(s);
-            }
+
         }
 
         //starting and ending dates, and their defaults. All values are in UTC, assume format "yyyy-MM-dd HH"
@@ -67,10 +71,13 @@ public class AlertsController extends MyPerfBaseController {
         do {
 
             try {
+
                 if (qps.getGroup() != null && !qps.getGroup().isEmpty() && !"All".equalsIgnoreCase(qps.getGroup())) {
+
                     if (qps.getHost() != null && !qps.getHost().isEmpty()) {
                         DBInstanceInfo dbinfo = this.frameworkContext.getDbInfoManager().findDB(qps.getGroup(), qps.getHost());
-                        if (dbinfo != null) {
+
+                        if (dbinfo != null)
                             if (!useFilter || filteredGroups.contains(dbinfo.getDbGroupName())) {
                                 dbIdList.add(dbinfo.getDbid());
                                 DBInstanceInfo dbinfo2 = new DBInstanceInfo();
@@ -79,10 +86,11 @@ public class AlertsController extends MyPerfBaseController {
                                 dbinfo2.setDbid(dbinfo.getDbid());
                                 dbs.put(dbinfo2.getDbid(), dbinfo2);
                             }
-                        }
+
                     }
-                    if (dbIdList.size() == 0) {
-                        for (DBInstanceInfo dbinfo : this.frameworkContext.getDbInfoManager().findGroup(qps.getGroup()).getInstances()) {
+
+                    if (dbIdList.size() == 0)
+                        for (DBInstanceInfo dbinfo : this.frameworkContext.getDbInfoManager().findGroup(qps.getGroup()).getInstances())
                             if (!useFilter || filteredGroups.contains(dbinfo.getDbGroupName())) {
                                 dbIdList.add(dbinfo.getDbid());
                                 DBInstanceInfo dbinfo2 = new DBInstanceInfo();
@@ -91,13 +99,14 @@ public class AlertsController extends MyPerfBaseController {
                                 dbinfo2.setDbid(dbinfo.getDbid());
                                 dbs.put(dbinfo2.getDbid(), dbinfo2);
                             }
-                        }
-                    }
+
+
                 }
+
                 if (dbIdList.size() == 0)//if at this stage still empty, it is for all
                 {
                     for (String grp : this.frameworkContext.getDbInfoManager().listGroupNames())
-                        for (DBInstanceInfo dbinfo : this.frameworkContext.getDbInfoManager().findGroup(grp).getInstances()) {
+                        for (DBInstanceInfo dbinfo : this.frameworkContext.getDbInfoManager().findGroup(grp).getInstances())
                             if (!useFilter || filteredGroups.contains(dbinfo.getDbGroupName())) {
                                 DBInstanceInfo dbinfo2 = new DBInstanceInfo();
                                 dbinfo2.setDbGroupName(dbinfo.getDbGroupName());
@@ -105,8 +114,9 @@ public class AlertsController extends MyPerfBaseController {
                                 dbinfo2.setDbid(dbinfo.getDbid());
                                 dbs.put(dbinfo2.getDbid(), dbinfo2);
                             }
-                        }
+
                 }
+
             } catch (Exception ex) {
             }
             //when we reach here, at least we have valid query and can connect to db
@@ -120,10 +130,12 @@ public class AlertsController extends MyPerfBaseController {
 
             AutoScanner as = this.frameworkContext.getAutoScanner();
             rList = as.getMetricDb().retrieveAlerts(dateRange[0], dateRange[1], dbs, dbIdList);
+
             if (rList == null) {
                 status = Constants.STATUS_BAD;
                 message = "No alert data available";
             }
+
             break;//end of the flow
         } while (true);
 
@@ -140,11 +152,13 @@ public class AlertsController extends MyPerfBaseController {
                                                  HttpServletResponse resp) {
         Object tsObj = req.getSession().getAttribute("LAST_ALERT_REQ_STAMP");
         long ts = System.currentTimeMillis() - 300000; //5 minutes back
+
         if (tsObj != null)
             ts = Long.parseLong(tsObj.toString());
 
         //only want 10
         List<AlertEntry> alerts = this.frameworkContext.getAlerts().getEntries(ts, 10);
+
         if (alerts.size() > 0) {
             //update session ts
             req.getSession().setAttribute("LAST_ALERT_REQ_STAMP", alerts.get(0).getTs());
@@ -158,6 +172,7 @@ public class AlertsController extends MyPerfBaseController {
 
             ResultList rList = new ResultList();
             rList.setColumnDescriptor(desc);
+
             for (AlertEntry e : alerts) {
                 ResultRow row = new ResultRow();
                 row.setColumnDescriptor(desc);
@@ -168,12 +183,13 @@ public class AlertsController extends MyPerfBaseController {
                 row.addColumn(e.getDbHost());
                 rList.addRow(row);
             }
+
             ModelAndView mv = new ModelAndView(this.jsonView);
             mv.addObject("json_result", ResultListUtil.toJSONString(rList, null, 0, "OK"));
             return mv;
-        } else {
+        } else
             return this.respondSuccess("No Alerts", req);
-        }
+
     }
 
     private ModelAndView handleRetrieveSettings(HttpServletRequest req,
@@ -184,14 +200,18 @@ public class AlertsController extends MyPerfBaseController {
         String host = req.getParameter("host");
 
         boolean updatable = true;
+
         if (group == null || group.isEmpty() || "all".equals(group))
             updatable = false;
         else {
             AppUser appUser = AppUser.class.cast(req.getSession().getAttribute(AppUser.SESSION_ATTRIBUTE));
+
             if (!appUser.isAdminUser())
                 updatable = false;
         }
+
         DBInstanceInfo dbinfo = null;
+
         if (group != null && !group.isEmpty() && !"all".equals(group) && host != null && !host.isEmpty())
             dbinfo = this.getFrameworkContext().getDbInfoManager().findDB(group, host);
 
@@ -226,6 +246,7 @@ public class AlertsController extends MyPerfBaseController {
             sb.append(",\"metrics\":\"").append(dbinfo.isMetricsEnabled() ? "y" : "n").append("\"");
             sb.append(",\"snmp\":\"").append(dbinfo.isSnmpEnabled() ? "y" : "n").append("\"");
         }
+
         sb.append("}");
 
         mv.addObject("json_result", sb.toString());
@@ -238,9 +259,10 @@ public class AlertsController extends MyPerfBaseController {
         int status = 0;
         AppUser appUser = AppUser.class.cast(req.getSession().getAttribute(AppUser.SESSION_ATTRIBUTE));
         String group = req.getParameter("group");
-        if (!appUser.isAdminUser()) {
+
+        if (!appUser.isAdminUser())
             message = "Only admin user can update alert threshold settings.";
-        } else if (group == null || group.isEmpty() || "all".equals(group)) {
+         else if (group == null || group.isEmpty() || "all".equals(group)) {
             message = "Cannot update system default settings.";
             status = -1;
         } else {
@@ -265,6 +287,7 @@ public class AlertsController extends MyPerfBaseController {
                 status = -1;
             }
         }
+
         return this.respondWithStatus(status, message, req);
     }
 
@@ -277,31 +300,39 @@ public class AlertsController extends MyPerfBaseController {
         String cmd = req.getParameter("cmd");
         int status = -1;
         do {
+
             if (!appUser.isAdminUser()) {
                 message = "Only admin user can update metrics settings.";
                 break;
             }
+
             if (group == null || group.isEmpty() || "all".equals(group)) {
                 message = "No database server group is provided.";
                 break;
             }
+
             if (host == null || host.isEmpty()) {
                 message = "No database server host name is provided.";
                 break;
             }
+
             DBInstanceInfo dbinfo = this.getFrameworkContext().getDbInfoManager().findDB(group, host);
+
             if (dbinfo == null) {
                 message = "Cannot find  database server.";
                 break;
             }
+
             try {
+
                 if (this.getFrameworkContext().getMetricDb().enableMetrics(group, host, "metrics_enabled_yes".equalsIgnoreCase(cmd),
-                        appUser.getName(), true)) {
+                        appUser.getName(), true))
                     dbinfo.setMetricsEnabled("metrics_enabled_yes".equalsIgnoreCase(cmd));
-                } else {
+                 else {
                     message = "Failed to update metrics setting";
                     break;
                 }
+
             } catch (Exception ex) {
 
                 message = "Failed to update metrics setting: " + ex.getMessage();
@@ -323,28 +354,35 @@ public class AlertsController extends MyPerfBaseController {
         String cmd = req.getParameter("cmd");
         int status = -1;
         do {
+
             if (!appUser.isAdminUser()) {
                 message = "Only admin user can update alert settings.";
                 break;
             }
+
             if (group == null || group.isEmpty() || "all".equals(group)) {
                 message = "No database server group is provided.";
                 break;
             }
+
             if (host == null || host.isEmpty()) {
                 message = "No database server host name is provided.";
                 break;
             }
+
             DBInstanceInfo dbinfo = this.getFrameworkContext().getDbInfoManager().findDB(group, host);
+
             if (dbinfo == null) {
                 message = "Cannot find  database server.";
                 break;
             }
+
             try {
+
                 if (this.getFrameworkContext().getMetricDb().enableAlerts(group, host, "alerts_enabled_yes".equalsIgnoreCase(cmd),
-                        appUser.getName(), true)) {
+                        appUser.getName(), true))
                     dbinfo.setAlertEnabled("alerts_enabled_yes".equalsIgnoreCase(cmd));
-                } else {
+                 else {
                     message = "Failed to update alert setting";
                     break;
                 }
@@ -370,28 +408,35 @@ public class AlertsController extends MyPerfBaseController {
         String cmd = req.getParameter("cmd");
         int status = -1;
         do {
+
             if (!appUser.isAdminUser()) {
                 message = "Only admin user can update snmp settings.";
                 break;
             }
+
             if (group == null || group.isEmpty() || "all".equals(group)) {
                 message = "No database server group is provided.";
                 break;
             }
+
             if (host == null || host.isEmpty()) {
                 message = "No database server host name is provided.";
                 break;
             }
+
             DBInstanceInfo dbinfo = this.getFrameworkContext().getDbInfoManager().findDB(group, host);
+
             if (dbinfo == null) {
                 message = "Cannot find  database server.";
                 break;
             }
+
             try {
+
                 if (this.getFrameworkContext().getMetricDb().enableSnmp(group, host, "snmp_enabled_yes".equalsIgnoreCase(cmd),
-                        appUser.getName(), true)) {
+                        appUser.getName(), true))
                     dbinfo.setSnmpEnabled("snmp_enabled_yes".equalsIgnoreCase(cmd));
-                } else {
+                 else {
                     message = "Failed to update snmp setting";
                     break;
                 }

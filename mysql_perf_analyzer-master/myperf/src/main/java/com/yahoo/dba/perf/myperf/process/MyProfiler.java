@@ -60,6 +60,7 @@ public class MyProfiler implements Serializable {
     }
 
     private void checkQuerySafety(String sqlText) throws UnsafeQueryException {
+
         if (sqlText == null || sqlText.isEmpty())
             throw new UnsafeQueryException("No query text provided");
 
@@ -67,8 +68,10 @@ public class MyProfiler implements Serializable {
         //remove any comments
         while (s.startsWith("/*")) {
             int idx = s.indexOf("*/");
+
             if (idx < 0)
                 break;
+
             s = s.substring(idx + 2);
             s = s.trim();
         }
@@ -76,10 +79,13 @@ public class MyProfiler implements Serializable {
         //remove --
         while (s.startsWith("--")) {
             int idx = s.indexOf("\n");
+
             if (idx < 0)
                 idx = s.indexOf("\r");
+
             if (idx < 0)
                 break;
+
             s = s.substring(idx + 1);
             s = s.trim();
         }
@@ -92,6 +98,7 @@ public class MyProfiler implements Serializable {
     }
 
     public void destroy() {
+
         if (this.connection != null)
             DBUtils.close(connection);
 
@@ -105,6 +112,7 @@ public class MyProfiler implements Serializable {
      * @param dbpwd
      */
     public void connect(String dbuser, String dbpwd, boolean readOnly) throws SQLException {
+
         if (connection != null && !this.dbUser.equalsIgnoreCase(dbuser))
             DBUtils.close(connection);
 
@@ -130,6 +138,7 @@ public class MyProfiler implements Serializable {
             }
 
             try (ResultSet rs = stmt.executeQuery("show status like 'Last_query_cost'")) {
+
                 if (rs != null && rs.next()) {
                     String cost = rs.getString("Value");
 
@@ -160,6 +169,7 @@ public class MyProfiler implements Serializable {
     public String runExplainPlanJson() throws SQLException {
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery("EXPLAIN FORMAT=JSON " + this.sqlText)) {
+
             if (rs != null && rs.next())
                 return rs.getString(1);
         }
@@ -186,25 +196,26 @@ public class MyProfiler implements Serializable {
                 for (int i = 0; i < bitmap.length; i++)
                     bitmap[i] = 0;
 
-                for (int i = 0; i < bitmap.length; i++) {
+                for (int i = 0; i < bitmap.length; i++)
                     for (ResultRow row : rList.getRows()) {
                         List<String> cols = row.getColumns();
                         String val = cols.get(i);
+
                         if (val != null && !val.isEmpty() && !"0".equals(val.trim())) {
                             bitmap[i] = 1;
                             break;
                         }
                     }
-                }
+
 
                 ColumnDescriptor desc = new ColumnDescriptor();
                 List<ColumnInfo> colInfos = rList.getColumnDescriptor().getColumns();
                 int idx = 0;
 
-                for (int i = 0; i < bitmap.length; i++) {
+                for (int i = 0; i < bitmap.length; i++)
                     if (bitmap[i] == 1)
                         desc.addColumn(colInfos.get(i).getName(), colInfos.get(i).isNumberType(), idx++);
-                }
+
 
                 ResultList rlist2 = new ResultList();
                 rlist2.setColumnDescriptor(desc);
@@ -214,10 +225,10 @@ public class MyProfiler implements Serializable {
                     newRow.setColumnDescriptor(desc);
                     List<String> cols = row.getColumns();
 
-                    for (int i = 0; i < bitmap.length; i++) {
+                    for (int i = 0; i < bitmap.length; i++)
                         if (bitmap[i] == 1)
                             newRow.addColumn(cols.get(i));
-                    }
+
 
                     rlist2.addRow(newRow);
                 }
@@ -240,8 +251,10 @@ public class MyProfiler implements Serializable {
                 while (rs != null && rs.next()) {
                     String key = rs.getString(1);
                     String val = rs.getString(2);
+
                     if (val == null || val.isEmpty() || "0".equals(val))
                         continue;
+
                     try {
                         startStat.put(key.toUpperCase(), new BigDecimal(val));
                     } catch (Exception ex) {
@@ -296,6 +309,7 @@ public class MyProfiler implements Serializable {
                     //skip the one with no change
                     if (val.equals(startStat.get(key)))
                         continue;
+
                     val = val.add(startStat.get(key).negate());
                 }
 

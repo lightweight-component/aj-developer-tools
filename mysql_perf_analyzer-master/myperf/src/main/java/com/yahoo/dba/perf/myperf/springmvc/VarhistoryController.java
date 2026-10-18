@@ -33,6 +33,7 @@ public class VarhistoryController extends MyPerfBaseController {
 
         //first session check
         boolean isSessionValid = WebAppUtil.hasValidSession(req);
+
         if (!isSessionValid)
             return this.respondFailure("session timeout. Please logout and re-login.", req);
 
@@ -40,6 +41,7 @@ public class VarhistoryController extends MyPerfBaseController {
         qps.setSql("mysql_global_variables");
 
         dbinfo = this.frameworkContext.getDbInfoManager().findDB(qps.getGroup(), qps.getHost());
+
         if (dbinfo == null)
             return this.respondFailure("Cannot find  record for DB (" + qps.getGroup() + ", " + qps.getHost() + ")", req);
 
@@ -54,6 +56,7 @@ public class VarhistoryController extends MyPerfBaseController {
         rList.setColumnDescriptor(desc);
         try {
             ConfigHistory ch = ConfigHistory.load(new File(new File(this.frameworkContext.getFileReposirtoryPath()), "autoscan"), dbinfo);
+
             if (ch != null && ch.getChanges().size() > 0) {
                 {
                     ResultRow row = new ResultRow();
@@ -84,9 +87,10 @@ public class VarhistoryController extends MyPerfBaseController {
                     for (Map.Entry<String, String> e : cb.getVariables().entrySet()) {
                         String key = e.getKey();
                         String val = e.getValue();
-                        if (key.startsWith("+-")) {
+
+                        if (key.startsWith("+-"))
                             changes.put(key.substring(2), val);
-                        }
+
                     }
 
                     for (Map.Entry<String, String> e : cb.getVariables().entrySet()) {
@@ -94,19 +98,23 @@ public class VarhistoryController extends MyPerfBaseController {
                         String v = e.getValue();
                         row = new ResultRow();
                         cols = new ArrayList<>();
+
                         if (key.startsWith("+-"))
                             continue;//skip
                         else if (key.startsWith("+-"))
                             cols.add(key.substring(1));//removed
                         else
                             cols.add(key);
+
                         cols.add(v);
+
                         if (changes.containsKey(key))
                             cols.add("Prev Value: " + changes.get(key));
                         else if (key.startsWith("-"))
                             cols.add("Removed");
                         else
                             cols.add("");
+
                         row.setColumns(cols);
                         row.setColumnDescriptor(desc);
                         rList.addRow(row);
@@ -123,6 +131,7 @@ public class VarhistoryController extends MyPerfBaseController {
 
                 }
             }
+
             if (ch != null) {
                 ConfigBlock cb = ch.getStartingConfig();
 
@@ -130,10 +139,12 @@ public class VarhistoryController extends MyPerfBaseController {
                 List<String> cols = new ArrayList<>();
                 cols.add("FIRST RECORD TIME");
                 cols.add(cb.getTime());
+
                 if (ch != null && ch.getChanges().size() > 0)
                     cols.add("First Recorded Timestamp (UTC)");
                 else
                     cols.add("No Changes Since First Check (Timestamp UTC)");
+
                 row.setColumns(cols);
                 row.setColumnDescriptor(desc);
                 rList.addRow(row);
@@ -163,6 +174,7 @@ public class VarhistoryController extends MyPerfBaseController {
         }
 
         mv = new ModelAndView(this.jsonView);
+
         if (req.getParameter("callback") != null && req.getParameter("callback").trim().length() > 0)
             mv.addObject("callback", req.getParameter("callback"));//YUI datasource binding
 

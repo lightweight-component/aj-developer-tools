@@ -18,6 +18,7 @@ public class DynamicQueryFactory {
     }
 
     public static String getQuery(String queryClass, DBConnectionWrapper conn, boolean gc) {
+
         if (queryMap.containsKey(queryClass))
             return queryMap.get(queryClass).getQueryString(conn, gc);
 

@@ -52,6 +52,7 @@ public class QueryController extends MyPerfBaseController {
         qps = WebAppUtil.parseRequestParameter(req);
         //validation input
         String validation = qps.validate();
+
         if (validation == null || validation.isEmpty()) {
             //do we have such query?
             try {
@@ -60,17 +61,20 @@ public class QueryController extends MyPerfBaseController {
                 validation = ex.getMessage();
             }
         }
+
         if (validation != null && !validation.isEmpty())
             return this.respondFailure("Input validation: " + validation, req);
 
         //valid DB?
         dbinfo = this.frameworkContext.getDbInfoManager().findDB(qps.getGroup(), qps.getHost());
+
         if (dbinfo == null)
             return this.respondFailure("Cannot find database (" + qps.getGroup() + ", " + qps.getHost() + ")", req);
 
         //create connection if needed
         DBConnectionWrapper connWrapper = null;
         Sql sql = this.frameworkContext.getSqlManager().getSql(qps.getSql());
+
         if (sql == null || sql.getQueryProcessor() == null
                 || !CUSTOMER_PROCESSOR.containsKey(sql.getQueryProcessor())
                 || CUSTOMER_PROCESSOR.get(sql.getQueryProcessor()).requireDBConnection()) {
@@ -90,36 +94,44 @@ public class QueryController extends MyPerfBaseController {
 
         try {
             log.info("execute query " + qps.getSql() + ", " + qps.getSqlParams());
+
             if (sql != null && sql.getQueryProcessor() != null
                     && CUSTOMER_PROCESSOR.containsKey(sql.getQueryProcessor())) //custom processor
             {
                 CustomQueryProcessor prc = CUSTOMER_PROCESSOR.get(sql.getQueryProcessor());
+
                 if (prc.isMultiple()) {
                     listMap = new LinkedHashMap<>();
                     prc.queryMultiple(frameworkContext, dbinfo, findUserFromRequest(req), connWrapper, qps, listMap);
                 } else
                     rList = prc.querySingle(this.frameworkContext, dbinfo, findUserFromRequest(req), connWrapper, qps);
+
             } else
                 rList = this.frameworkContext.getQueryEngine().executeQueryGeneric(qps, connWrapper, qps.getMaxRows());
+
             log.info("Done query " + qps.getSql() + " with " + (rList != null ? rList.getRows().size() : 0) + " records.");
+
             if (connWrapper != null)
                 WebAppUtil.closeDBConnection(req, connWrapper, false, this.getFrameworkContext().getMyperfConfig().isReuseMonUserConnction());
+
         } catch (Throwable ex) {
             log.error("Exception", ex);
-            if (connWrapper != null) {
+
+            if (connWrapper != null)
                 if (ex instanceof SQLException) {
                     SQLException sqlEx = SQLException.class.cast(ex);
                     String msg = ex.getMessage();
                     log.info(sqlEx.getSQLState() + ", " + sqlEx.getErrorCode() + ", " + msg);
                     //check if the connection is still good
-                    if (!DBUtils.checkConnection(connWrapper.getConnection())) {
+                    if (!DBUtils.checkConnection(connWrapper.getConnection()))
                         WebAppUtil.closeDBConnection(req, connWrapper, true, false);
-                    } else
+                     else
                         WebAppUtil.closeDBConnection(req, connWrapper, true, false);
-                } else {
+
+                } else
                     WebAppUtil.closeDBConnection(req, connWrapper, false, this.getFrameworkContext().getMyperfConfig().isReuseMonUserConnction());
-                }
-            }
+
+
             status = Constants.STATUS_BAD;
             message = "Exception: " + ex.getMessage();
         }
@@ -131,10 +143,12 @@ public class QueryController extends MyPerfBaseController {
             rList = POST_PROCESSOR.get(qps.getSql()).process(rList);
 
         mv = new ModelAndView(this.jsonView);
+
         if (listMap != null)
             mv.addObject("json_result", ResultListUtil.toMultiListJSONStringUpper(listMap, qps, status, message));
         else
             mv.addObject("json_result", ResultListUtil.toJSONString(filterResultList(rList, req), qps, status, message));
+
         return mv;
     }
 
@@ -151,26 +165,35 @@ public class QueryController extends MyPerfBaseController {
     private ResultList filterResultList(ResultList rList, HttpServletRequest req) {
         try {
             String rf = req.getParameter("rf");
+
             if (rf == null || rf.isEmpty())
                 return rList;
+
             int idx = rList.getColumnIndex(rf);
+
             if (idx < 0)
                 return rList;
 
             String[] filtered_vals = req.getParameterValues("rfv");
+
             if (filtered_vals == null || filtered_vals.length == 0)
                 return rList;
+
             Set<String> filteredSet = new HashSet<>(filtered_vals.length);
+
             for (String s : filtered_vals)
                 filteredSet.add(s.toLowerCase());
 
             ResultList newList = new ResultList();
             newList.setColumnDescriptor(rList.getColumnDescriptor());
+
             for (ResultRow row : rList.getRows()) {
                 String v = row.getColumns().get(idx);
+
                 if (v != null && filteredSet.contains(v.toLowerCase()))
                     newList.addRow(row);
             }
+
             return newList;
         } catch (Exception ex) {
             log.info("Failed to filter data", ex);

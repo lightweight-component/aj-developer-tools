@@ -44,15 +44,17 @@ public class PerfController extends MyPerfBaseController {
                                              HttpServletResponse response) throws Exception {
         String pg = request.getParameter("pg");
         String tgtPage = pg;
+
         if (tgtPage != null)
             tgtPage = tgtPage.trim().toLowerCase();
+
         if (tgtPage == null || tgtPage.isEmpty() || (!pageMap.containsKey(tgtPage) && !noSessionPageMap.containsKey(tgtPage)))
             tgtPage = this.defaultView;
-        else if (pageMap.containsKey(tgtPage) && !WebAppUtil.hasValidSession(request)) {
+        else if (pageMap.containsKey(tgtPage) && !WebAppUtil.hasValidSession(request))
             return new ModelAndView(new RedirectView(this.getNosessView()));
-        } else if (pageMap.containsKey(tgtPage)) {
+         else if (pageMap.containsKey(tgtPage))
             tgtPage = pageMap.get(tgtPage);
-        } else
+         else
             tgtPage = noSessionPageMap.get(tgtPage);
 
         ModelAndView mv = new ModelAndView(tgtPage);
@@ -66,6 +68,7 @@ public class PerfController extends MyPerfBaseController {
             mv.addObject("mydbs", this.frameworkContext.getDbInfoManager().getClusters().keySet());
             mv.addObject("mydbSize", 0);
         }
+
         mv.addObject("hours", HOURS);
         mv.addObject("dbMap", this.frameworkContext.getDbInfoManager().getClusters());
         mv.addObject("help_key", pg);
@@ -75,6 +78,7 @@ public class PerfController extends MyPerfBaseController {
 
         if ("sp".equals(pg) || "scatterplot".equals(pg) || "m".equals(pg) || "metrics".equalsIgnoreCase(pg))
             mv.addObject("udms", this.frameworkContext.getMetricsList());
+
         return mv;
 
     }

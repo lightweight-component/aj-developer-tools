@@ -31,6 +31,7 @@ public class MetricsResultObject implements CustomResultObject {
             boolean first = true;
 
             for (Metric m : this.metrics) {
+
                 if (!first)
                     sb.append(",");
                 else
@@ -44,10 +45,13 @@ public class MetricsResultObject implements CustomResultObject {
 
                 if (m.getAverageTimeUnit() != null)
                     sb.append(",\"avg\":\"").append(m.getAverageTimeUnit()).append("\"");
+
                 if (m.getAdjustment() != null)
                     sb.append(",\"adj\":").append(m.getAdjustment());
+
                 if (m.getChartDisplayUnit() != null)
                     sb.append(",\"display\":\"").append(m.getChartDisplayUnit()).append("\"");
+
                 if (m.getDescription() != null)
                     sb.append(",\"description\":\"").append(m.getDescription()).append("\"");
 
@@ -61,16 +65,18 @@ public class MetricsResultObject implements CustomResultObject {
 
     //will prefix metricsGroupname
     public void setMetrics(List<Metric> metrics, String metricsGroupName) {
-        if (metrics != null && metricsGroupName != null && !metricsGroupName.isEmpty() && !"globalstatus".equals(metricsGroupName)) {
-            for (Metric m : metrics) {
+
+        if (metrics != null && metricsGroupName != null && !metricsGroupName.isEmpty() && !"globalstatus".equals(metricsGroupName))
+            for (Metric m : metrics)
                 m.setName(metricsGroupName + "." + m.getName());
-            }
-        }
+
+
 
         this.metrics = metrics;
     }
 
     public void addMetric(Metric m) {
+
         if (this.metrics == null)
             this.metrics = new ArrayList<>();
 

@@ -76,6 +76,7 @@ public class AlertDefinition implements Serializable {
     }
 
     public void setSource(String source) {
+
         if (SOURCE_SQL.equalsIgnoreCase(source))
             this.source = SOURCE_SQL;
         else if (SOURCE_METRICS.equalsIgnoreCase(source))
@@ -107,14 +108,17 @@ public class AlertDefinition implements Serializable {
             alert.setSqlText(jsonObject.getString("sqlText", null));
 
             JsonArray params = jsonObject.getJsonArray("params");
+
             if (params != null) {
                 int mlen = params.size();
+
                 for (int i = 0; i < mlen; i++) {
                     JsonObject mobj = params.getJsonObject(i);
                     alert.addParam(mobj.getString("name"),
                             mobj.getString("defaultValue"));
                 }
             }
+
             return alert;
         } catch (Exception ex) {
             log.warn("Error to parse UDM", ex);
@@ -127,27 +131,38 @@ public class AlertDefinition implements Serializable {
         mtrStr.append("{\r\n");
         mtrStr.append("\"name\": \"").append(name).append("\",\r\n");
         mtrStr.append("\"source\": \"").append(source).append("\",\r\n");
+
         if (this.metricName != null && !this.metricName.isEmpty()) {
             mtrStr.append("\"metricName\": \"").append(metricName).append("\",\r\n");
+
             if (this.metricComparison != null && !this.metricComparison.isEmpty())
                 mtrStr.append("\"metricComparison\": \"").append(metricComparison).append("\",\r\n");
+
             if (this.metricValueType != null && !this.metricValueType.isEmpty())
                 mtrStr.append("\"metricValueType\": \"").append(metricValueType).append("\",\r\n");
+
             mtrStr.append("\"defaultThreshold\": \"").append(defaultThreshold).append("\",\r\n");
         }
+
         if (this.sqlId != null && !this.sqlId.isEmpty())
             mtrStr.append("\"sqlId\": \"").append(sqlId).append("\",\r\n");
+
         if (this.sqlText != null && !this.sqlText.isEmpty()) mtrStr.append("\"sqlText\": \"")
                 .append(html ? CommonUtils.escapeJsonHTML(sqlText) : CommonUtils.escapeJson(sqlText)).append("\",\r\n");
+
         mtrStr.append("\"params\":[");
         int cnt = 0;
+
         for (Map.Entry<String, String> e : this.params.entrySet()) {
+
             if (cnt > 0)
                 mtrStr.append(",\r\n");
+
             mtrStr.append("{\"name\": \"").append(e.getKey()).append("\",\"defaultValue\":\"")
                     .append(e.getValue())
                     .append("\"}");
         }
+
         mtrStr.append("]}");
         return mtrStr.toString();
     }
@@ -156,30 +171,33 @@ public class AlertDefinition implements Serializable {
     public void validate() throws UserDefinedMetricsException {
         StringBuilder sb = new StringBuilder();
         boolean valid = true;
+
         if (!Metric.isAlphaNumericUnderscoreNotNull(name, 30)) {
             valid = false;
             sb.append("ALERT name " + name + " is not valid. Please use alphanumeric and underscore with max length of 30. ");
         }
-        if ("SQL".equalsIgnoreCase(source)) {
+
+        if ("SQL".equalsIgnoreCase(source))
             if ((sqlText == null || sqlText.isEmpty()) && (sqlId == null || sqlId.isEmpty())) {
                 sb.append("Please provide SQL text for customized SQL. ");
                 valid = false;
             } else {
                 sqlText = sqlText.trim();
+
                 if (!sqlText.toLowerCase().startsWith("select") || sqlText.indexOf(';') >= 0) {
                     sb.append("The SQL statement must start with select and no semi column is allowed. ");
                     valid = false;
                 }
             }
-        }
 
-        for (Map.Entry<String, String> e : this.params.entrySet()) {
+
+        for (Map.Entry<String, String> e : this.params.entrySet())
             if (!Metric.isAlphaNumericUnderscoreNotNull(e.getKey(), 0)) {
                 valid = false;
                 sb.append("Alert param name ").append(e.getKey()).append(" is not valid. Please use alphanumeric and underscore.");
             }
             //TODO value
-        }
+
 
         if (!valid)
             throw new UserDefinedMetricsException(sb.toString());

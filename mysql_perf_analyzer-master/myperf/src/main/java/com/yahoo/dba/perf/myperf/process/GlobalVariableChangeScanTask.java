@@ -44,6 +44,7 @@ public class GlobalVariableChangeScanTask implements Runnable {
 
         //get all dbids
         List<DBInstanceInfo> dbs = new ArrayList<>();
+
         for (Map.Entry<String, DBGroupInfo> e : context.getDbInfoManager().getClusters().entrySet()) {
             DBGroupInfo g = e.getValue();
             dbs.addAll(g.getInstances());
@@ -74,6 +75,7 @@ public class GlobalVariableChangeScanTask implements Runnable {
 
     private ConfigBlock scanHost(DBInstanceInfo dbinfo) {
         DBCredential cred = DBUtils.findDBCredential(context, dbinfo.getDbGroupName(), appUser);
+
         if (cred == null) {
             log.info("No credential for cluster " + dbinfo.getDbGroupName() + ", skip it");
             //log the error
@@ -116,6 +118,7 @@ public class GlobalVariableChangeScanTask implements Runnable {
 
             return null; // we should be not used failed data
         } finally {
+
             if (conn != null)
                 conns.checkinConnectionAndClose(conn);
         }

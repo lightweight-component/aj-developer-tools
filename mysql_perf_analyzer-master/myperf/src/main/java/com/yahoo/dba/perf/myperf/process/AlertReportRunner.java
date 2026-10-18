@@ -95,7 +95,7 @@ public class AlertReportRunner implements Runnable {
                 }
             }
 
-            if ("REPLLAG".equalsIgnoreCase(this.alertReason) || "REPLDOWN".equalsIgnoreCase(this.alertReason)) {
+            if ("REPLLAG".equalsIgnoreCase(this.alertReason) || "REPLDOWN".equalsIgnoreCase(this.alertReason))
                 try (ResultSet rs = stmt.executeQuery("show slave status")) {
                     int i = 0;
                     int cnt = rs.getMetaData().getColumnCount();
@@ -108,23 +108,27 @@ public class AlertReportRunner implements Runnable {
 
                         for (int k = 0; k < cnt; k++)
                             repMap.put(rs.getMetaData().getColumnName(k + 1) + suffix, rs.getString(k + 1));
+
                         i++;
                     }
                 }
-            }
+
             //if ("CPU".equalsIgnoreCase(alertReason) ||"THREAD".equalsIgnoreCase(alertReason)||"REPLLAG".equalsIgnoreCase(this.alertReason))
             {
                 try (ResultSet rs = stmt.executeQuery("show engine innodb status")) {
+
                     if (rs != null && rs.next())
                         innodbStatus = rs.getString("Status");
                 }
 
                 try (ResultSet rs = stmt.executeQuery("select * from information_schema.innodb_locks")) {
+
                     if (rs != null)
                         rList = ResultListUtil.fromSqlResultSet(rs, 0);
                 }
 
                 try (ResultSet rs = stmt.executeQuery("select * from information_schema.INNODB_TRX where to_seconds(now()) - to_seconds(trx_started) > 60")) {
+
                     if (rs != null)
                         trxList = ResultListUtil.fromSqlResultSet(rs, 0);
                 }
@@ -135,10 +139,12 @@ public class AlertReportRunner implements Runnable {
                 String sql = "select user, host, command, count(*) conns from information_schema.processlist group by user, host, command";
 
                 try (ResultSet rs = stmt.executeQuery(sql)) {
+
                     if (rs != null)
                         clientList = ResultListUtil.fromSqlResultSet(rs, 0);
                 }
             }
+
         } catch (Exception ex) {
             log.warn("Error when retrieve alert detail", ex);
         } finally {

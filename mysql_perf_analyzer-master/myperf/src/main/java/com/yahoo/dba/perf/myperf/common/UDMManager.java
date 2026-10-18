@@ -62,11 +62,15 @@ public class UDMManager implements Serializable {
 
     public void init() {
         File udmroot = new File(new File(rootPath), UDM_DIR);
+
         if (!udmroot.exists())
             udmroot.mkdirs();
+
         File alertroot = new File(new File(rootPath), ALERT_DIR);
+
         if (!alertroot.exists())
             alertroot.mkdirs();
+
         this.loadUDM();
         this.loadAlertDef();
 
@@ -80,6 +84,7 @@ public class UDMManager implements Serializable {
     }
 
     public UserDefinedMetrics getUDMByName(String name) {
+
         if (udms.containsKey(name))
             return udms.get(name);
         else
@@ -87,6 +92,7 @@ public class UDMManager implements Serializable {
     }
 
     public AlertDefinition getAlertByName(String name) {
+
         if (alerts.containsKey(name))
             return alerts.get(name);
         else
@@ -94,19 +100,26 @@ public class UDMManager implements Serializable {
     }
 
     public List<String> getUDMsAttachedToBuiltinMetrics(String metricsGroup, String group, String host) {
+
         if (!this.builtinMapping.containsKey(metricsGroup))
             return null;
+
         List<String> subList = this.metricsSubscriptions.getSubscribedUDMs(group, host);
+
         if (subList == null || subList.size() == 0)
             return null;
+
         Set<String> mlist = new HashSet<>();
+
         for (String s : this.builtinMapping.get(metricsGroup))
             mlist.add(s);
+
         List<String> outList = new ArrayList<>(mlist.size());
-        for (String s : subList) {
+
+        for (String s : subList)
             if (mlist.contains(s))
                 outList.add(s);
-        }
+
         return outList;
     }
 
@@ -121,21 +134,25 @@ public class UDMManager implements Serializable {
     public List<AlertSubscribers.Subscription> getAlertsAttachedToBuiltinMetrics(String metricsGroup, String group, String host) {
         List<AlertSubscribers.Subscription> attachedList = new ArrayList<>();
         List<AlertSubscribers.Subscription> subs = this.getAlertSubscriptions().getSubscriptions(group, host);
-        if (subs != null && subs.size() > 0) {
+
+        if (subs != null && subs.size() > 0)
             for (AlertSubscribers.Subscription sub : subs) {
                 AlertDefinition def = this.getAlerts().get(sub.alertName);
+
                 if (def != null && AlertDefinition.SOURCE_METRICS.equals(def.getSource())
                         && def.getMetricName() != null) {
                     String m = def.getMetricName();
                     int idx = m.lastIndexOf(".");
+
                     if (idx > 0) {
                         String grpName = m.substring(0, idx);
+
                         if (metricsGroup.equals(grpName))
                             attachedList.add(sub);
                     }
                 }
             }
-        }
+
         return attachedList;
     }
 
@@ -150,15 +167,17 @@ public class UDMManager implements Serializable {
     public List<AlertSubscribers.Subscription> getAlertsAttachedToGlobalStatus(String group, String host) {
         List<AlertSubscribers.Subscription> attachedList = new ArrayList<>();
         List<AlertSubscribers.Subscription> subs = this.getAlertSubscriptions().getSubscriptions(group, host);
-        if (subs != null && subs.size() > 0) {
+
+        if (subs != null && subs.size() > 0)
             for (AlertSubscribers.Subscription sub : subs) {
                 AlertDefinition def = this.getAlerts().get(sub.alertName);
+
                 if (def != null && AlertDefinition.SOURCE_GLOBAL_STATUS.equals(def.getSource())
-                        && def.getMetricName() != null) {
+                        && def.getMetricName() != null)
                     attachedList.add(sub);
-                }
+
             }
-        }
+
         return attachedList;
     }
 
@@ -170,10 +189,12 @@ public class UDMManager implements Serializable {
         sub.mSubGroup = metricsSubGroup;
 
         boolean status = false;
+
         if (subscribe)
             status = this.getMetricsSubscriptions().addSubscription(sub);
         else
             status = this.getMetricsSubscriptions().deleteSubscription(sub);
+
         return status;
     }
 
@@ -184,10 +205,12 @@ public class UDMManager implements Serializable {
         sub.alertName = alertName;
 
         boolean status = false;
+
         if (subscribe)
             status = this.getAlertSubscriptions().addSubscription(sub);
         else
             status = this.getAlertSubscriptions().deleteSubscription(sub);
+
         return status;
     }
 
@@ -198,6 +221,7 @@ public class UDMManager implements Serializable {
 
     private void loadUDM() {
         File root = new File(new File(rootPath), UDM_DIR);
+
         if (!root.exists()) {
             log.info("There is no user defined metrics at " + root.getAbsolutePath());
             return;
@@ -206,6 +230,7 @@ public class UDMManager implements Serializable {
         File[] udmFiles = root.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
+
                 if (name != null && name.endsWith(".json") && !name.equals(UDM_DB_FILE))
                     return true;
                 else
@@ -217,21 +242,27 @@ public class UDMManager implements Serializable {
             log.info("There is no UDM degfned.");
             return;
         }
+
         for (File udmF : udmFiles) {
             //now load one by one
             try (InputStream in = new FileInputStream(udmF)) {
                 UserDefinedMetrics udm = UserDefinedMetrics.createFromJson(in);
+
                 if (udm == null)
                     log.warn("Failed to parse udm filr " + udmF.getName());
                 else {
                     this.udms.put(udm.getName(), udm);
                     String src = udm.getSource();
+
                     if (!"SQL".equalsIgnoreCase(src)) {
+
                         if (!this.builtinMapping.containsKey(src))
                             this.builtinMapping.put(src, new ArrayList<>());
+
                         this.builtinMapping.get(src).add(udm.getName());
                     }
                 }
+
             } catch (Exception ex) {
                 log.warn("Error when parsing udm " + udmF.getName(), ex);
             }
@@ -240,6 +271,7 @@ public class UDMManager implements Serializable {
 
     private void loadAlertDef() {
         File root = new File(new File(rootPath), ALERT_DIR);
+
         if (!root.exists()) {
             log.info("There is no user defined alerts at " + root.getAbsolutePath());
             return;
@@ -248,6 +280,7 @@ public class UDMManager implements Serializable {
         File[] alertFiles = root.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
+
                 if (name != null && name.endsWith(".json"))
                     return true;
                 else
@@ -259,14 +292,17 @@ public class UDMManager implements Serializable {
             log.info("There is no ALERT defined.");
             return;
         }
+
         for (File alertF : alertFiles) {
             //now load one by one
             try (InputStream in = new FileInputStream(alertF)) {
                 AlertDefinition alertDef = AlertDefinition.createFromJson(in);
+
                 if (alertDef == null)
                     log.warn("Failed to parse alert file " + alertF.getName());
                 else
                     this.alerts.put(alertDef.getName(), alertDef);
+
             } catch (Exception ex) {
                 log.warn("Error when parsing aert def " + alertF.getName(), ex);
             }
@@ -277,9 +313,10 @@ public class UDMManager implements Serializable {
         String fileName = udm.getName() + ".json";
         File root = new File(new File(rootPath), UDM_DIR);
         File udmFile = new File(root, fileName);
-        if (udmFile.exists()) {
+
+        if (udmFile.exists())
             throw new UserDefinedMetrics.UserDefinedMetricsException("UDM file " + fileName + " already exists.");
-        }
+
         try (FileWriter fw = new FileWriter(udmFile)) {
             fw.write(udm.toJSON(false));
             fw.flush();
@@ -292,10 +329,11 @@ public class UDMManager implements Serializable {
         String fileName = alertDef.getName() + ".json";
         File root = new File(new File(rootPath), ALERT_DIR);
         File udmFile = new File(root, fileName);
-        if (udmFile.exists()) {
+
+        if (udmFile.exists())
             log.info("Overwrite alert def file: " + udmFile.getPath());
             //throw new UserDefinedMetrics.UserDefinedMetricsException("ALERT file "+fileName +" already exists.");
-        }
+
         try (FileWriter fw = new FileWriter(udmFile)) {
             fw.write(alertDef.toJSON(false));
             fw.flush();
@@ -312,8 +350,10 @@ public class UDMManager implements Serializable {
      * @throws UserDefinedMetrics.UserDefinedMetricsException
      */
     public void addUDM(UserDefinedMetrics udm) throws UserDefinedMetrics.UserDefinedMetricsException {
+
         if (udm == null)
             return;
+
         synchronized (udmUpdateLock) {
             //while we are updating, don't want other to do the same. Avoid duplicates
             if (this.udms.containsKey(udm.getName()))
@@ -323,17 +363,22 @@ public class UDMManager implements Serializable {
             this.storeUDM(udm);
             this.udms.put(udm.getName(), udm);
             String src = udm.getSource();
+
             if (!"SQL".equalsIgnoreCase(src)) {
+
                 if (!this.builtinMapping.containsKey(src))
                     this.builtinMapping.put(src, new ArrayList<>());
+
                 this.builtinMapping.get(src).add(udm.getName());
             }
         }
     }
 
     public void addAlertDefinition(AlertDefinition alertDef) throws UserDefinedMetrics.UserDefinedMetricsException {
+
         if (alertDef == null)
             return;
+
         synchronized (this.alertDefUpdateLock) {
             //while we are updating, don't want other to do the same. Avoid duplicates
             //if(this.alerts.containsKey(alertDef.getName()))

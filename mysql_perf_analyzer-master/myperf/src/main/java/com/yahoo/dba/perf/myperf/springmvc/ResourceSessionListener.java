@@ -22,10 +22,12 @@ public class ResourceSessionListener implements HttpSessionListener {
     public void sessionDestroyed(HttpSessionEvent evt) {
         AppUser appUser = AppUser.class.cast(evt.getSession().getAttribute(AppUser.SESSION_ATTRIBUTE));
         UserDBConnections conns = UserDBConnections.class.cast(evt.getSession().getAttribute("UserDBConnections"));
+
         if (conns != null) {
-            if (appUser != null) {
+
+            if (appUser != null)
                 log.info("Session destroyed. Close all connections held by " + appUser.getName());
-            }
+
             conns.setValid(false);
             conns.close();
             evt.getSession().removeAttribute("UserDBConnections");

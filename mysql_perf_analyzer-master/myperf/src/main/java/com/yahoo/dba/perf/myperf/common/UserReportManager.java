@@ -74,18 +74,23 @@ public class UserReportManager {
             sb.append(this.format).append(fieldSeparator);
             sb.append(this.filename).append(fieldSeparator);
             boolean first = true;
+
             for (Map.Entry<String, String> e : this.parameters.entrySet()) {
+
                 if (!first)
                     sb.append(pairSeparator);
                 else first = false;
+
                 sb.append(e.getKey()).append(kvSeparator).append(e.getValue());
             }
+
             sb.append(fieldSeparator);
             sb.append(this.completed_timestamp);
             return sb.toString();
         }
 
         public static UserReport decodeLine(String line) {
+
             if (line == null || line.trim().length() == 0)
                 return null;
 
@@ -102,17 +107,21 @@ public class UserReportManager {
                 urp.setFormat(tokens[idx++]);
                 urp.setFilename(tokens[idx++]);
                 String p = tokens[idx++];
+
                 if (p != null) {
                     String[] pairs = p.split("\\u0002");
-                    if (pairs != null) {
+
+                    if (pairs != null)
                         for (String pair : pairs) {
                             String[] kv = pair.split("\\u0003");
-                            if (kv != null && kv.length == 2) {
+
+                            if (kv != null && kv.length == 2)
                                 urp.addParameter(kv[0], kv[1]);
-                            }
+
                         }
-                    }
+
                 }
+
                 urp.setCompleted_timestamp(tokens[idx++]);
             } catch (Exception ex) {
                 log.error("Exception", ex);
@@ -142,28 +151,35 @@ public class UserReportManager {
 
     public UserReportManager(String username, String rootpath) {
         this.username = username;
+
         if (rootpath != null && rootpath.trim().length() > 0)
             this.rootpath = rootpath.trim();
         //else use default
     }
 
     public void init() {
+
         if (!initiated) {
             File reproot = new File(rootpath);
+
             if (!reproot.exists())
                 reproot.mkdir();
 
             userroot = new File(reproot, username);
+
             if (!userroot.exists())
                 userroot.mkdir();
+
             this.initiated = true;
         }
     }
 
     synchronized public void addReportEntry(UserReport urp) {
         File idxFile = new File(userroot, idxfile);
+
         if (maxId == 0)
             this.list();
+
         this.maxId++;
         urp.setId(this.maxId);
         try (FileWriter fw = new FileWriter(idxFile, true)) {
@@ -178,15 +194,18 @@ public class UserReportManager {
     synchronized public List<UserReport> list() {
         List<UserReport> repList = new ArrayList<>();
         File idxFile = new File(userroot, idxfile);
-        if (idxFile.exists()) {
+
+        if (idxFile.exists())
             try (BufferedReader br = new BufferedReader(new FileReader(idxFile))) {
 
                 String line = null;
 
                 while ((line = br.readLine()) != null) {
                     UserReport rep = UserReport.decodeLine(line);
+
                     if (rep != null) {
                         repList.add(rep);
+
                         if (rep.getId() >= this.maxId)
                             maxId = rep.getId();
                     }
@@ -194,7 +213,7 @@ public class UserReportManager {
             } catch (Exception ex) {
                 log.error("Exception", ex);
             }
-        }
+
         return repList;
     }
 
@@ -233,6 +252,7 @@ public class UserReportManager {
             cols.add(urp.getFilename());
             rList.addRow(row);
         }
+
         return rList;
     }
 
@@ -244,10 +264,12 @@ public class UserReportManager {
     public void update(List<UserReport> repList) {
         File idxFile = new File(userroot, idxfile);
         try (FileWriter fw = new FileWriter(idxFile)) {
+
             for (UserReport urp : repList) {
                 String line = urp.encodeLine() + lineSeparator;
                 fw.write(line);
             }
+
         } catch (Exception ex) {
             log.error("Exception", ex);
         }
@@ -257,12 +279,15 @@ public class UserReportManager {
     public File getFileForDownload(String fname)//retrieve file for download
     {
         File f = new File(new File(new File(getRootpath()), getUsername()), fname);
+
         if (!f.exists() || !f.getAbsolutePath().endsWith(fname))//check file and security
             return null;
+
         return f;
     }
 
     public boolean deleteFile(String fname, String id) {
+
         if (fname == null && id == null)
             return false;
         //first check if we have such file or not
@@ -274,22 +299,26 @@ public class UserReportManager {
         }
         List<UserReport> repList = this.list();
         boolean findOne = false;
-        for (int i = repList.size() - 1; i >= 0; i--) {
+
+        for (int i = repList.size() - 1; i >= 0; i--)
             if (repList.get(i).getFilename().equalsIgnoreCase(fname) || rpid == repList.get(i).getId()) {
                 fname = repList.get(i).getFilename();
                 repList.remove(i);
                 findOne = true;
                 break;
             }
-        }
+
         if (!findOne)
             return false;
+
         this.update(repList);
         File f = this.getFileForDownload(fname);
+
         if (f != null && !"rep.idx".equalsIgnoreCase(f.getName())) {
             f.delete();
             return true;
         }
+
         return false;
     }
 }

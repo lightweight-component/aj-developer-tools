@@ -86,8 +86,10 @@ public class ProcessListSummary implements Serializable {
 
         @Override
         public int compareTo(KeyValIntPair o) {
+
             if (o == null)
                 return -1;
+
             return o.value - value;//reverse order
         }
 
@@ -105,9 +107,12 @@ public class ProcessListSummary implements Serializable {
      * It should be invoked after processlist set
      */
     public void summarize() {
+
         if (this.processList == null)
             return;//something wrong
+
         for (ProcessListEntry e : this.processList) {
+
             if ("system user".equalsIgnoreCase(e.getUser()))
                 continue;//ignore replication
             //update user
@@ -149,9 +154,12 @@ public class ProcessListSummary implements Serializable {
 
             //1. Strip comments
             String s = stripComments(e.getInfo());
+
             if (s == null || s.isEmpty())
                 continue;
+
             int t = e.getTime();
+
             if (t == Integer.MAX_VALUE || t < 0)
                 t = 0;//overflow
 
@@ -178,14 +186,19 @@ public class ProcessListSummary implements Serializable {
      * @return
      */
     private static String stripComments(String str) {
+
         if (str == null)
             return "";
+
         String s = str.trim();
         while (s.startsWith("/*")) {
             int idx = s.indexOf("*/");
+
             if (idx < 0)
                 return s;//might not be valie
+
             s = s.substring(idx + 2);
+
             if (s == null)
                 return s;
             else s = s.trim();
@@ -195,27 +208,39 @@ public class ProcessListSummary implements Serializable {
 
     //TODO in case there is a LIMIT in the middle
     private String stripLimit(String str) {
+
         if (str == null)
             return "";
+
         String s = str.trim();
         Matcher mt = pt.matcher(s);
+
         if (!mt.find())
             return s;
+
         if (mt.end() == s.length()) {
             s = s.substring(0, mt.start());
+
             if (s != null)
                 s = s.trim();
+
             return s;
         }
+
         mt = pt2.matcher(s);
+
         if (!mt.find())
             return s;
+
         if (mt.end() == s.length()) {
             s = s.substring(0, mt.start());
+
             if (s != null)
                 s = s.trim();
+
             return s;
         }
+
         return s;//don't care middle one
     }
 
@@ -278,15 +303,18 @@ public class ProcessListSummary implements Serializable {
         try {
             Pattern pt = Pattern.compile("(?i)\\s*IN\\s*\\('?\\d+'?,");
             Matcher m = pt.matcher(str);
+
             if (m.find()) {
                 int start = m.start();
                 //find first close bracket )
                 int idx = str.indexOf(')', start);
+
                 if (idx < 0 || idx == str.length() - 1)
                     return str.substring(0, start) + " IN (......)";
                 else
                     return str.substring(0, start) + " IN (...) " + str.substring(idx + 1);
             }
+
         } catch (Exception ex) {
         }
         return str;
@@ -298,51 +326,65 @@ public class ProcessListSummary implements Serializable {
         pw.println();
         pw.println("------ User Summary ------");
         List<KeyValIntPair> tmpList = new ArrayList<>(this.userSummary.size());
-        for (Map.Entry<String, Integer> e : this.userSummary.entrySet()) {
+
+        for (Map.Entry<String, Integer> e : this.userSummary.entrySet())
             tmpList.add(new KeyValIntPair(e.getKey(), e.getValue()));
-        }
+
         Collections.sort(tmpList);
+
         for (KeyValIntPair p : tmpList) {
             //pw.println(p.name+":  "+p.value);
             pw.println(String.format("%5d: %s", p.value, p.name));
         }
+
         tmpList.clear();
 
         int count = 0;
         pw.println();
         pw.println("------ Host Summary ------");
         tmpList = new ArrayList<>(this.hostSummary.size());
+
         for (Map.Entry<String, Integer> e : this.hostSummary.entrySet()) {
             tmpList.add(new KeyValIntPair(e.getKey(), e.getValue()));
             count++;
+
             if (count >= 20)
                 break;
         }
+
         Collections.sort(tmpList);
+
         for (KeyValIntPair p : tmpList)
             pw.println(String.format("%5d: %s", p.value, p.name));
+
         tmpList.clear();
 
         pw.println();
         pw.println("------ Command Summary ------");
         tmpList = new ArrayList<>(this.commandSummary.size());
-        for (Map.Entry<String, Integer> e : this.commandSummary.entrySet()) {
+
+        for (Map.Entry<String, Integer> e : this.commandSummary.entrySet())
             tmpList.add(new KeyValIntPair(e.getKey(), e.getValue()));
-        }
+
         Collections.sort(tmpList);
+
         for (KeyValIntPair p : tmpList)
             pw.println(String.format("%5d: %s", p.value, p.name));
+
         tmpList.clear();
 
         pw.println();
         pw.println("------ State Summary ------");
         tmpList = new ArrayList<>(this.stateSummary.size());
-        for (Map.Entry<String, Integer> e : this.stateSummary.entrySet()) {
+
+        for (Map.Entry<String, Integer> e : this.stateSummary.entrySet())
             tmpList.add(new KeyValIntPair(e.getKey(), e.getValue()));
-        }
+
         Collections.sort(tmpList);
+
         for (KeyValIntPair p : tmpList)
             pw.println(String.format("%5d: %s", p.value, p.name));
+
         tmpList.clear();
 
 
@@ -350,16 +392,19 @@ public class ProcessListSummary implements Serializable {
         pw.println("------ Query Summary With LIMIT Stripped------");
 
         ArrayList<ProcessListEntryAggregate> tmpList2 = new ArrayList<>(this.queriesWithLimitStripped.size());
-        for (Map.Entry<String, ProcessListEntryAggregate> e : this.queriesWithLimitStripped.entrySet()) {
+
+        for (Map.Entry<String, ProcessListEntryAggregate> e : this.queriesWithLimitStripped.entrySet())
             tmpList2.add(e.getValue());
-        }
+
         Collections.sort(tmpList2, new ProcessListEntryAggregate.SortByCount());
         count = 0;
+
         for (ProcessListEntryAggregate p : tmpList2) {
             pw.println(p.getChecksum() + ": " + p.getSql());
             pw.println(String.format("%s: count - %d, time - %d sec, avg - %3f sec, min - %d sec, max -%d sec",
                     p.getChecksum(), p.getCount(), p.getTotal_time_sec(), p.getAverage(), p.getMin_time_sec(), p.getMax_time_sec()));
             count++;
+
             if (count > 20)
                 break;//since we sort them and attach process list, display only top 20
         }
@@ -370,30 +415,36 @@ public class ProcessListSummary implements Serializable {
 
         Collections.sort(tmpList2);
         count = 0;
+
         for (ProcessListEntryAggregate p : tmpList2) {
             pw.println(p.getChecksum() + ": " + p.getSql());
             pw.println(String.format("%s: count - %d, time - %d sec, avg - %3f sec, min - %d sec, max -%d sec",
                     p.getChecksum(), p.getCount(), p.getTotal_time_sec(), p.getAverage(), p.getMin_time_sec(), p.getMax_time_sec()));
             count++;
+
             if (count > 20)
                 break;//since we sort them and attach process list, display only top 20
         }
+
         tmpList2.clear();
 
         pw.println();
         pw.println("------ Normalized Queries------");
         tmpList2 = new ArrayList<>(this.normalizedQueries.size());
-        for (Map.Entry<String, ProcessListEntryAggregate> e : this.normalizedQueries.entrySet()) {
+
+        for (Map.Entry<String, ProcessListEntryAggregate> e : this.normalizedQueries.entrySet())
             tmpList2.add(e.getValue());
-        }
+
         Collections.sort(tmpList2, new ProcessListEntryAggregate.SortByCount());
 
         count = 0;
+
         for (ProcessListEntryAggregate p : tmpList2) {
             pw.println(p.getChecksum() + ": " + p.getSql());
             pw.println(String.format("%s: count - %d, time - %d sec, avg - %3f sec, min - %d sec, max -%d sec",
                     p.getChecksum(), p.getCount(), p.getTotal_time_sec(), p.getAverage(), p.getMin_time_sec(), p.getMax_time_sec()));
             count++;
+
             if (count > 20)
                 break;//since we sort them and attach process list, display only top 20
         }
@@ -404,14 +455,17 @@ public class ProcessListSummary implements Serializable {
 
         Collections.sort(tmpList2);
         count = 0;
+
         for (ProcessListEntryAggregate p : tmpList2) {
             pw.println(p.getChecksum() + ": " + p.getSql());
             pw.println(String.format("%s: count - %d, time - %d sec, avg - %3f sec, min - %d sec, max -%d sec",
                     p.getChecksum(), p.getCount(), p.getTotal_time_sec(), p.getAverage(), p.getMin_time_sec(), p.getMax_time_sec()));
             count++;
+
             if (count > 20)
                 break;//since we sort them and attach process list, display only top 20
         }
+
         tmpList2.clear();
 
         //app specific
@@ -424,7 +478,9 @@ public class ProcessListSummary implements Serializable {
         pw.println();
         pw.println("------ Active Process List ------");
         int idx = 1;
+
         for (ProcessListEntry e : this.processList) {
+
             if ("Sleep".equalsIgnoreCase(e.getCommand()))
                 continue;//ignore sleep one
             //dump the process list
@@ -436,9 +492,10 @@ public class ProcessListSummary implements Serializable {
             } catch (Exception ex) {
             }
             pw.println("Time: " + e.getTime() + ", Ts: " + ts + ", State: " + e.getState() + ", User: " + e.getUser() + ", DB: " + e.getDb() + ", Host: " + e.getHost());
-            if (e.getRows_examined() > 0 || e.getRows_read() > 0 || e.getRows_sent() > 0) {
+
+            if (e.getRows_examined() > 0 || e.getRows_read() > 0 || e.getRows_sent() > 0)
                 pw.println("Rows_examined: " + e.getRows_examined() + ", Rows_read: " + e.getRows_read() + ", Rows_sent: " + e.getRows_sent());
-            }
+
             idx++;
         }
 
@@ -450,12 +507,13 @@ public class ProcessListSummary implements Serializable {
                 String line = null;
                 boolean skip = false;
                 while ((line = bufReader.readLine()) != null) {
+
                     if (line.startsWith("---TRANSACTION ") && line.contains("not started") && !line.contains("estimating"))
                         skip = true;
-                    else if (skip) {
+                    else if (skip)
                         if (line.startsWith("--------") || line.startsWith("---TRANSACTION "))
                             skip = false;
-                    }
+
                     if (!skip)
                         pw.println(line);
                 }
@@ -469,12 +527,14 @@ public class ProcessListSummary implements Serializable {
             pw.println("------ InnoDB Locks ------");
             AlertReport.printList(pw, this.lockList);
         }
+
         if (this.clientList != null && this.clientList.getRows().size() > 0) {
             pw.println();
             pw.println("------ Client Statistics ------");
             AlertReport.printList(pw, this.clientList);
 
         }
+
         if (this.trxList != null && this.trxList.getRows().size() > 0) {
             pw.println();
             pw.println("------ InnoDB TRX LONGER THAN 60 SECONDS ------");

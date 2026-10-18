@@ -1,8 +1,7 @@
 package com.yahoo.dba.perf.myperf.db;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.yahoo.dba.perf.myperf.common.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.sql.SQLException;
 import java.util.Map;
@@ -24,17 +23,18 @@ public class MySQLStatusQueryProcessor implements CustomQueryProcessor {
             throws SQLException {
         QueryParameters qps2 = new QueryParameters();
         qps2.setSql("mysql_global_status_metrics");
-        for (String key : qps.getSqlParams().keySet()) {
-            qps2.getSqlParams().put(key, qps.getSqlParams().get(key));
-        }
-        if (!qps2.getSqlParams().containsKey("p_1")) {
 
+        for (String key : qps.getSqlParams().keySet())
+            qps2.getSqlParams().put(key, qps.getSqlParams().get(key));
+
+        if (!qps2.getSqlParams().containsKey("p_1"))
             qps2.getSqlParams().put("p_1", "");
-        }
+
         //mysql_global_status_metrics
         //mysql_show_global_status
-        ResultList rList = null;
+        ResultList rList;
         rList = context.getQueryEngine().executeQueryGeneric(qps2, connWrapper, qps.getMaxRows());
+
         if (rList != null) {
 
             ResultList newList = new ResultList();
@@ -42,9 +42,12 @@ public class MySQLStatusQueryProcessor implements CustomQueryProcessor {
             ColumnDescriptor newDesc = new ColumnDescriptor();
             int idx = 0;
             int nameIdx = 0;
+
             for (ColumnInfo c : desc.getColumns()) {
+
                 if ("VARIABLE_NAME".equalsIgnoreCase(c.getName()))
                     nameIdx = idx;
+
                 if ("VALUE".equalsIgnoreCase(c.getName()))
                     newDesc.addColumn("VARIABLE_VALUE", c.isNumberType(), idx++);
                 else
@@ -52,20 +55,26 @@ public class MySQLStatusQueryProcessor implements CustomQueryProcessor {
             }
 
             newList.setColumnDescriptor(newDesc);
+
             for (ResultRow row : rList.getRows()) {
                 ResultRow newRow = new ResultRow();
                 newRow.setColumnDescriptor(newDesc);
                 int cols = row.getColumns().size();
+
                 for (int i = 0; i < cols; i++) {
                     String v = row.getColumns().get(i);
-                    if (i == nameIdx) {
+
+                    if (i == nameIdx)
                         newRow.addColumn(v == null ? null : v.toUpperCase());
-                    } else newRow.addColumn(v);
+                     else newRow.addColumn(v);
                 }
+
                 newList.addRow(newRow);
             }
+
             return newList;
         }
+
         return null;
     }
 

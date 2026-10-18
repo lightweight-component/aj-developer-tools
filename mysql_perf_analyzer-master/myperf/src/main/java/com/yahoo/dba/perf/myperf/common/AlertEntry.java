@@ -53,8 +53,10 @@ public class AlertEntry implements Serializable {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("ALERT: ").append(this.alertReason);
+
         if (this.alertValue != null && !this.alertValue.isEmpty())
             sb.append(", ").append(this.alertValue);
+
         sb.append(", ").append(this.dbGroup).append(", ").append(this.dbHost);
         sb.append(", TIME: ").append(this.getAlertTime());
         return sb.toString();

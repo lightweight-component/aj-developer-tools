@@ -25,8 +25,10 @@ public class MailUtil {
         String mailCommand = "mailx";//or mail, which send long body as attachment
 
         String os = System.getProperty("os.name");
+
         if (os != null && os.toUpperCase().contains("WIN"))
             return false;
+
         log.info("Sending email to " + receiver + " regarding " + subject);
         String[] cmd = {mailCommand, "-s", subject, receiver};
         try {

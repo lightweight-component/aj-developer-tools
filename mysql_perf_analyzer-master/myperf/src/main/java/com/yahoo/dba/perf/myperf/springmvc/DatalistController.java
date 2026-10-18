@@ -34,6 +34,7 @@ public class DatalistController extends MyPerfBaseController {
         String dataType = req.getParameter("t");
         String contentType = req.getParameter("ct");
         ModelAndView mv = null;
+
         if ("json".equalsIgnoreCase(contentType)) {
             resp.setContentType("application/json");
             mv = new ModelAndView(jsonView);
@@ -41,29 +42,33 @@ public class DatalistController extends MyPerfBaseController {
             resp.setContentType("text/xml");
             mv = new ModelAndView(xmlView);
         }
+
         ResultList rs = null;
+
         if ("dbhosts".equalsIgnoreCase(dataType))
             rs = this.retrieveDbHostList(req);
         else if ("dbinfo".equalsIgnoreCase(dataType))
             rs = this.retrieveDbHostInfo(req);
         else if ("list_restricted".equalsIgnoreCase(dataType))
             rs = this.listRestricted(req);
-        if ("json".equalsIgnoreCase(contentType)) {
+
+        if ("json".equalsIgnoreCase(contentType))
             mv.addObject("json_result", ResultListUtil.toJSONString(rs, null, 0, "OK"));
-        } else {
+         else
             if (rs == null || rs.getRows().size() == 0)
                 mv.addObject("status", 0);
             else {
                 mv.addObject("status", rs.getRows().size());
                 mv.addObject("results", rs);
             }
-        }
+
         return mv;
     }
 
     private ResultList retrieveDbHostList(HttpServletRequest req) {
         String clusterName = req.getParameter("dbid");
         DBGroupInfo cls = this.frameworkContext.getDbInfoManager().findGroup(clusterName);
+
         if (cls != null) {
             ResultList rs = new ResultList();
             ColumnDescriptor desc = new ColumnDescriptor();
@@ -72,6 +77,7 @@ public class DatalistController extends MyPerfBaseController {
             col.setPosition(1);
             desc.getColumns().add(col);
             rs.setColumnDescriptor(desc);
+
             for (DBInstanceInfo db : cls.getInstances()) {
                 ResultRow row = new ResultRow();
                 row.setColumnDescriptor(desc);
@@ -79,6 +85,7 @@ public class DatalistController extends MyPerfBaseController {
                 row.getColumns().add(db.getHostName());
                 rs.addRow(row);
             }
+
             return rs;
         } else
             return null;
@@ -88,6 +95,7 @@ public class DatalistController extends MyPerfBaseController {
         String clusterName = req.getParameter("dbid");
         String hostName = req.getParameter("host");
         DBInstanceInfo db = this.frameworkContext.getDbInfoManager().findDB(clusterName, hostName);
+
         if (db != null) {
             ResultList rs = new ResultList();
             ColumnDescriptor desc = new ColumnDescriptor();
@@ -142,12 +150,14 @@ public class DatalistController extends MyPerfBaseController {
 
         if (mydbs == null)
             return rs;
+
         for (String s : mydbs) {
             ResultRow row = new ResultRow();
             row.setColumnDescriptor(desc);
             row.addColumn(s);
             rs.addRow(row);
         }
+
         return rs;
     }
 }

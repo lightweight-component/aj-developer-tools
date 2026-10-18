@@ -59,8 +59,10 @@ public class AppUser implements Serializable {
     }
 
     public boolean match(String hash, long ts, int seed) {
+
         if (hash == null)
             return false;
+
         try {
             return hash.equals(MD5Util.MD5(ts + ":" + this.md5Hash + ":" + seed));
         } catch (Exception ex) {
@@ -85,8 +87,10 @@ public class AppUser implements Serializable {
     }
 
     public boolean matchPassword(String pd) {
+
         if (pd == null)
             return false;//we always need password
+
         return this.calMd5(pd).equals(this.md5Hash);
     }
 
@@ -100,9 +104,10 @@ public class AppUser implements Serializable {
     public static String geterateRandomPwd() {
         char mypwd[] = new char[8];
         char[] chars = LETTERS.toCharArray();
-        for (int i = 0; i < 8; i++) {
+
+        for (int i = 0; i < 8; i++)
             mypwd[i] = chars[(int) (Math.floor(Math.random() * chars.length))];
-        }
+
         return new String(mypwd);
     }
 

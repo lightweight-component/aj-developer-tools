@@ -100,6 +100,7 @@ public class DerbyMetricsDb extends MetricsDbBase implements Serializable, Runna
         for (Metric m : mg.getMetrics()) {
             sb.append(",");
             sb.append(m.getName().toUpperCase()).append(" ");
+
             if (m.getDataType() == MetricDataType.BYTE)
                 sb.append("SMALLINT");
             else if (m.getDataType() == MetricDataType.SHORT)
@@ -178,4 +179,4 @@ public class DerbyMetricsDb extends MetricsDbBase implements Serializable, Runna
         };
     }
 }
-  
+
