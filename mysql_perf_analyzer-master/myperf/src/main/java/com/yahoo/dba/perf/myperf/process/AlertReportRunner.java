@@ -20,6 +20,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Collections;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -70,9 +71,6 @@ public class AlertReportRunner implements Runnable {
     public void run() {
         AlertEntry alertEntry = new AlertEntry(timestamp, alertReason, alertValue, dbInfo.getDbGroupName(), dbInfo.getHostName());
         this.context.getAlerts().addAlert(alertEntry);
-
-        ResultSet rs = null;
-        Statement stmt = null;
         long reportTimestamp = System.currentTimeMillis();
         List<ProcessListEntry> prList = new ArrayList<>();
         LinkedHashMap<String, String> repMap = new LinkedHashMap<>();
@@ -80,86 +78,63 @@ public class AlertReportRunner implements Runnable {
         ResultList rList = null;
         ResultList trxList = null;
         ResultList clientList = null;
-
-        try {
-            stmt = connection.getConnection().createStatement();
+        try (Statement stmt = connection.getConnection().createStatement()) {
             stmt.setFetchSize(5000);
-            //stmt.setMaxRows(5000);
-            //rs = stmt.executeQuery("select * from information_schema.processlist limit 5000");
-            rs = stmt.executeQuery("select * from information_schema.processlist"); //remove limit to handle the case of very large connections
-            boolean hasRowInfo = rs != null && hasRowInfo(rs);
-            boolean hasRowRead = rs != null && hasRowsRead(rs);
-
-            while (rs != null && rs.next()) {
-                ProcessListEntry ps = new ProcessListEntry(rs, hasRowInfo, hasRowRead);
-                prList.add(ps);
-            }
-
-            if ("REPLLAG".equalsIgnoreCase(this.alertReason) || "REPLDOWN".equalsIgnoreCase(this.alertReason)) {
-                DBUtils.close(rs);
-                rs = stmt.executeQuery("show slave status");
-                int i = 0;
-                int cnt = rs.getMetaData().getColumnCount();
-
-                while (rs.next()) {
-                    String suffix = "";
-
-                    if (i > 0)
-                        suffix = "_" + i;
-
-                    for (int k = 0; k < cnt; k++)
-                        repMap.put(rs.getMetaData().getColumnName(k + 1) + suffix, rs.getString(k + 1));
-                    i++;
+            try (ResultSet rs = stmt.executeQuery("select * from information_schema.processlist")) {
+                boolean hasRowInfo = rs != null && hasRowInfo(rs);
+                boolean hasRowRead = rs != null && hasRowsRead(rs);
+                while (rs != null && rs.next()) {
+                    ProcessListEntry ps = new ProcessListEntry(rs, hasRowInfo, hasRowRead);
+                    prList.add(ps);
                 }
             }
-
+            if ("REPLLAG".equalsIgnoreCase(this.alertReason) || "REPLDOWN".equalsIgnoreCase(this.alertReason)) {
+                try (ResultSet rs = stmt.executeQuery("show slave status")) {
+                    int i = 0;
+                    int cnt = rs.getMetaData().getColumnCount();
+                    while (rs.next()) {
+                        String suffix = "";
+                        if (i > 0)
+                            suffix = "_" + i;
+                        for (int k = 0; k < cnt; k++) repMap.put(rs.getMetaData().getColumnName(k + 1) + suffix, rs.getString(k + 1));
+                        i++;
+                    }
+                }
+            }
             //if ("CPU".equalsIgnoreCase(alertReason) ||"THREAD".equalsIgnoreCase(alertReason)||"REPLLAG".equalsIgnoreCase(this.alertReason))
             {
-                DBUtils.close(rs);
-                rs = stmt.executeQuery("show engine innodb status");
-                if (rs != null && rs.next())
-                    innodbStatus = rs.getString("Status");
-
-                DBUtils.close(rs);
-                rs = null;
-                rs = stmt.executeQuery("select * from information_schema.innodb_locks");
-
-                if (rs != null)
-                    rList = ResultListUtil.fromSqlResultSet(rs, 0);
-
-                DBUtils.close(rs);
-                rs = null;
-                rs = stmt.executeQuery("select * from information_schema.INNODB_TRX where to_seconds(now()) - to_seconds(trx_started) > 60");
-
-                if (rs != null)
-                    trxList = ResultListUtil.fromSqlResultSet(rs, 0);
-
-                DBUtils.close(rs);
-                rs = null;
+                try (ResultSet rs = stmt.executeQuery("show engine innodb status")) {
+                    if (rs != null && rs.next())
+                        innodbStatus = rs.getString("Status");
+                }
+                try (ResultSet rs = stmt.executeQuery("select * from information_schema.innodb_locks")) {
+                    if (rs != null)
+                        rList = ResultListUtil.fromSqlResultSet(rs, 0);
+                }
+                try (ResultSet rs = stmt.executeQuery("select * from information_schema.INNODB_TRX where to_seconds(now()) - to_seconds(trx_started) > 60")) {
+                    if (rs != null)
+                        trxList = ResultListUtil.fromSqlResultSet(rs, 0);
+                }
             }
-
             // TODO we need two snapshot to get useful data
             if ("CONNECT_FAILURE".equalsIgnoreCase(alertReason)) {
                 //dump summary of processlist if possible
                 String sql = "select user, host, command, count(*) conns from information_schema.processlist group by user, host, command";
-                DBUtils.close(rs);
-                rs = stmt.executeQuery(sql);
-                if (rs != null) {
-                    clientList = ResultListUtil.fromSqlResultSet(rs, 0);
+                try (ResultSet rs = stmt.executeQuery(sql)) {
+                    if (rs != null) {
+                        clientList = ResultListUtil.fromSqlResultSet(rs, 0);
+                    }
                 }
-
-                DBUtils.close(rs);
             }
         } catch (Exception ex) {
             log.warn("Error when retrieve alert detail", ex);
         } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
             //release pending report count
             this.context.getInstanceStatesManager().getStates(this.dbInfo.getDbid()).reportDone();
         }
         if (prList.size() > 0 || repMap.size() > 0) {
-            java.util.Collections.sort(prList);//sort by sql text
+            //sort by sql text
+            Collections.sort(prList);
             ProcessListSummary prSum = new ProcessListSummary();
             prSum.setProcessList(prList);
             prSum.setInnodbStatus(innodbStatus);
@@ -168,7 +143,6 @@ public class AlertReportRunner implements Runnable {
             //prSum.setClientList(clientList);
             prSum.setReportTimestamp(reportTimestamp);
             prSum.summarize();
-
             AlertReport ar = this.context.createAlertReport(reportTimestamp, alertEntry);
             ar.setProcessListSummary(prSum);
             if (repMap.size() > 0)

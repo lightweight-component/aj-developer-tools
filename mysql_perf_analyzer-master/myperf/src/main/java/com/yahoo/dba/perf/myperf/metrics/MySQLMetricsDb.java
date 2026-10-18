@@ -7,7 +7,6 @@ package com.yahoo.dba.perf.myperf.metrics;
 
 import lombok.extern.slf4j.Slf4j;
 
-import com.yahoo.dba.perf.myperf.common.DBUtils;
 import com.yahoo.dba.perf.myperf.common.MetricsGroup;
 
 import java.nio.ByteBuffer;
@@ -16,6 +15,8 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.io.Serializable;
+import java.util.Date;
 
 /**
  * persistence store for metrics
@@ -23,7 +24,7 @@ import java.util.List;
  * @author xrao
  */
 @Slf4j
-public class MySQLMetricsDb extends MetricsDbBase implements java.io.Serializable, Runnable {
+public class MySQLMetricsDb extends MetricsDbBase implements Serializable, Runnable {
     private static final long serialVersionUID = 1L;
 
     //private java.text.DecimalFormat df = new java.text.DecimalFormat("#.###");
@@ -79,23 +80,22 @@ public class MySQLMetricsDb extends MetricsDbBase implements java.io.Serializabl
 
     @Override
     protected void storeGenericMetric(String s, List<MetricsData> q2, Connection conn) throws SQLException {
-        Statement stmt = null;
         MetricsGroup mg = this.metricsGroups.get(s);
         StringBuilder sb = new StringBuilder();
         String targetTable = mg != null ? mg.getTargetTable() : null;
         if (targetTable == null || targetTable.isEmpty())
             targetTable = "METRIC_GENERIC";
-
         sb.append("INSERT INTO " + targetTable + " (DBID, METRIC_ID, SNAP_ID, TS, VALUE) VALUES");
-        try {
-            stmt = conn.createStatement();
+        try (Statement stmt = conn.createStatement()) {
             int cnt = 0;
-            int batchSize = 100;//hard coded for now
+            //hard coded for now
+            int batchSize = 100;
             for (MetricsData dbuf : q2) {
                 ByteBuffer buf = dbuf.data;
                 int idx = 1;
                 int pos = 0;
-                if (cnt > 0) sb.append(",");
+                if (cnt > 0)
+                    sb.append(",");
                 sb.append("(");
                 sb.append(buf.getInt(pos));
                 pos += 4;
@@ -105,9 +105,10 @@ public class MySQLMetricsDb extends MetricsDbBase implements java.io.Serializabl
                 sb.append(",").append(buf.getInt(pos));
                 idx++;
                 pos += 4;
-                sb.append(",").append(sdf.format(new java.util.Date(buf.getLong(pos))));
+                sb.append(",").append(sdf.format(new Date(buf.getLong(pos))));
                 idx++;
-                pos += 8;//TODO sdf thread safety
+                //TODO sdf thread safety
+                pos += 8;
                 sb.append(",").append(df.format(buf.getDouble(pos))).append(")");
                 idx++;
                 cnt++;
@@ -119,19 +120,15 @@ public class MySQLMetricsDb extends MetricsDbBase implements java.io.Serializabl
                     sb.setLength(0);
                     sb.append("INSERT INTO " + targetTable + " (DBID, METRIC_ID, TS, VALUE) VALUES");
                 }
-            }//for loop
+            }
+            //for loop
             if (cnt > 0) {
                 //log.info("Batch statement: "+sb.toString());
                 stmt.execute(sb.toString());
                 //conn.commit();
                 sb.setLength(0);
             }
-            stmt.close();
-            stmt = null;
-        } finally {
-            DBUtils.close(stmt);
         }
-
     }
 
     @Override

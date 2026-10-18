@@ -11,7 +11,6 @@ import lombok.Data;
  */
 @Data
 public class DiskIOStats {
-
     /**
      * 读取的总字节数
      * <p>

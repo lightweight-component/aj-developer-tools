@@ -18,6 +18,7 @@ import java.io.File;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.*;
+import java.text.SimpleDateFormat;
 
 @Slf4j
 public class GlobalVariableChangeScanTask implements Runnable {
@@ -28,7 +29,7 @@ public class GlobalVariableChangeScanTask implements Runnable {
     @Getter
     private AppUser appUser;
     private UserDBConnections conns;
-    java.text.SimpleDateFormat sdf;
+    SimpleDateFormat sdf;
 
     public GlobalVariableChangeScanTask(MyPerfContext context, AppUser user) {
         this.context = context;
@@ -45,7 +46,7 @@ public class GlobalVariableChangeScanTask implements Runnable {
         File root = new File(new File(this.context.getFileReposirtoryPath()), STORAGE_DIR);
 
         //get all dbids
-        List<DBInstanceInfo> dbs = new ArrayList<DBInstanceInfo>();
+        List<DBInstanceInfo> dbs = new ArrayList<>();
         for (Map.Entry<String, DBGroupInfo> e : context.getDbInfoManager().getClusters().entrySet()) {
             DBGroupInfo g = e.getValue();
             for (DBInstanceInfo i : g.getInstances()) {
@@ -55,7 +56,7 @@ public class GlobalVariableChangeScanTask implements Runnable {
 
 
         //now get current timestamp
-        sdf = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
+        sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         for (DBInstanceInfo db : dbs)//now we need scan for each db
         {
@@ -80,12 +81,12 @@ public class GlobalVariableChangeScanTask implements Runnable {
         DBCredential cred = DBUtils.findDBCredential(context, dbinfo.getDbGroupName(), appUser);
         if (cred == null) {
             log.info("No credential for cluster " + dbinfo.getDbGroupName() + ", skip it");
-            return null;//log the error
+            //log the error
+            return null;
         }
         log.info("Scan for host (" + dbinfo + ") as user " + cred.getUsername());
-        DBConnectionWrapper conn = null;//find one connection is enough
-        Statement stmt = null;
-        ResultSet rs = null;
+        //find one connection is enough
+        DBConnectionWrapper conn = null;
         ConfigBlock cb = null;
         try {
             conn = conns.checkoutConnection(dbinfo, cred);
@@ -94,25 +95,27 @@ public class GlobalVariableChangeScanTask implements Runnable {
                 return null;
             }
             String sqlText = "show global variables";
-            stmt = conn.getConnection().createStatement();
-            rs = stmt.executeQuery(sqlText);
-            cb = new ConfigBlock();
-            while (rs != null && rs.next()) {
-                String key = rs.getString("VARIABLE_NAME").toUpperCase();
-                if ("TIMESTAMP".equalsIgnoreCase(key)) continue;//exclude a timestamp variable
-                cb.addVariable(key, rs.getString("VALUE"));
+            try (Statement stmt = conn.getConnection().createStatement();
+                ResultSet rs = stmt.executeQuery(sqlText)) {
+                cb = new ConfigBlock();
+                while (rs != null && rs.next()) {
+                    String key = rs.getString("VARIABLE_NAME").toUpperCase();
+                    //exclude a timestamp variable
+                    if ("TIMESTAMP".equalsIgnoreCase(key))
+                        continue;
+                    cb.addVariable(key, rs.getString("VALUE"));
+                }
+                Calendar c = Calendar.getInstance();
+                Date dt = c.getTime();
+                cb.setTime(sdf.format(dt));
             }
-            Calendar c = Calendar.getInstance();
-            Date dt = c.getTime();
-            cb.setTime(sdf.format(dt));
         } catch (Exception ex) {
             log.warn("exception", ex);
             //we should not used failed data
             return null;
         } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
-            if (conn != null) conns.checkinConnectionAndClose(conn);
+            if (conn != null)
+                conns.checkinConnectionAndClose(conn);
         }
         log.info("Done configuration scan for host (" + dbinfo + ") as user " + cred.getUsername());
         return cb;

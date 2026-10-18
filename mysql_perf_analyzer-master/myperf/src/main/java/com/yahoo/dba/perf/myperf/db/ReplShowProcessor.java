@@ -22,7 +22,7 @@ public class ReplShowProcessor implements CustomQueryProcessor {
         String port;
         boolean probed;
 
-        List<ReplServer> repls = new ArrayList<ReplServer>();
+        List<ReplServer> repls = new ArrayList<>();
 
         ReplServer(String host, String port) {
             this.host = host;
@@ -41,7 +41,7 @@ public class ReplShowProcessor implements CustomQueryProcessor {
 
         //slef and children
         Map<String, ReplServer> getAllServers() {
-            Map<String, ReplServer> childs = new LinkedHashMap<String, ReplServer>();
+            Map<String, ReplServer> childs = new LinkedHashMap<>();
             childs.put(this.toString(), this); //add self first
             listAllChildren(childs);
             return childs;
@@ -115,7 +115,7 @@ public class ReplShowProcessor implements CustomQueryProcessor {
     }
 
     //For all servers in a topology, it will share the same ReplTopologyCacheEntry
-    private Map<String, ReplTopologyCacheEntry> topologyCache = new HashMap<String, ReplTopologyCacheEntry>();
+    private Map<String, ReplTopologyCacheEntry> topologyCache = new HashMap<>();
 
     @Override
     public void queryMultiple(MyPerfContext context, DBInstanceInfo dbinfo,
@@ -130,7 +130,7 @@ public class ReplShowProcessor implements CustomQueryProcessor {
     public ResultList querySingle(MyPerfContext context, DBInstanceInfo dbinfo,
                                   String appUser, DBConnectionWrapper connWrapper, QueryParameters qps)
             throws SQLException {
-        Map<String, ReplStatus> statusResults = new java.util.LinkedHashMap<String, ReplStatus>();
+        Map<String, ReplStatus> statusResults = new LinkedHashMap<>();
         DBCredential cred = context.getMetaDb().retrieveDBCredential(appUser, dbinfo.getDbGroupName());
         ReplServer replServer = new ReplServer(dbinfo.getHostName(), dbinfo.getPort());
 
@@ -192,7 +192,7 @@ public class ReplShowProcessor implements CustomQueryProcessor {
         desc.addColumn("MASTER EXECUTED GTID", false, idx++);
         desc.addColumn("EXECUTED GTID", false, idx++);
 
-        Set<String> probed = new HashSet<String>();
+        Set<String> probed = new HashSet<>();
         outputTree(rootServer, statusResults, probed, 0, rList);
 
         //for (Map.Entry<String, ReplStatus> e: statusResults.entrySet())
@@ -261,12 +261,9 @@ public class ReplShowProcessor implements CustomQueryProcessor {
     private void queryDetail(MyPerfContext context, DBCredential cred,
                              Map<String, ReplStatus> replStatusMap, ReplServer replServer, int depth) {
         log.info("Probing " + replServer.toString());
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
         //store new hosts
         ReplStatus repl = replStatusMap.get(replServer.toString());
-        Map<String, String> hosts = new java.util.LinkedHashMap<String, String>();
+        Map<String, String> hosts = new LinkedHashMap<>();
         boolean toprobe = depth < context.getMyperfConfig().getReplTopologyMaxDepth() && !replServer.probed;
         try {
             DBInstanceInfo dbinfo2 = new DBInstanceInfo();
@@ -275,90 +272,79 @@ public class ReplShowProcessor implements CustomQueryProcessor {
             dbinfo2.setDatabaseName("information_schema");
             dbinfo2.setDbType("mysql");
             String url = dbinfo2.getConnectionString();
-
             DriverManager.setLoginTimeout(60);
-            conn = DriverManager.getConnection(url, cred.getUsername(), cred.getPassword());
-            if (conn == null) return;//we might not have permission
-            stmt = conn.createStatement();
-            //first, probe master status
-            rs = stmt.executeQuery("show master status");
-            if (rs != null && rs.next()) {
-                java.sql.ResultSetMetaData meta = rs.getMetaData();
-                int col = meta.getColumnCount();
-                for (int i = 1; i <= col; i++) {
-                    String colName = meta.getColumnLabel(i);
-                    String val = rs.getString(i);
-                    if ("File".equalsIgnoreCase(colName))
-                        repl.masterFile = val;
-                    else if ("Position".equalsIgnoreCase(colName))
-                        repl.masterPosition = val;
-                    else if ("Executed_Gtid_Set".equalsIgnoreCase(colName))
-                        repl.masterExecutedGtidSet = val;
-                }
-            }
-            DBUtils.close(rs);
-            rs = null;
-            //then slave status
-            rs = stmt.executeQuery("show slave status");
-            if (rs != null && rs.next()) {
-                java.sql.ResultSetMetaData meta = rs.getMetaData();
-                int col = meta.getColumnCount();
-                for (int i = 1; i <= col; i++) {
-                    String colName = meta.getColumnLabel(i);
-                    String val = rs.getString(i);
-                    if ("Master_Host".equalsIgnoreCase(colName))
-                        repl.masterHost = getHostnameByIp(val);
-                    else if ("Master_Port".equalsIgnoreCase(colName))
-                        repl.masterPort = val;
-                    else if ("Master_Log_File".equalsIgnoreCase(colName))
-                        repl.masterLogFile = val;
-                    else if ("Read_Master_Log_Pos".equalsIgnoreCase(colName))
-                        repl.readMasterLogPos = val;
-                    else if ("Relay_Master_Log_File".equalsIgnoreCase(colName))
-                        repl.relayMasterLogFile = val;
-                    else if ("Exec_Master_Log_Pos".equalsIgnoreCase(colName))
-                        repl.execMasterLogPos = val;
-                    else if ("Executed_Gtid_Set".equalsIgnoreCase(colName))
-                        repl.executedGtidSet = val;
-                    else if ("Seconds_Behind_Master".equalsIgnoreCase(colName))
-                        repl.lag = val;
-                    else if ("Slave_IO_Running".equalsIgnoreCase(colName))
-                        repl.io = val;
-                    else if ("Slave_SQL_Running".equalsIgnoreCase(colName))
-                        repl.sql = val;
-                }
-                if (toprobe) hosts.put(repl.masterHost, repl.masterPort);
-            }
-            DBUtils.close(rs);
-            rs = null;
-
-            if (toprobe) {
-                rs = stmt.executeQuery("select host from information_schema.processlist where command like 'Binlog Dump%'");
-                while (rs != null && rs.next()) {
-                    String host = rs.getString(1);
-                    if (host != null && host.indexOf(":") > 0) {
-                        host = host.substring(0, host.indexOf(':'));
+            try (Connection conn = DriverManager.getConnection(url, cred.getUsername(), cred.getPassword())) {
+                //we might not have permission
+                if (conn == null)
+                    return;
+                try (Statement stmt = conn.createStatement()) {
+                    try (ResultSet rs = stmt.executeQuery("show master status")) {
+                        if (rs != null && rs.next()) {
+                            ResultSetMetaData meta = rs.getMetaData();
+                            int col = meta.getColumnCount();
+                            for (int i = 1; i <= col; i++) {
+                                String colName = meta.getColumnLabel(i);
+                                String val = rs.getString(i);
+                                if ("File".equalsIgnoreCase(colName))
+                                    repl.masterFile = val;
+                                else if ("Position".equalsIgnoreCase(colName))
+                                    repl.masterPosition = val;
+                                else if ("Executed_Gtid_Set".equalsIgnoreCase(colName))
+                                    repl.masterExecutedGtidSet = val;
+                            }
+                        }
                     }
-                    host = getHostnameByIp(host);
-                    if (host != null && !host.isEmpty())
-                        hosts.put(host, "3306"); //we cannot probe port, assume 3306
+                    try (ResultSet rs = stmt.executeQuery("show slave status")) {
+                        if (rs != null && rs.next()) {
+                            ResultSetMetaData meta = rs.getMetaData();
+                            int col = meta.getColumnCount();
+                            for (int i = 1; i <= col; i++) {
+                                String colName = meta.getColumnLabel(i);
+                                String val = rs.getString(i);
+                                if ("Master_Host".equalsIgnoreCase(colName))
+                                    repl.masterHost = getHostnameByIp(val);
+                                else if ("Master_Port".equalsIgnoreCase(colName))
+                                    repl.masterPort = val;
+                                else if ("Master_Log_File".equalsIgnoreCase(colName))
+                                    repl.masterLogFile = val;
+                                else if ("Read_Master_Log_Pos".equalsIgnoreCase(colName))
+                                    repl.readMasterLogPos = val;
+                                else if ("Relay_Master_Log_File".equalsIgnoreCase(colName))
+                                    repl.relayMasterLogFile = val;
+                                else if ("Exec_Master_Log_Pos".equalsIgnoreCase(colName))
+                                    repl.execMasterLogPos = val;
+                                else if ("Executed_Gtid_Set".equalsIgnoreCase(colName))
+                                    repl.executedGtidSet = val;
+                                else if ("Seconds_Behind_Master".equalsIgnoreCase(colName))
+                                    repl.lag = val;
+                                else if ("Slave_IO_Running".equalsIgnoreCase(colName))
+                                    repl.io = val;
+                                else if ("Slave_SQL_Running".equalsIgnoreCase(colName))
+                                    repl.sql = val;
+                            }
+                            if (toprobe)
+                                hosts.put(repl.masterHost, repl.masterPort);
+                        }
+                    }
+                    if (toprobe) {
+                        try (ResultSet rs = stmt.executeQuery("select host from information_schema.processlist where command like 'Binlog Dump%'")) {
+                            while (rs != null && rs.next()) {
+                                String host = rs.getString(1);
+                                if (host != null && host.indexOf(":") > 0) {
+                                    host = host.substring(0, host.indexOf(':'));
+                                }
+                                host = getHostnameByIp(host);
+                                if (host != null && !host.isEmpty())
+                                    //we cannot probe port, assume 3306
+                                    hosts.put(host, "3306");
+                            }
+                        }
+                    }
                 }
-
-                DBUtils.close(rs);
-                rs = null;
             }
-            DBUtils.close(stmt);
-            stmt = null;
-            DBUtils.close(conn);
-            conn = null;
         } catch (Exception ex) {
             log.warn("Failed to retrieve repl info from " + repl.hostname + ":" + repl.port, ex);
-        } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
-            DBUtils.close(conn);
         }
-
         //probe
         for (Map.Entry<String, String> server : hosts.entrySet()) {
             if (replStatusMap.containsKey(server.getKey() + ":" + server.getValue()))
@@ -375,7 +361,7 @@ public class ReplShowProcessor implements CustomQueryProcessor {
 
     private ReplServer findReplRoot(Map<String, ReplStatus> replStatusMap) {
         ReplServer root = null;
-        Map<String, ReplServer> probed = new HashMap<String, ReplServer>();
+        Map<String, ReplServer> probed = new HashMap<>();
         //only need first probe one
         for (Map.Entry<String, ReplStatus> e : replStatusMap.entrySet()) {
             ReplStatus rpl = e.getValue();
@@ -402,7 +388,7 @@ public class ReplShowProcessor implements CustomQueryProcessor {
 
     //probe the map to build a tree like structure, and return the root
     private ReplServer buildReplTree(Map<String, ReplStatus> replStatusMap) {
-        Map<String, ReplServer> tree = new HashMap<String, ReplServer>();
+        Map<String, ReplServer> tree = new HashMap<>();
         for (Map.Entry<String, ReplStatus> e : replStatusMap.entrySet()) {
             String self = e.getKey();
             ReplStatus repl = e.getValue();

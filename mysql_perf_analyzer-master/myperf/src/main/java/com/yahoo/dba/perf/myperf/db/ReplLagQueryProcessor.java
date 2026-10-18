@@ -11,6 +11,7 @@ import com.yahoo.dba.perf.myperf.common.*;
 
 import java.sql.*;
 import java.util.Map;
+import java.util.LinkedHashMap;
 
 /**
  * Query slave status and use master info to add master status
@@ -43,9 +44,10 @@ public class ReplLagQueryProcessor implements CustomQueryProcessor {
         String master = null;
         String port = null;
         if (rList != null) {
-            java.util.LinkedHashMap<String, String> kvPairs = new java.util.LinkedHashMap<String, String>(rList.getRows().size());
+            LinkedHashMap<String, String> kvPairs = new LinkedHashMap<>(rList.getRows().size());
             for (ResultRow row : rList.getRows()) {
-                if (row.getColumns() == null || row.getColumns().size() < 2) continue;
+                if (row.getColumns() == null || row.getColumns().size() < 2)
+                    continue;
                 kvPairs.put(row.getColumns().get(0), row.getColumns().get(1));
             }
             master = kvPairs.get("Master_Host");
@@ -58,71 +60,64 @@ public class ReplLagQueryProcessor implements CustomQueryProcessor {
                 dbinfo2.setDatabaseName("information_schema");
                 dbinfo2.setDbType("mysql");
                 String url = dbinfo2.getConnectionString();
-
                 DBCredential cred = null;
                 if (appUser != null) {
                     try {
                         //first, check if the user has his own credential
                         cred = context.getMetaDb().retrieveDBCredential(appUser, dbinfo.getDbGroupName());
                         if (cred != null) {
-                            Connection conn = null;
-                            Statement stmt = null;
-                            ResultSet rs = null;
                             try {
                                 DriverManager.setLoginTimeout(60);
-                                conn = DriverManager.getConnection(url, cred.getUsername(), cred.getPassword());
-                                if (conn != null) {
-                                    stmt = conn.createStatement();
-                                    rs = stmt.executeQuery("show master status");
-                                    //TODO rearrange order
-                                    ResultList rList2 = new ResultList();
-                                    rList2.setColumnDescriptor(rList.getColumnDescriptor());
-                                    for (String e : SLAVE_LAG_ENTRIES) {
-                                        ResultRow row = new ResultRow();
-                                        row.setColumnDescriptor(rList.getColumnDescriptor());
-                                        row.addColumn(e);
-                                        row.addColumn(kvPairs.get(e));
-                                        rList2.addRow(row);
-                                        kvPairs.remove(e);
+                                try (Connection conn = DriverManager.getConnection(url, cred.getUsername(), cred.getPassword())) {
+                                    if (conn != null) {
+                                        try (Statement stmt = conn.createStatement();
+                                            ResultSet rs = stmt.executeQuery("show master status")) {
+                                            //TODO rearrange order
+                                            ResultList rList2 = new ResultList();
+                                            rList2.setColumnDescriptor(rList.getColumnDescriptor());
+                                            for (String e : SLAVE_LAG_ENTRIES) {
+                                                ResultRow row = new ResultRow();
+                                                row.setColumnDescriptor(rList.getColumnDescriptor());
+                                                row.addColumn(e);
+                                                row.addColumn(kvPairs.get(e));
+                                                rList2.addRow(row);
+                                                kvPairs.remove(e);
+                                            }
+                                            while (rs != null && rs.next()) {
+                                                ResultRow row = new ResultRow();
+                                                row.setColumnDescriptor(rList.getColumnDescriptor());
+                                                row.addColumn("Master: File");
+                                                row.addColumn(rs.getString("File"));
+                                                rList2.addRow(row);
+                                                row = new ResultRow();
+                                                row.setColumnDescriptor(rList.getColumnDescriptor());
+                                                row.addColumn("Master: Position");
+                                                row.addColumn(rs.getString("Position"));
+                                                rList2.addRow(row);
+                                                //TODO gtid set
+                                            }
+                                            //now add slave position info
+                                            for (String e : SLAVE_POS_ENTRIES) {
+                                                ResultRow row = new ResultRow();
+                                                row.setColumnDescriptor(rList.getColumnDescriptor());
+                                                row.addColumn(e);
+                                                row.addColumn(kvPairs.get(e));
+                                                rList2.addRow(row);
+                                                kvPairs.remove(e);
+                                            }
+                                            //now add remaining entries
+                                            for (Map.Entry<String, String> e : kvPairs.entrySet()) {
+                                                ResultRow row = new ResultRow();
+                                                row.setColumnDescriptor(rList.getColumnDescriptor());
+                                                row.addColumn(e.getKey());
+                                                row.addColumn(e.getValue());
+                                                rList2.addRow(row);
+                                            }
+                                            return rList2;
+                                        }
                                     }
-                                    while (rs != null && rs.next()) {
-                                        ResultRow row = new ResultRow();
-                                        row.setColumnDescriptor(rList.getColumnDescriptor());
-                                        row.addColumn("Master: File");
-                                        row.addColumn(rs.getString("File"));
-                                        rList2.addRow(row);
-                                        row = new ResultRow();
-                                        row.setColumnDescriptor(rList.getColumnDescriptor());
-                                        row.addColumn("Master: Position");
-                                        row.addColumn(rs.getString("Position"));
-                                        rList2.addRow(row);
-                                        //TODO gtid set
-                                    }
-                                    //now add slave position info
-                                    for (String e : SLAVE_POS_ENTRIES) {
-                                        ResultRow row = new ResultRow();
-                                        row.setColumnDescriptor(rList.getColumnDescriptor());
-                                        row.addColumn(e);
-                                        row.addColumn(kvPairs.get(e));
-                                        rList2.addRow(row);
-                                        kvPairs.remove(e);
-                                    }
-                                    //now add remaining entries
-                                    for (Map.Entry<String, String> e : kvPairs.entrySet()) {
-                                        ResultRow row = new ResultRow();
-                                        row.setColumnDescriptor(rList.getColumnDescriptor());
-                                        row.addColumn(e.getKey());
-                                        row.addColumn(e.getValue());
-                                        rList2.addRow(row);
-                                    }
-                                    return rList2;
                                 }
-
                             } catch (Exception ex) {
-                            } finally {
-                                DBUtils.close(rs);
-                                DBUtils.close(stmt);
-                                DBUtils.close(conn);
                             }
                         }
                     } catch (Exception ex) {
@@ -130,7 +125,6 @@ public class ReplLagQueryProcessor implements CustomQueryProcessor {
                 }
             }
         }
-
         return rList;
     }
 

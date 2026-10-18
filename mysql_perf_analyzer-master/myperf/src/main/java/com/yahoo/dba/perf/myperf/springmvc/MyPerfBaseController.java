@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
+import java.text.SimpleDateFormat;
 
 /**
  * Base controller, includes some common functions, for example, to report
@@ -43,16 +44,14 @@ public abstract class MyPerfBaseController extends AbstractController {
     protected String formView;//if it is going to display a form, form view
     @Getter
     @Setter
-    protected String jsonView;//if result will be sent back in json format
+    protected String jsonView;//if a result will be sent back in json format
     @Getter
     @Setter
     private boolean requireLogin = true;//by default, we need login
 
     @Override
-    protected ModelAndView handleRequestInternal(HttpServletRequest req,
-                                                 HttpServletResponse resp) throws Exception {
+    protected ModelAndView handleRequestInternal(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         setupDebug(req);
-
         boolean debug = this.isDebug(req);
 
         if (debug) log.info("receive url path: " + req.getContextPath() + "," + req.getRequestURI() + ", "
@@ -94,9 +93,8 @@ public abstract class MyPerfBaseController extends AbstractController {
         return mv;
     }
 
-    //all subclasss need implement this method
-    protected abstract ModelAndView handleRequestImpl(HttpServletRequest req,
-                                                      HttpServletResponse resp) throws Exception;
+    //all subclasss need to implement this method
+    protected abstract ModelAndView handleRequestImpl(HttpServletRequest req, HttpServletResponse resp) throws Exception;
 
     /**
      * Whether debug is enabled at session level
@@ -152,8 +150,8 @@ public abstract class MyPerfBaseController extends AbstractController {
      * @return
      */
     public static String[] getDateRange(String startDate, String endDate) {
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyyMMddHHmmss");//metricsDB TS column format
-        java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH");//URL request format
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");//metricsDB TS column format
+        SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd HH");//URL request format
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         sdf2.setTimeZone(TimeZone.getTimeZone("UTC"));
         Date d1 = null;

@@ -17,13 +17,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import java.io.Serializable;
 
 /**
  * MySQL query profiler
  *
  * @author xrao
  */
-public class MyProfiler implements java.io.Serializable {
+public class MyProfiler implements Serializable {
     private static final long serialVersionUID = 1L;
     @Getter
     @Setter
@@ -115,7 +116,7 @@ public class MyProfiler implements java.io.Serializable {
         }
         this.dbUser = dbuser;
         //TODO test connection
-        java.util.Properties prop = new java.util.Properties();
+        Properties prop = new Properties();
         prop.put("socketTimeout", "600000");//make it 10 minutes. 1 minute is too short for profiling
         prop.put("interactiveClient", "true");
         long connStartTime = System.currentTimeMillis();
@@ -128,31 +129,25 @@ public class MyProfiler implements java.io.Serializable {
 
     public ResultList runExplainPlan()
             throws SQLException {
-        Statement stmt = null;
-        ResultSet rs = null;
-        try {
-            stmt = connection.createStatement();
-            rs = stmt.executeQuery("EXPLAIN " + this.sqlText);
-            ResultList rList = ResultListUtil.fromSqlResultSet(rs, 1000);
-            //now add query cost
-            DBUtils.close(rs);
-            rs = stmt.executeQuery("show status like 'Last_query_cost'");
-            if (rs != null && rs.next()) {
-                String cost = rs.getString("Value");
-                if (cost != null) {
-                    //append as last row
-                    ResultRow row = new ResultRow();
-                    int cols = rList.getColumnDescriptor().getColumns().size();
-                    for (int i = 0; i < cols - 1; i++)
-                        row.addColumn("");
-                    row.addColumn("Cost: " + cost);
-                    rList.addRow(row);
-                }
+        try (Statement stmt = connection.createStatement()) {
+            ResultList rList;
+            try (ResultSet rs = stmt.executeQuery("EXPLAIN " + this.sqlText)) {
+                rList = ResultListUtil.fromSqlResultSet(rs, 1000);
             }
-            return rList;
-        } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
+            try (ResultSet rs = stmt.executeQuery("show status like 'Last_query_cost'")) {
+                if (rs != null && rs.next()) {
+                    String cost = rs.getString("Value");
+                    if (cost != null) {
+                        //append as last row
+                        ResultRow row = new ResultRow();
+                        int cols = rList.getColumnDescriptor().getColumns().size();
+                        for (int i = 0; i < cols - 1; i++) row.addColumn("");
+                        row.addColumn("Cost: " + cost);
+                        rList.addRow(row);
+                    }
+                }
+                return rList;
+            }
         }
     }
 
@@ -164,159 +159,140 @@ public class MyProfiler implements java.io.Serializable {
      */
     public String runExplainPlanJson()
             throws SQLException {
-        Statement stmt = null;
-        ResultSet rs = null;
-        try {
-            stmt = connection.createStatement();
-            rs = stmt.executeQuery("EXPLAIN FORMAT=JSON " + this.sqlText);
+        try (Statement stmt = connection.createStatement();
+            ResultSet rs = stmt.executeQuery("EXPLAIN FORMAT=JSON " + this.sqlText)) {
             if (rs != null && rs.next()) {
                 return rs.getString(1);
             }
-            DBUtils.close(rs);
-        } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
         }
         return null;
     }
 
     public ResultList runProfile()
             throws SQLException {
-        Statement stmt = null;
-        ResultSet rs = null;
-        try {
-            stmt = connection.createStatement();
+        try (Statement stmt = connection.createStatement()) {
             stmt.execute("set profiling=1");
-            rs = stmt.executeQuery(this.sqlText);
-            int count = 0;
-            while (rs != null && rs.next()) {
-                count++;
+            try (ResultSet rs = stmt.executeQuery(this.sqlText)) {
+                int count = 0;
+                while (rs != null && rs.next()) {
+                    count++;
+                }
             }
-            DBUtils.close(rs);
-            //TODO we need use the count
-            rs = stmt.executeQuery("show profile all");
-            //while(rs!=null && rs.next())
-            //{
-            //	  System.out.println(rs.getString(1));
-            //}
-            ResultList rList = ResultListUtil.fromSqlResultSet(rs, 1000);
-            stmt.execute("set profiling=0");
-            //reprocess and remove empty/all zero columns
-            int[] bitmap = new int[rList.getColumnDescriptor().getColumns().size()];
-            for (int i = 0; i < bitmap.length; i++) bitmap[i] = 0;
-
-            for (int i = 0; i < bitmap.length; i++) {
-                for (ResultRow row : rList.getRows()) {
-                    List<String> cols = row.getColumns();
-                    String val = cols.get(i);
-                    if (val != null && !val.isEmpty() && !"0".equals(val.trim())) {
-                        bitmap[i] = 1;
-                        break;
+            try (ResultSet rs = stmt.executeQuery("show profile all")) {
+                //}
+                ResultList rList = ResultListUtil.fromSqlResultSet(rs, 1000);
+                stmt.execute("set profiling=0");
+                //reprocess and remove empty/all zero columns
+                int[] bitmap = new int[rList.getColumnDescriptor().getColumns().size()];
+                for (int i = 0; i < bitmap.length; i++) bitmap[i] = 0;
+                for (int i = 0; i < bitmap.length; i++) {
+                    for (ResultRow row : rList.getRows()) {
+                        List<String> cols = row.getColumns();
+                        String val = cols.get(i);
+                        if (val != null && !val.isEmpty() && !"0".equals(val.trim())) {
+                            bitmap[i] = 1;
+                            break;
+                        }
                     }
                 }
-            }
-            ColumnDescriptor desc = new ColumnDescriptor();
-            List<ColumnInfo> colInfos = rList.getColumnDescriptor().getColumns();
-            int idx = 0;
-            for (int i = 0; i < bitmap.length; i++) {
-                if (bitmap[i] == 1)
-                    desc.addColumn(colInfos.get(i).getName(), colInfos.get(i).isNumberType(), idx++);
-            }
-            ResultList rlist2 = new ResultList();
-            rlist2.setColumnDescriptor(desc);
-            for (ResultRow row : rList.getRows()) {
-                ResultRow newRow = new ResultRow();
-                newRow.setColumnDescriptor(desc);
-
-                List<String> cols = row.getColumns();
+                ColumnDescriptor desc = new ColumnDescriptor();
+                List<ColumnInfo> colInfos = rList.getColumnDescriptor().getColumns();
+                int idx = 0;
                 for (int i = 0; i < bitmap.length; i++) {
                     if (bitmap[i] == 1)
-                        newRow.addColumn(cols.get(i));
+                        desc.addColumn(colInfos.get(i).getName(), colInfos.get(i).isNumberType(), idx++);
                 }
-                rlist2.addRow(newRow);
+                ResultList rlist2 = new ResultList();
+                rlist2.setColumnDescriptor(desc);
+                for (ResultRow row : rList.getRows()) {
+                    ResultRow newRow = new ResultRow();
+                    newRow.setColumnDescriptor(desc);
+                    List<String> cols = row.getColumns();
+                    for (int i = 0; i < bitmap.length; i++) {
+                        if (bitmap[i] == 1)
+                            newRow.addColumn(cols.get(i));
+                    }
+                    rlist2.addRow(newRow);
+                }
+                return rlist2;
             }
-            return rlist2;
-        } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
         }
     }
 
     public ResultList runStats()
             throws SQLException {
-        Statement stmt = null;
-        ResultSet rs = null;
-        HashMap<String, BigDecimal> startStat = new HashMap<String, BigDecimal>();
-        HashMap<String, BigDecimal> endStat = new HashMap<String, BigDecimal>();
-
-        try {
-            stmt = connection.createStatement();
+        HashMap<String, BigDecimal> startStat = new HashMap<>();
+        HashMap<String, BigDecimal> endStat = new HashMap<>();
+        try (Statement stmt = connection.createStatement()) {
             stmt.setFetchSize(1000);
-            stmt.execute("set long_query_time=0.00");//log query running for more than 0 millisconds
-            //rs = stmt.executeQuery("select variable_name, variable_value from information_schema.session_status where variable_value!='0' and variable_value regexp '[0-9\\.]' limit 1000");
-            rs = stmt.executeQuery("show status");
-            while (rs != null && rs.next()) {
-                String key = rs.getString(1);
-                String val = rs.getString(2);
-                if (val == null || val.isEmpty() || "0".equals(val)) continue;
-                try {
-                    startStat.put(key.toUpperCase(), new BigDecimal(val));
-                } catch (Exception ex) {
+            //log query running for more than 0 millisconds
+            stmt.execute("set long_query_time=0.00");
+            try (ResultSet rs = stmt.executeQuery("show status")) {
+                while (rs != null && rs.next()) {
+                    String key = rs.getString(1);
+                    String val = rs.getString(2);
+                    if (val == null || val.isEmpty() || "0".equals(val))
+                        continue;
+                    try {
+                        startStat.put(key.toUpperCase(), new BigDecimal(val));
+                    } catch (Exception ex) {
+                    }
                 }
             }
-            DBUtils.close(rs);
             long execStart = System.currentTimeMillis();
-            rs = stmt.executeQuery(this.sqlText);
-            long execEnd = System.currentTimeMillis();
-            int count = 0;
-            while (rs != null && rs.next()) {
-                count++;
+            long execEnd;
+            int count;
+            long fetchEnd;
+            try (ResultSet rs = stmt.executeQuery(this.sqlText)) {
+                execEnd = System.currentTimeMillis();
+                count = 0;
+                while (rs != null && rs.next()) {
+                    count++;
+                }
+                fetchEnd = System.currentTimeMillis();
             }
-            long fetchEnd = System.currentTimeMillis();
-            DBUtils.close(rs);
-            //rs = stmt.executeQuery("select variable_name, variable_value from information_schema.session_status where variable_value!='0' and variable_value regexp '[0-9\\.]' limit 1000");
-            rs = stmt.executeQuery("show status");
-            while (rs != null && rs.next()) {
-                String key = rs.getString(1);
-                String val = rs.getString(2);
-                if (val == null || val.isEmpty() || "0".equals(val)) continue;
-                try {
-                    endStat.put(key.toUpperCase(), new BigDecimal(val));
-                } catch (Exception ex) {
+            try (ResultSet rs = stmt.executeQuery("show status")) {
+                while (rs != null && rs.next()) {
+                    String key = rs.getString(1);
+                    String val = rs.getString(2);
+                    if (val == null || val.isEmpty() || "0".equals(val))
+                        continue;
+                    try {
+                        endStat.put(key.toUpperCase(), new BigDecimal(val));
+                    } catch (Exception ex) {
+                    }
                 }
             }
-            DBUtils.close(rs);
-
-            TreeMap<String, BigDecimal> res = new TreeMap<String, BigDecimal>();
+            TreeMap<String, BigDecimal> res = new TreeMap<>();
             for (Map.Entry<String, BigDecimal> e : endStat.entrySet()) {
                 String key = e.getKey();
                 if (key.toLowerCase().startsWith("innodb") || key.toLowerCase().startsWith("uptime"))
-                    continue;//skip non session related innodb stats and uptime
+                    //skip non session related innodb stats and uptime
+                    continue;
                 BigDecimal val = e.getValue();
                 if (key.toLowerCase().startsWith("last_query")) {
                     //skip the negate
                 } else if (startStat.containsKey(key)) {
-                    if (val.equals(startStat.get(key))) continue;//skip the one with no change
+                    //skip the one with no change
+                    if (val.equals(startStat.get(key)))
+                        continue;
                     val = val.add(startStat.get(key).negate());
                 }
                 res.put(key, val);
             }
-
             res.put("_RETURNED_ROWS", new BigDecimal(count));
             res.put("_TIME_EXEC_MS", new BigDecimal(execEnd - execStart));
             res.put("_TIME_FETCH_MS", new BigDecimal(fetchEnd - execEnd));
             res.put("_TIME_CONN_MS", new BigDecimal(this.connectionTime));
-
             ResultList rList = new ResultList();
             ColumnDescriptor desc = new ColumnDescriptor();
             desc.addColumn("VARIABLE_NAME", false, 1);
             desc.addColumn("VARIABLE_VALUE", true, 2);
             rList.setColumnDescriptor(desc);
-
             for (Map.Entry<String, BigDecimal> e : res.entrySet()) {
                 ResultRow row = new ResultRow();
                 row.setColumnDescriptor(desc);
-                List<String> vals = new ArrayList<String>(2);
+                List<String> vals = new ArrayList<>(2);
                 vals.add(e.getKey());
                 vals.add(e.getValue().toPlainString());
                 row.setColumns(vals);
@@ -324,9 +300,6 @@ public class MyProfiler implements java.io.Serializable {
             }
             //TODO add row count and time
             return rList;
-        } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
         }
     }
 

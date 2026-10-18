@@ -1,0 +1,26 @@
+JDBC 资源自动关闭改造记录（2026-10-18）
+
+范围：JDBC Connection、Statement、PreparedStatement、ResultSet。
+原先在 finally 中清理的局部资源改用 Java 8 try-with-resources。
+连续执行多次查询时，每个 ResultSet 使用独立作用域；事务回滚在连接关闭前执行。
+连接管理器的归还、取消查询引用清理、告警报告计数等 finally 操作继续保留。
+try-with-resources 遵循 JDBC close() 的异常规则：业务异常优先，关闭异常作为
+suppressed exception；只有关闭失败时，异常进入原有 catch 或由方法声明向上传播。
+这与 DBUtils.close() 忽略关闭异常的旧行为存在区别。
+
+按用户要求保留的 catch 特殊情况：
+文件：myperf/src/main/java/com/yahoo/dba/perf/myperf/db/DBConnectionWrapper.java
+方法：retrieveInfoUponOpen()
+调用：setConnection() 设置连接后查询版本和 Oracle 实例信息。
+现状：仅在 catch (Exception ex) 中调用 DBUtils.close(rs)、DBUtils.close(stmt)，
+正常路径不显式释放这两个局部资源；异常也未记录或重新抛出。
+处理：原样保留，未改成 try-with-resources，也未添加 finally。
+原作者是否有特殊意图尚未确认，后续如需调整，应单独确认行为。
+
+保留的跨方法连接生命周期：
+- DBConnectionWrapper.close()：显式关闭包装器持有的连接。
+- UserDBConnections：连接借出、归还、错误关闭、到期淘汰和会话结束清理。
+- MyProfiler：连接跨多次分析操作复用，destroy() 或切换用户时释放。
+- MetricsDbBase.storeConnection：后台写入复用连接，工作线程退出或到期重连时释放。
+这些连接不是单次查询的局部资源，未将其放入查询的 try-with-resources。
+DBUtils.close() 工具方法继续供上述生命周期管理和保留的 catch 使用。

@@ -92,20 +92,20 @@ public class UdmController extends MyPerfBaseController {
 
         mv = new ModelAndView(this.formView);
         //udm list
-        List<String> udms = new ArrayList<String>();
+        List<String> udms = new ArrayList<>();
         for (Map.Entry<String, UserDefinedMetrics> e : this.frameworkContext.getMetricsDef().getUdmManager().getUdms().entrySet()) {
             udms.add(e.getKey());
         }
         mv.addObject("udms", udms);
         //alerts
-        List<String> alerts = new ArrayList<String>();
+        List<String> alerts = new ArrayList<>();
         for (Map.Entry<String, AlertDefinition> e : this.frameworkContext.getMetricsDef().getUdmManager().getAlerts().entrySet()) {
             alerts.add(e.getKey());
         }
         mv.addObject("alerts", alerts);
 
         //predefined
-        Map<String, String> predefined = new TreeMap<String, String>();
+        Map<String, String> predefined = new TreeMap<>();
         String[] predefinedGroups = this.frameworkContext.getMetricsDef().getGroupNames();
         for (String gname : predefinedGroups) {
             MetricsGroup g = this.frameworkContext.getMetricsDef().getGroupByName(gname);
@@ -152,7 +152,7 @@ public class UdmController extends MyPerfBaseController {
                 rList.setColumnDescriptor(desc);
                 for (String u : udms) {
                     ResultRow row = new ResultRow();
-                    ArrayList<String> cols = new ArrayList<String>();
+                    ArrayList<String> cols = new ArrayList<>();
                     cols.add(u);
                     row.setColumns(cols);
                     rList.addRow(row);
@@ -168,7 +168,7 @@ public class UdmController extends MyPerfBaseController {
                 rList.setColumnDescriptor(desc);
                 for (AlertSubscribers.Subscription u : alerts) {
                     ResultRow row = new ResultRow();
-                    ArrayList<String> cols = new ArrayList<String>();
+                    ArrayList<String> cols = new ArrayList<>();
                     cols.add(u.alertName);
                     row.setColumns(cols);
                     rList.addRow(row);
@@ -187,7 +187,7 @@ public class UdmController extends MyPerfBaseController {
                     if (this.frameworkContext.getMetricsDef().getUdmManager().isMetricsGroupSubscribed(
                             group, host, mg.getGroupName(), null)) {
                         ResultRow row = new ResultRow();
-                        ArrayList<String> cols = new ArrayList<String>();
+                        ArrayList<String> cols = new ArrayList<>();
                         cols.add(mg.getGroupName());
                         row.setColumns(cols);
                         rList.addRow(row);
@@ -199,7 +199,7 @@ public class UdmController extends MyPerfBaseController {
                         if (!subG.isAuto() && this.frameworkContext.getMetricsDef().getUdmManager().isMetricsGroupSubscribed(
                                 group, host, mg.getGroupName(), subG.getGroupName())) {
                             ResultRow row = new ResultRow();
-                            ArrayList<String> cols = new ArrayList<String>();
+                            ArrayList<String> cols = new ArrayList<>();
                             cols.add(mg.getGroupName() + "." + subG.getGroupName());
                             row.setColumns(cols);
                             rList.addRow(row);
@@ -276,21 +276,17 @@ public class UdmController extends MyPerfBaseController {
             throws Exception {
         if (db == null || db.isEmpty())
             throw new Exception("please provide valid database for test");
-
         String[] dbs = db.split("\\|");
         if (dbs == null || dbs.length < 2)
             throw new Exception("please provide valid database for test");
         DBInstanceInfo dbinfo = this.frameworkContext.getDbInfoManager().findDB(dbs[0], dbs[1]);
         if (dbinfo == null)
             throw new Exception("please provide valid database for test");
-
-        HashSet<String> metricsNameSet = new HashSet<String>();
+        HashSet<String> metricsNameSet = new HashSet<>();
         for (Metric m : udm.getMetrics()) {
             metricsNameSet.add(m.getSourceName());
         }
         DBConnectionWrapper connWrapper = null;
-        Statement stmt = null;
-        ResultSet rs = null;
         try {
             String sql = udm.getSql();
             MetricsGroup mg = udm.getMetricsGroup();
@@ -303,9 +299,12 @@ public class UdmController extends MyPerfBaseController {
                 sql = this.frameworkContext.getSqlTextForMetricsGroup(udm.getSource());
                 mg = this.frameworkContext.getMetricsDef().getGroupByName(udm.getSource());
                 if (mg != null) {
-                    if (mg.getKeyColumn() != null) udmType = "key";
-                    else if (mg.isMultipleMetricsPerRow()) udmType = "column";
-                    else udmType = "row";
+                    if (mg.getKeyColumn() != null)
+                        udmType = "key";
+                    else if (mg.isMultipleMetricsPerRow())
+                        udmType = "column";
+                    else
+                        udmType = "row";
                     nameCol = mg.getMetricNameColumn();
                     valCol = mg.getMetricValueColumn();
                     keyCol = mg.getKeyColumn();
@@ -319,60 +318,59 @@ public class UdmController extends MyPerfBaseController {
             if (connWrapper == null) {
                 throw new Exception("failed to connect to target db (" + dbinfo + ")");
             }
-            stmt = connWrapper.getConnection().createStatement();
-            rs = stmt.executeQuery(sql);
-            if (rs != null) {
-                ResultSetMetaData meta = rs.getMetaData();
-                //verify columns
-                int cols = meta.getColumnCount();
-                Map<String, Integer> colMap = new HashMap<String, Integer>(cols);
-                for (int i = 1; i <= cols; i++)
-                    colMap.put(meta.getColumnName(i).toUpperCase(), meta.getColumnType(i));
-                if ("row".equals(udmType)) {
-                    if (!colMap.containsKey(udm.getNameCol().toUpperCase()))
-                        throw new Exception("Failed to find name column from SQL result: " + udm.getNameCol() + ", returned: " + colMap);
-                    if (!colMap.containsKey(udm.getValueCol().toUpperCase()))
-                        throw new Exception("Failed to find value column from SQL result: " + udm.getValueCol() + ", returned: " + colMap);
-                } else //check metrics column
-                {
-                    if ("key".equals(udmType)) {
-                        if (!colMap.containsKey(keyCol.toUpperCase()))
-                            throw new Exception("Failed to find key column from SQL result: " + udm.getKeyCol());
-                    }
-                    for (Metric m : udm.getMetrics()) {
-                        if (!colMap.containsKey(m.getSourceName().toUpperCase()))
-                            throw new Exception("Failed to find metric column from SQL result: " + m.getSourceName());
-                    }
-                }
-            } else {
-                throw new Exception("Failed to test SQL.");
-            }
-            while (rs != null && rs.next()) {
-                if ("row".equals(udmType)) {
-                    String name = rs.getString(nameCol);
-                    if (!metricsNameSet.contains(name)) continue;
-                    String val = rs.getString(valCol);
-                    try {
-                        BigDecimal d = new BigDecimal(val == null ? "0" : val);
-                    } catch (Exception ex) {
-                        throw new Exception("Expect numeric value for metric from SQL result, got " + val);
+            try (Statement stmt = connWrapper.getConnection().createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+                if (rs != null) {
+                    ResultSetMetaData meta = rs.getMetaData();
+                    //verify columns
+                    int cols = meta.getColumnCount();
+                    Map<String, Integer> colMap = new HashMap<>(cols);
+                    for (int i = 1; i <= cols; i++) colMap.put(meta.getColumnName(i).toUpperCase(), meta.getColumnType(i));
+                    if ("row".equals(udmType)) {
+                        if (!colMap.containsKey(udm.getNameCol().toUpperCase()))
+                            throw new Exception("Failed to find name column from SQL result: " + udm.getNameCol() + ", returned: " + colMap);
+                        if (!colMap.containsKey(udm.getValueCol().toUpperCase()))
+                            throw new Exception("Failed to find value column from SQL result: " + udm.getValueCol() + ", returned: " + colMap);
+                    } else //check metrics column
+                    {
+                        if ("key".equals(udmType)) {
+                            if (!colMap.containsKey(keyCol.toUpperCase()))
+                                throw new Exception("Failed to find key column from SQL result: " + udm.getKeyCol());
+                        }
+                        for (Metric m : udm.getMetrics()) {
+                            if (!colMap.containsKey(m.getSourceName().toUpperCase()))
+                                throw new Exception("Failed to find metric column from SQL result: " + m.getSourceName());
+                        }
                     }
                 } else {
-                    for (Metric m : udm.getMetrics()) {
-                        String val = rs.getString(m.getSourceName());
+                    throw new Exception("Failed to test SQL.");
+                }
+                while (rs != null && rs.next()) {
+                    if ("row".equals(udmType)) {
+                        String name = rs.getString(nameCol);
+                        if (!metricsNameSet.contains(name))
+                            continue;
+                        String val = rs.getString(valCol);
                         try {
                             BigDecimal d = new BigDecimal(val == null ? "0" : val);
                         } catch (Exception ex) {
-                            throw new Exception("Expect numeric value metric value from SQL result for column " + m.getShortName() + ", got " + val);
+                            throw new Exception("Expect numeric value for metric from SQL result, got " + val);
+                        }
+                    } else {
+                        for (Metric m : udm.getMetrics()) {
+                            String val = rs.getString(m.getSourceName());
+                            try {
+                                BigDecimal d = new BigDecimal(val == null ? "0" : val);
+                            } catch (Exception ex) {
+                                throw new Exception("Expect numeric value metric value from SQL result for column " + m.getShortName() + ", got " + val);
+                            }
                         }
                     }
                 }
-
             }
         } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
-            WebAppUtil.closeDBConnection(req, connWrapper, true, false);//close it anyway
+            //close it anyway
+            WebAppUtil.closeDBConnection(req, connWrapper, true, false);
         }
     }
 
@@ -380,7 +378,6 @@ public class UdmController extends MyPerfBaseController {
             throws Exception {
         if (def == null)
             throw new Exception("please provide valid alert definition for test");
-
         if (AlertDefinition.SOURCE_SQL.equals(def.getSource())) {
             if (def.getSqlText() == null || def.getSqlText().isEmpty())
                 throw new Exception("please provide valid SQL text for test");
@@ -393,8 +390,6 @@ public class UdmController extends MyPerfBaseController {
             if (dbinfo == null)
                 throw new Exception("please provide valid database for test");
             DBConnectionWrapper connWrapper = null;
-            Statement stmt = null;
-            ResultSet rs = null;
             try {
                 connWrapper = WebAppUtil.getDBConnection(req, this.frameworkContext, dbinfo);
                 if (connWrapper == null) {
@@ -406,12 +401,12 @@ public class UdmController extends MyPerfBaseController {
                         sql = sql.replace("&" + e.getKey(), e.getValue());
                     }
                 }
-                stmt = connWrapper.getConnection().createStatement();
-                rs = stmt.executeQuery(sql);
+                try (Statement stmt = connWrapper.getConnection().createStatement();
+                    ResultSet rs = stmt.executeQuery(sql)) {
+                }
             } finally {
-                DBUtils.close(rs);
-                DBUtils.close(stmt);
-                WebAppUtil.closeDBConnection(req, connWrapper, true, false);//close it anyway
+                //close it anyway
+                WebAppUtil.closeDBConnection(req, connWrapper, true, false);
             }
         } else if (AlertDefinition.SOURCE_METRICS.equals(def.getSource())) {
             String metricsName = def.getMetricName();
@@ -431,7 +426,6 @@ public class UdmController extends MyPerfBaseController {
             }
             if (mg == null)
                 throw new Exception("please provide valid metrics name in the format of group[.subgroup].metric_name. " + ms[0] + " is not valid metrics group name.");
-
             if (mg.getSubGroups().size() > 0) {
                 if (ms.length < 3)
                     throw new Exception("please provide valid metrics name in the format of group[.subgroup].metric_name. " + ms[0] + " has sub groups.");
@@ -450,8 +444,6 @@ public class UdmController extends MyPerfBaseController {
             if (!findOne)
                 throw new Exception("please provide valid metrics name in the format of group[.subgroup].metric_name. " + metricsName + " is not valid.");
         }
-
-
     }
 
     private ModelAndView processNewUDM(HttpServletRequest req,

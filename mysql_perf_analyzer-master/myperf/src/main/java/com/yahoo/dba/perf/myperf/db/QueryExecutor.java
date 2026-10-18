@@ -18,6 +18,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.sql.ResultSetMetaData;
 
 @Slf4j
 public class QueryExecutor {
@@ -46,9 +47,6 @@ public class QueryExecutor {
      * @throws SQLException
      */
     public ResultList executeQueryGeneric(QueryParameters qps, DBConnectionWrapper conn, int maxCount) throws SQLException {
-        PreparedStatement pstmt = null;
-        Statement stmt = null;
-        ResultSet rs = null;
         String actualSql = null;
         long startTime = System.currentTimeMillis();
         long execTime = startTime;
@@ -63,70 +61,49 @@ public class QueryExecutor {
             }
             if (sqlText == null) sqlText = sql.getSqlText(conn.getVersion());
 
-            if (sql.getParamCount() > 0) {
-                if (!sql.isReplace()) {
-                    actualSql = sqlText;
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        actualSql = actualSql.replace("&p_" + i, "?");
-                    }
-                    pstmt = conn.getConnection().prepareStatement(actualSql);
-                    pstmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                    pstmt.setFetchSize(maxCount > 0 && maxCount < this.frameworkContext.getQueryFetchSize() ? maxCount : this.frameworkContext.getQueryFetchSize());
-                    conn.setCurrentStatement(pstmt);
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        pstmt.setString(i, qps.getSqlParams().get("p_" + i));
-                    }
-                    //log.info("execute query "+qps.getSql()+" with bind variables: "+actualSql);
-                    rs = pstmt.executeQuery();
-                    execTime = System.currentTimeMillis();
-                } else {
-                    actualSql = sqlText;
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        //add check here
-                        actualSql = actualSql.replace("&p_" + i, escapeSingleQuote(sql.getSqlParameter(i - 1), qps.getSqlParams().get("p_" + i)));
-                    }
-                    stmt = conn.getConnection().createStatement();
-                    stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                    stmt.setFetchSize(maxCount > 0 && maxCount < this.frameworkContext.getQueryFetchSize() ? maxCount : this.frameworkContext.getQueryFetchSize());
-                    conn.setCurrentStatement(stmt);
-                    //log.info("execute query "+qps.getSql()+" with bind variables: "+actualSql);
-                    rs = stmt.executeQuery(actualSql);
-                    execTime = System.currentTimeMillis();
-
+            boolean usePreparedStatement = sql != null && sql.getParamCount() > 0 && !sql.isReplace();
+            actualSql = sqlText;
+            if (sql != null && sql.getParamCount() > 0) {
+                for (int i = 1; i <= sql.getParamCount(); i++) {
+                    actualSql = actualSql.replace("&p_" + i, usePreparedStatement
+                            ? "?" : escapeSingleQuote(sql.getSqlParameter(i - 1), qps.getSqlParams().get("p_" + i)));
                 }
-            } else {
-                actualSql = sqlText;
-                stmt = conn.getConnection().createStatement();
+            }
+            try (Statement stmt = usePreparedStatement
+                    ? conn.getConnection().prepareStatement(actualSql)
+                    : conn.getConnection().createStatement()) {
                 stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
                 stmt.setFetchSize(maxCount > 0 && maxCount < this.frameworkContext.getQueryFetchSize() ? maxCount : this.frameworkContext.getQueryFetchSize());
                 conn.setCurrentStatement(stmt);
-                rs = stmt.executeQuery(actualSql);
-                execTime = System.currentTimeMillis();
+                if (usePreparedStatement) {
+                    PreparedStatement pstmt = (PreparedStatement) stmt;
+                    for (int i = 1; i <= sql.getParamCount(); i++) {
+                        pstmt.setString(i, qps.getSqlParams().get("p_" + i));
+                    }
+                }
+                try (ResultSet rs = usePreparedStatement
+                        ? ((PreparedStatement) stmt).executeQuery() : stmt.executeQuery(actualSql)) {
+                    execTime = System.currentTimeMillis();
+                    ResultList rList = ResultListUtil.flatSqlResultSet(sqlManager.getSql(qps.getSql()), rs, maxCount >= 0 ? maxCount : 1000);//TODO, the maximum count
+                    long endTime = System.currentTimeMillis();
+                    if (rList != null) {
+                        rList.setTotalResponseTime(endTime - startTime);
+                        rList.setTotalExecutionTime(execTime - startTime);
+                        rList.setTotalFetchTime(endTime - execTime);
+                    }
+                    return rList;
+                }
             }
-            ResultList rList = ResultListUtil.flatSqlResultSet(sqlManager.getSql(qps.getSql()), rs, maxCount >= 0 ? maxCount : 1000);//TODO, the maximum count
-            long endTime = System.currentTimeMillis();
-            if (rList != null) {
-                rList.setTotalResponseTime(endTime - startTime);
-                rList.setTotalExecutionTime(execTime - startTime);
-                rList.setTotalFetchTime(endTime - execTime);
-            }
-            return rList;
         } catch (SQLException sqlEx) {
             log.info("Failed to execute " + actualSql);
             throw sqlEx;
         } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
-            DBUtils.close(pstmt);
             conn.setCurrentStatement(null);
         }
     }
 
 
     public Map<String, String> executeQueryWithMultiRowMetricsCollapsed(QueryParameters qps, DBConnectionWrapper conn, MetricsBuffer buf) throws SQLException {
-        PreparedStatement pstmt = null;
-        Statement stmt = null;
-        ResultSet rs = null;
         String actualSql = null;
         long startTimestamp = System.currentTimeMillis();
         try {
@@ -138,52 +115,40 @@ public class QueryExecutor {
                 sqlText = DynamicQueryFactory.getQuery(sql.getQueryClass(), conn, false);
             }
             if (sqlText == null) sqlText = sql.getSqlText(conn.getVersion());
-            if (sql.getParamCount() > 0) {
-                if (!sql.isReplace()) {
-                    actualSql = sqlText;
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        actualSql = actualSql.replace("&p_" + i, "?");
-                    }
-                    pstmt = conn.getConnection().prepareStatement(actualSql);
-                    pstmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                    conn.setCurrentStatement(pstmt);
+            boolean usePreparedStatement = sql != null && sql.getParamCount() > 0 && !sql.isReplace();
+            actualSql = sqlText;
+            if (sql != null && sql.getParamCount() > 0) {
+                for (int i = 1; i <= sql.getParamCount(); i++) {
+                    actualSql = actualSql.replace("&p_" + i, usePreparedStatement
+                            ? "?" : escapeSingleQuote(sql.getSqlParameter(i - 1), qps.getSqlParams().get("p_" + i)));
+                }
+            }
+            try (Statement stmt = usePreparedStatement
+                    ? conn.getConnection().prepareStatement(actualSql)
+                    : conn.getConnection().createStatement()) {
+                stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
+                conn.setCurrentStatement(stmt);
+                if (usePreparedStatement) {
+                    PreparedStatement pstmt = (PreparedStatement) stmt;
                     for (int i = 1; i <= sql.getParamCount(); i++) {
                         pstmt.setString(i, qps.getSqlParams().get("p_" + i));
                     }
-                    //log.info("execute query "+qps.getSql()+" with bind variables: "+actualSql);
-                    rs = pstmt.executeQuery();
-                } else {
-                    actualSql = sqlText;
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        actualSql = actualSql.replace("&p_" + i, escapeSingleQuote(sql.getSqlParameter(i - 1), qps.getSqlParams().get("p_" + i)));
-                    }
-                    stmt = conn.getConnection().createStatement();
-                    stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                    conn.setCurrentStatement(stmt);
-                    //log.info("execute query "+qps.getSql()+" with bind variables: "+actualSql);
-                    rs = stmt.executeQuery(actualSql);
                 }
-            } else {
-                actualSql = sqlText;
-                stmt = conn.getConnection().createStatement();
-                stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                conn.setCurrentStatement(stmt);
-                rs = stmt.executeQuery(actualSql);
+                try (ResultSet rs = usePreparedStatement
+                        ? ((PreparedStatement) stmt).executeQuery() : stmt.executeQuery(actualSql)) {
+                    //long endTimestamp = System.currentTimeMillis();
+                    //return buf.recordOneRowBymetricsName2(rs, startTimestamp, (int)(endTimestamp - startTimestamp));
+                    Map<String, String> metrics = new HashMap<>();
+                    while (rs != null && rs.next()) {
+                        metrics.put(rs.getString(buf.getMetrics().getMetricNameColumn()).toLowerCase(), rs.getString(buf.getMetrics().getMetricValueColumn()));
+                    }
+                    return metrics;
+                }
             }
-            //long endTimestamp = System.currentTimeMillis();
-            //return buf.recordOneRowBymetricsName2(rs, startTimestamp, (int)(endTimestamp - startTimestamp));
-            Map<String, String> metrics = new HashMap<String, String>();
-            while (rs != null && rs.next()) {
-                metrics.put(rs.getString(buf.getMetrics().getMetricNameColumn()).toLowerCase(), rs.getString(buf.getMetrics().getMetricValueColumn()));
-            }
-            return metrics;
         } catch (SQLException sqlEx) {
             log.info("Failed to execute " + actualSql);
             throw sqlEx;
         } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
-            DBUtils.close(pstmt);
             conn.setCurrentStatement(null);
         }
     }
@@ -200,9 +165,6 @@ public class QueryExecutor {
      * @throws SQLException
      */
     public Map<String, String> executeQueryWithKeyValuPairs(QueryParameters qps, DBConnectionWrapper conn, String keyColumn, String valueColumn, boolean normalizeKey) throws SQLException {
-        PreparedStatement pstmt = null;
-        Statement stmt = null;
-        ResultSet rs = null;
         String actualSql = null;
         //long startTimestamp = System.currentTimeMillis();
         try {
@@ -218,63 +180,52 @@ public class QueryExecutor {
 
             if (sqlText == null && sql != null)
                 sqlText = sql.getSqlText(conn.getVersion());
+            boolean usePreparedStatement = sql != null && sql.getParamCount() > 0 && !sql.isReplace();
+            actualSql = sqlText;
             if (sql != null && sql.getParamCount() > 0) {
-                if (!sql.isReplace()) {
-                    actualSql = sqlText;
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        actualSql = actualSql.replace("&p_" + i, "?");
-                    }
-                    pstmt = conn.getConnection().prepareStatement(actualSql);
-                    pstmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                    conn.setCurrentStatement(pstmt);
+                for (int i = 1; i <= sql.getParamCount(); i++) {
+                    actualSql = actualSql.replace("&p_" + i, usePreparedStatement
+                            ? "?" : escapeSingleQuote(sql.getSqlParameter(i - 1), qps.getSqlParams().get("p_" + i)));
+                }
+            }
+            try (Statement stmt = usePreparedStatement
+                    ? conn.getConnection().prepareStatement(actualSql)
+                    : conn.getConnection().createStatement()) {
+                stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
+                conn.setCurrentStatement(stmt);
+                if (usePreparedStatement) {
+                    PreparedStatement pstmt = (PreparedStatement) stmt;
                     for (int i = 1; i <= sql.getParamCount(); i++) {
                         pstmt.setString(i, qps.getSqlParams().get("p_" + i));
                     }
-                    //log.info("execute query "+qps.getSql()+" with bind variables: "+actualSql);
-                    rs = pstmt.executeQuery();
-                } else {
-                    actualSql = sqlText;
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        actualSql = actualSql.replace("&p_" + i, escapeSingleQuote(sql.getSqlParameter(i - 1), qps.getSqlParams().get("p_" + i)));
-                    }
-                    stmt = conn.getConnection().createStatement();
-                    stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                    conn.setCurrentStatement(stmt);
-                    rs = stmt.executeQuery(actualSql);
                 }
-            } else {
-                actualSql = sqlText;
-                stmt = conn.getConnection().createStatement();
-                stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                conn.setCurrentStatement(stmt);
-                rs = stmt.executeQuery(actualSql);
-            }
-            Map<String, String> metrics = new HashMap<String, String>();
-            if (keyColumn != null && !keyColumn.isEmpty() && valueColumn != null && !valueColumn.isEmpty()) {
-                while (rs != null && rs.next()) {
-                    String key = rs.getString(keyColumn.toLowerCase());
-                    if (normalizeKey) key = key.toUpperCase();
-                    metrics.put(key, rs.getString(valueColumn.toLowerCase()));
-                }
-            } else {
-                if (rs != null) {
-                    java.sql.ResultSetMetaData meta = rs.getMetaData();
-                    int cnt = meta.getColumnCount();
-                    if (rs.next()) {
-                        for (int i = 1; i <= cnt; i++)
-                            metrics.put(meta.getColumnLabel(i).toLowerCase(), rs.getString(i));
+                try (ResultSet rs = usePreparedStatement
+                        ? ((PreparedStatement) stmt).executeQuery() : stmt.executeQuery(actualSql)) {
+                    Map<String, String> metrics = new HashMap<>();
+                    if (keyColumn != null && !keyColumn.isEmpty() && valueColumn != null && !valueColumn.isEmpty()) {
+                        while (rs != null && rs.next()) {
+                            String key = rs.getString(keyColumn.toLowerCase());
+                            if (normalizeKey) key = key.toUpperCase();
+                            metrics.put(key, rs.getString(valueColumn.toLowerCase()));
+                        }
+                    } else {
+                        if (rs != null) {
+                            ResultSetMetaData meta = rs.getMetaData();
+                            int cnt = meta.getColumnCount();
+                            if (rs.next()) {
+                                for (int i = 1; i <= cnt; i++)
+                                    metrics.put(meta.getColumnLabel(i).toLowerCase(), rs.getString(i));
+                            }
+                        }
                     }
+                    //log.info("Retrieved: "+metrics.size()+", sql: "+actualSql);
+                    return metrics;
                 }
             }
-            //log.info("Retrieved: "+metrics.size()+", sql: "+actualSql);
-            return metrics;
         } catch (SQLException sqlEx) {
             log.info("Failed to execute: " + qps.getSql() + ": " + actualSql);
             throw sqlEx;
         } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
-            DBUtils.close(pstmt);
             conn.setCurrentStatement(null);
         }
     }
@@ -291,9 +242,6 @@ public class QueryExecutor {
      * @throws SQLException
      */
     public Map<String, Map<String, String>> executeQueryWithMultipleColumns(QueryParameters qps, DBConnectionWrapper conn, String keyColumn) throws SQLException {
-        PreparedStatement pstmt = null;
-        Statement stmt = null;
-        ResultSet rs = null;
         String actualSql = null;
         //long startTimestamp = System.currentTimeMillis();
         try {
@@ -310,55 +258,44 @@ public class QueryExecutor {
             if (sqlText == null && sql != null)
                 sqlText = sql.getSqlText(conn.getVersion());
 
+            boolean usePreparedStatement = sql != null && sql.getParamCount() > 0 && !sql.isReplace();
+            actualSql = sqlText;
             if (sql != null && sql.getParamCount() > 0) {
-                if (!sql.isReplace()) {
-                    actualSql = sqlText;
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        actualSql = actualSql.replace("&p_" + i, "?");
-                    }
-                    pstmt = conn.getConnection().prepareStatement(actualSql);
-                    pstmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                    conn.setCurrentStatement(pstmt);
+                for (int i = 1; i <= sql.getParamCount(); i++) {
+                    actualSql = actualSql.replace("&p_" + i, usePreparedStatement
+                            ? "?" : escapeSingleQuote(sql.getSqlParameter(i - 1), qps.getSqlParams().get("p_" + i)));
+                }
+            }
+            try (Statement stmt = usePreparedStatement
+                    ? conn.getConnection().prepareStatement(actualSql)
+                    : conn.getConnection().createStatement()) {
+                stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
+                conn.setCurrentStatement(stmt);
+                if (usePreparedStatement) {
+                    PreparedStatement pstmt = (PreparedStatement) stmt;
                     for (int i = 1; i <= sql.getParamCount(); i++) {
                         pstmt.setString(i, qps.getSqlParams().get("p_" + i));
                     }
-                    //log.info("execute query "+qps.getSql()+" with bind variables: "+actualSql);
-                    rs = pstmt.executeQuery();
-                } else {
-                    actualSql = sqlText;
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        actualSql = actualSql.replace("&p_" + i, escapeSingleQuote(sql.getSqlParameter(i - 1), qps.getSqlParams().get("p_" + i)));
-                    }
-                    stmt = conn.getConnection().createStatement();
-                    stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                    conn.setCurrentStatement(stmt);
-                    rs = stmt.executeQuery(actualSql);
                 }
-            } else {
-                actualSql = sqlText;
-                stmt = conn.getConnection().createStatement();
-                stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                conn.setCurrentStatement(stmt);
-                rs = stmt.executeQuery(actualSql);
+                try (ResultSet rs = usePreparedStatement
+                        ? ((PreparedStatement) stmt).executeQuery() : stmt.executeQuery(actualSql)) {
+                    Map<String, Map<String, String>> metrics = new HashMap<>();
+                    int colCnt = 0;
+                    if (rs != null) colCnt = rs.getMetaData().getColumnCount();
+                    while (rs != null && rs.next()) {
+                        String key = rs.getString(keyColumn);
+                        Map<String, String> metricsperKey = new HashMap<>(colCnt);
+                        for (int i = 1; i <= colCnt; i++)
+                            metricsperKey.put(rs.getMetaData().getColumnName(i), rs.getString(i));
+                        metrics.put(key, metricsperKey);
+                    }
+                    return metrics;
+                }
             }
-            Map<String, Map<String, String>> metrics = new HashMap<String, Map<String, String>>();
-            int colCnt = 0;
-            if (rs != null) colCnt = rs.getMetaData().getColumnCount();
-            while (rs != null && rs.next()) {
-                String key = rs.getString(keyColumn);
-                Map<String, String> metricsperKey = new HashMap<String, String>(colCnt);
-                for (int i = 1; i <= colCnt; i++)
-                    metricsperKey.put(rs.getMetaData().getColumnName(i), rs.getString(i));
-                metrics.put(key, metricsperKey);
-            }
-            return metrics;
         } catch (SQLException sqlEx) {
             log.info("Failed to execute " + actualSql);
             throw sqlEx;
         } finally {
-            DBUtils.close(rs);
-            DBUtils.close(stmt);
-            DBUtils.close(pstmt);
             conn.setCurrentStatement(null);
         }
     }
@@ -372,30 +309,24 @@ public class QueryExecutor {
      * @return
      */
     public HashMap<String, String> showSlaveStatusMetrics(DBConnectionWrapper conn) {
-        Statement stmt = null;
-        ResultSet rs = null;
-        HashMap<String, String> resMap = new HashMap<String, String>(3);
+        HashMap<String, String> resMap = new HashMap<>(3);
         boolean isSlave = false;
         int secondsBehindMaster = 0;
         int slaveIoRunning = 1;
         int slaveSqlRunning = 1;
-        try {
-            stmt = conn.getConnection().createStatement();
-            rs = stmt.executeQuery("show slave status");
+        try (Statement stmt = conn.getConnection().createStatement();
+            ResultSet rs = stmt.executeQuery("show slave status")) {
             while (rs != null && rs.next()) {
                 int sec = rs.getInt("Seconds_Behind_Master");
-                if (sec > secondsBehindMaster) secondsBehindMaster = sec;
+                if (sec > secondsBehindMaster)
+                    secondsBehindMaster = sec;
                 if (!"Yes".equalsIgnoreCase(rs.getString("Slave_IO_Running")))
                     slaveIoRunning = 0;
                 if (!"Yes".equalsIgnoreCase(rs.getString("Slave_SQL_Running")))
                     slaveSqlRunning = 0;
                 isSlave = true;
             }
-
         } catch (Exception ex) {
-        } finally {
-            close(rs);
-            close(stmt);
         }
         if (isSlave) {
             resMap.put("Seconds_Behind_Master", String.valueOf(secondsBehindMaster));
@@ -408,9 +339,6 @@ public class QueryExecutor {
     public ResultList executeQuery(QueryParameters qps, DBConnectionWrapper conn, int maxCount) throws SQLException {
         //validate the sql first
         //QueryInputValidator.validateSql(this.sqlManager, qps);
-        PreparedStatement pstmt = null;
-        Statement stmt = null;
-        ResultSet rs = null;
         String actualSql = null;
         try {
             if (qps == null) log.error("No QPS specified");
@@ -421,58 +349,40 @@ public class QueryExecutor {
                 sqlText = DynamicQueryFactory.getQuery(sql.getQueryClass(), conn, false);
             }
             if (sqlText == null) sqlText = sql.getSqlText(conn.getVersion());
-            if (sql.getParamCount() > 0) {
-                if (!sql.isReplace()) {
-                    actualSql = sqlText;
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        actualSql = actualSql.replace("&p_" + i, "?");
-                    }
-                    pstmt = conn.getConnection().prepareStatement(actualSql);
-                    pstmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                    pstmt.setFetchSize(maxCount > 0 && maxCount < this.frameworkContext.getQueryFetchSize() ? maxCount : this.frameworkContext.getQueryFetchSize());
-                    conn.setCurrentStatement(pstmt);
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        pstmt.setString(i, qps.getSqlParams().get("p_" + i));
-                    }
-                    //log.info("execute query "+qps.getSql()+" with bind variables: "+actualSql);
-                    rs = pstmt.executeQuery();
-                } else {
-                    actualSql = sqlText;
-                    for (int i = 1; i <= sql.getParamCount(); i++) {
-                        actualSql = actualSql.replace("&p_" + i, escapeSingleQuote(sql.getSqlParameter(i - 1), qps.getSqlParams().get("p_" + i)));
-                    }
-                    stmt = conn.getConnection().createStatement();
-                    stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-                    stmt.setFetchSize(maxCount > 0 && maxCount < this.frameworkContext.getQueryFetchSize() ? maxCount : this.frameworkContext.getQueryFetchSize());
-                    conn.setCurrentStatement(stmt);
-                    //log.info("execute query "+qps.getSql()+" with bind variables: "+actualSql);
-                    rs = stmt.executeQuery(actualSql);
-
+            boolean usePreparedStatement = sql != null && sql.getParamCount() > 0 && !sql.isReplace();
+            actualSql = sqlText;
+            if (sql != null && sql.getParamCount() > 0) {
+                for (int i = 1; i <= sql.getParamCount(); i++) {
+                    actualSql = actualSql.replace("&p_" + i, usePreparedStatement
+                            ? "?" : escapeSingleQuote(sql.getSqlParameter(i - 1), qps.getSqlParams().get("p_" + i)));
                 }
-            } else {
-                actualSql = sqlText;
-                stmt = conn.getConnection().createStatement();
+            }
+            try (Statement stmt = usePreparedStatement
+                    ? conn.getConnection().prepareStatement(actualSql)
+                    : conn.getConnection().createStatement()) {
                 stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
                 stmt.setFetchSize(maxCount > 0 && maxCount < this.frameworkContext.getQueryFetchSize() ? maxCount : this.frameworkContext.getQueryFetchSize());
                 conn.setCurrentStatement(stmt);
-                rs = stmt.executeQuery(actualSql);
+                if (usePreparedStatement) {
+                    PreparedStatement pstmt = (PreparedStatement) stmt;
+                    for (int i = 1; i <= sql.getParamCount(); i++) {
+                        pstmt.setString(i, qps.getSqlParams().get("p_" + i));
+                    }
+                }
+                try (ResultSet rs = usePreparedStatement
+                        ? ((PreparedStatement) stmt).executeQuery() : stmt.executeQuery(actualSql)) {
+                    return ResultListUtil.flatSqlResultSet(sqlManager.getSql(qps.getSql()), rs, maxCount >= 0 ? maxCount : 1000);//TODO, the maximum count
+                }
             }
-            return ResultListUtil.flatSqlResultSet(sqlManager.getSql(qps.getSql()), rs, maxCount >= 0 ? maxCount : 1000);//TODO, the maximum count
         } catch (SQLException sqlEx) {
             log.info("Failed to execute " + actualSql);
             throw sqlEx;
         } finally {
-            close(rs);
-            close(stmt);
-            close(pstmt);
             conn.setCurrentStatement(null);
         }
     }
 
     public ResultList executeQuery(DBConnectionWrapper conn, String sql, Map<String, String> params, int maxCount) throws SQLException {
-        PreparedStatement pstmt = null;
-        Statement stmt = null;
-        ResultSet rs = null;
         String actualSql = null;
         try {
             String sqlText = sql;
@@ -484,35 +394,19 @@ public class QueryExecutor {
                 }
             } else
                 actualSql = sqlText;
-
-            stmt = conn.getConnection().createStatement();
-            stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
-            stmt.setFetchSize(maxCount > 0 && maxCount < this.frameworkContext.getQueryFetchSize() ? maxCount : this.frameworkContext.getQueryFetchSize());
-            conn.setCurrentStatement(stmt);
-            rs = stmt.executeQuery(actualSql);
-            return ResultListUtil.fromSqlResultSet(rs, maxCount >= 0 ? maxCount : 1000);
+            try (Statement stmt = conn.getConnection().createStatement()) {
+                stmt.setQueryTimeout(this.frameworkContext.getQueryTimeout());
+                stmt.setFetchSize(maxCount > 0 && maxCount < this.frameworkContext.getQueryFetchSize() ? maxCount : this.frameworkContext.getQueryFetchSize());
+                conn.setCurrentStatement(stmt);
+                try (ResultSet rs = stmt.executeQuery(actualSql)) {
+                    return ResultListUtil.fromSqlResultSet(rs, maxCount >= 0 ? maxCount : 1000);
+                }
+            }
         } catch (SQLException sqlEx) {
             log.info("Failed to execute " + actualSql);
             throw sqlEx;
         } finally {
-            close(rs);
-            close(stmt);
-            close(pstmt);
             conn.setCurrentStatement(null);
-        }
-    }
-
-    private void close(ResultSet rs) {
-        if (rs != null) try {
-            rs.close();
-        } catch (Exception ex) {
-        }
-    }
-
-    private void close(Statement stmt) {
-        if (stmt != null) try {
-            stmt.close();
-        } catch (Exception ex) {
         }
     }
 

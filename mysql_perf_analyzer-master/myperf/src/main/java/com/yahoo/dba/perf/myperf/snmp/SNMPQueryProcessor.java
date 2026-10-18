@@ -24,26 +24,21 @@ import java.util.Map;
  * network
  * all (all of above)
  * default to all
- *
- * @author xrao
  */
 @Slf4j
 public class SNMPQueryProcessor implements CustomQueryProcessor {
-
     @Override
     public void queryMultiple(MyPerfContext context, DBInstanceInfo dbinfo, String appUser, DBConnectionWrapper connWrapper, QueryParameters qps, Map<String, ResultList> rListMap)
-            throws java.sql.SQLException {
+            throws SQLException {
         throw new RuntimeException("Not implmented");
     }
 
     @Override
-    public ResultList querySingle(MyPerfContext context, DBInstanceInfo dbinfo, String appUser,
-                                  DBConnectionWrapper connWrapper, QueryParameters qps)
-            throws SQLException {
+    public ResultList querySingle(MyPerfContext context, DBInstanceInfo dbinfo, String appUser, DBConnectionWrapper connWrapper, QueryParameters qps) throws SQLException {
         String cat = "sys";
-        if (qps.getSqlParams().containsKey("p_1")) {
+        if (qps.getSqlParams().containsKey("p_1"))
             cat = qps.getSqlParams().get("p_1");
-        }
+
         SNMPClient client = null;
         try {
             client = new SNMPClient(qps.getHost());
@@ -66,18 +61,22 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
                 return this.queryTableSNMP(client, qps);
             } else if ("unknown".equalsIgnoreCase(cat)) {
                 ResultList res = this.querySingleSNMP(client, qps);
+
                 if (res == null || res.getRows().size() == 0
                         || (res.getRows().size() == 1 && "noSuchObject".equals(res.getRows().get(0).getColumns().get(2)))) {
                     res = this.queryTableSNMP(client, qps);
                 }
+
                 return res;
             } else {
                 ResultList sysList = querySystemData(client, qps);
 
-                if (sysList == null) return null; //don't expect no system data
+                if (sysList == null)
+                    return null; //don't expect no system data
+
                 try {
                     ResultList diskList = queryDisk(client, qps);
-                    ;
+
                     //ResultList mysqldList  = queryMysqldData(client, qps);
                     if (diskList != null) {
                         for (ResultRow row : diskList.getRows()) {
@@ -89,6 +88,7 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
                     log.info("Failed to query disk data", ex);
                     return sysList;
                 }
+
                 try {
                     ResultList netList = queryNetwork(client, qps);
                     if (netList != null) {
@@ -188,6 +188,7 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
 
         for (Map.Entry<String, List<SNMPTriple>> e : snmpData.entrySet()) {
             String net = e.getKey();
+
             for (SNMPTriple t : e.getValue()) {
                 if (diff) {
                     try {
@@ -196,6 +197,7 @@ public class SNMPQueryProcessor implements CustomQueryProcessor {
                         continue;
                     }
                 }
+
                 ResultRow row = new ResultRow();
                 row.addColumn(net + "." + t.name);
                 row.addColumn(t.oid);
