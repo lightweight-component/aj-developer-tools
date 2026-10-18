@@ -6,20 +6,22 @@
 package com.yahoo.dba.perf.myperf.common;
 
 import java.util.List;
+import java.io.Serializable;
+import java.util.ArrayList;
 
 /**
  * For now, it holds alerts for web notification purpose.
  *
  * @author xrao
  */
-public class Alerts implements java.io.Serializable {
+public class Alerts implements Serializable {
     private static final long serialVersionUID = 1L;
     public static final int ALERT_CAPACITY = 100;//hold 100 alerts
 
     private List<AlertEntry> entries = null;
 
     public Alerts() {
-        this.entries = new java.util.ArrayList<AlertEntry>(ALERT_CAPACITY);
+        this.entries = new ArrayList<>(ALERT_CAPACITY);
     }
 
     /**
@@ -40,7 +42,7 @@ public class Alerts implements java.io.Serializable {
      * @return
      */
     synchronized public List<AlertEntry> getEntries(long ts, int max) {
-        List<AlertEntry> resList = new java.util.ArrayList<AlertEntry>();
+        List<AlertEntry> resList = new ArrayList<>();
         int cnt = 0;
         for (int i = this.entries.size() - 1; i >= 0; i--) {
             AlertEntry e = this.entries.get(i);

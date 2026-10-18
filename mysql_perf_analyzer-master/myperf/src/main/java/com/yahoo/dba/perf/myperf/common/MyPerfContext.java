@@ -30,6 +30,10 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.util.FileSize;
 import org.slf4j.LoggerFactory;
+import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
 
 /**
  * MyPerfContext contains configuration data, accessor to common resources,
@@ -38,12 +42,12 @@ import org.slf4j.LoggerFactory;
  * @author xrao
  */
 @Slf4j
-public class MyPerfContext implements java.io.Serializable, InitializingBean, DisposableBean {
+public class MyPerfContext implements Serializable, InitializingBean, DisposableBean {
 
     private static final long serialVersionUID = 1L;
     //Use this parameter to control debug log at system level at runtime
     //This way, we don't need change and load our log configuration
-    private java.util.concurrent.atomic.AtomicBoolean DEBUG = new java.util.concurrent.atomic.AtomicBoolean();
+    private AtomicBoolean DEBUG = new AtomicBoolean();
 
     @Getter
     private MyPerfConfiguration myperfConfig = new MyPerfConfiguration(); //configurations, from settings page
@@ -130,7 +134,7 @@ public class MyPerfContext implements java.io.Serializable, InitializingBean, Di
     private Map<String, String> jdbcDriver;
 
     @Getter
-    private java.util.Date startTime = new java.util.Date();//when this server started
+    private Date startTime = new Date();//when this server started
 
     //metrics list
     private List<String> metricsList;
@@ -241,7 +245,7 @@ public class MyPerfContext implements java.io.Serializable, InitializingBean, Di
 
     private void configureLogging() {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        ch.qos.logback.classic.Logger rootLogger = context.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        ch.qos.logback.classic.Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
         String configuredLevel = getLogLevel();
         if ("SEVERE".equals(configuredLevel)) configuredLevel = "ERROR";
         else if ("WARNING".equals(configuredLevel)) configuredLevel = "WARN";
@@ -300,14 +304,14 @@ public class MyPerfContext implements java.io.Serializable, InitializingBean, Di
 
     public List<String> getMetricsList() {
         synchronized (metricsListRefreshLock) {
-            return java.util.Collections.unmodifiableList(metricsList);
+            return Collections.unmodifiableList(metricsList);
         }
     }
 
     public void refreshMetricsList() {
         synchronized (metricsListRefreshLock) {
             if (metricsList == null)
-                metricsList = new ArrayList<String>();
+                metricsList = new ArrayList<>();
             else
                 metricsList.clear();
             //user defined:
@@ -337,7 +341,7 @@ public class MyPerfContext implements java.io.Serializable, InitializingBean, Di
                         metricsList.add(mg.getGroupName().toUpperCase() + "._." + m.getName());
                 }
             }
-            java.util.Collections.sort(metricsList);
+            Collections.sort(metricsList);
         }
     }
 
@@ -492,7 +496,7 @@ public class MyPerfContext implements java.io.Serializable, InitializingBean, Di
     private String getAlertEmailTime(AlertEntry alert) {
         long mytime = alert.getTs();
         if (mytime <= 0L) mytime = System.currentTimeMillis();
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         try {
             return sdf.format(new Date(mytime));

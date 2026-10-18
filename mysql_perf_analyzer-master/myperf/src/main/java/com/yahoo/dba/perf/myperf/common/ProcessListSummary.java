@@ -14,27 +14,31 @@ import java.io.PrintWriter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.io.BufferedReader;
+import java.io.Serializable;
+import java.io.StringReader;
+import java.text.SimpleDateFormat;
 
 
 @Slf4j
-public class ProcessListSummary implements java.io.Serializable {
+public class ProcessListSummary implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Getter
     @Setter
-    private Map<String, Integer> userSummary = new HashMap<String, Integer>();//group by user
+    private Map<String, Integer> userSummary = new HashMap<>();//group by user
     @Getter
     @Setter
-    private Map<String, Integer> hostSummary = new HashMap<String, Integer>();//group by host
+    private Map<String, Integer> hostSummary = new HashMap<>();//group by host
     @Getter
     @Setter
-    private Map<String, Integer> commandSummary = new HashMap<String, Integer>();//group by command, including idle
+    private Map<String, Integer> commandSummary = new HashMap<>();//group by command, including idle
     @Getter
     @Setter
-    private Map<String, Integer> commandHostSummary = new HashMap<String, Integer>();//group by command and host, including idle
+    private Map<String, Integer> commandHostSummary = new HashMap<>();//group by command and host, including idle
     @Getter
     @Setter
-    private Map<String, Integer> stateSummary = new HashMap<String, Integer>();//active state
+    private Map<String, Integer> stateSummary = new HashMap<>();//active state
 
     @Getter
     @Setter
@@ -44,12 +48,12 @@ public class ProcessListSummary implements java.io.Serializable {
     private Pattern pt2 = Pattern.compile("LIMIT\\s+\\d+\\s*,\\s*\\d+", Pattern.CASE_INSENSITIVE);
 
     @Getter
-    private Map<String, ProcessListEntryAggregate> queries = new HashMap<String, ProcessListEntryAggregate>();
+    private Map<String, ProcessListEntryAggregate> queries = new HashMap<>();
     @Getter
-    private Map<String, ProcessListEntryAggregate> queriesWithLimitStripped = new HashMap<String, ProcessListEntryAggregate>();//pagenation
+    private Map<String, ProcessListEntryAggregate> queriesWithLimitStripped = new HashMap<>();//pagenation
 
     @Getter
-    private Map<String, ProcessListEntryAggregate> normalizedQueries = new HashMap<String, ProcessListEntryAggregate>();
+    private Map<String, ProcessListEntryAggregate> normalizedQueries = new HashMap<>();
 
     @Getter
     @Setter
@@ -65,7 +69,7 @@ public class ProcessListSummary implements java.io.Serializable {
     @Setter
     private ResultList clientList;
 
-    private List<ProcessListEntryProcessor> appProcessorList = new ArrayList<ProcessListEntryProcessor>();
+    private List<ProcessListEntryProcessor> appProcessorList = new ArrayList<>();
 
     @Getter
     @Setter
@@ -281,11 +285,11 @@ public class ProcessListSummary implements java.io.Serializable {
 
         pw.println();
         pw.println("------ User Summary ------");
-        List<KeyValIntPair> tmpList = new ArrayList<KeyValIntPair>(this.userSummary.size());
+        List<KeyValIntPair> tmpList = new ArrayList<>(this.userSummary.size());
         for (Map.Entry<String, Integer> e : this.userSummary.entrySet()) {
             tmpList.add(new KeyValIntPair(e.getKey(), e.getValue()));
         }
-        java.util.Collections.sort(tmpList);
+        Collections.sort(tmpList);
         for (KeyValIntPair p : tmpList) {
             //pw.println(p.name+":  "+p.value);
             pw.println(String.format("%5d: %s", p.value, p.name));
@@ -295,35 +299,35 @@ public class ProcessListSummary implements java.io.Serializable {
         int count = 0;
         pw.println();
         pw.println("------ Host Summary ------");
-        tmpList = new ArrayList<KeyValIntPair>(this.hostSummary.size());
+        tmpList = new ArrayList<>(this.hostSummary.size());
         for (Map.Entry<String, Integer> e : this.hostSummary.entrySet()) {
             tmpList.add(new KeyValIntPair(e.getKey(), e.getValue()));
             count++;
             if (count >= 20) break;
         }
-        java.util.Collections.sort(tmpList);
+        Collections.sort(tmpList);
         for (KeyValIntPair p : tmpList)
             pw.println(String.format("%5d: %s", p.value, p.name));
         tmpList.clear();
 
         pw.println();
         pw.println("------ Command Summary ------");
-        tmpList = new ArrayList<KeyValIntPair>(this.commandSummary.size());
+        tmpList = new ArrayList<>(this.commandSummary.size());
         for (Map.Entry<String, Integer> e : this.commandSummary.entrySet()) {
             tmpList.add(new KeyValIntPair(e.getKey(), e.getValue()));
         }
-        java.util.Collections.sort(tmpList);
+        Collections.sort(tmpList);
         for (KeyValIntPair p : tmpList)
             pw.println(String.format("%5d: %s", p.value, p.name));
         tmpList.clear();
 
         pw.println();
         pw.println("------ State Summary ------");
-        tmpList = new ArrayList<KeyValIntPair>(this.stateSummary.size());
+        tmpList = new ArrayList<>(this.stateSummary.size());
         for (Map.Entry<String, Integer> e : this.stateSummary.entrySet()) {
             tmpList.add(new KeyValIntPair(e.getKey(), e.getValue()));
         }
-        java.util.Collections.sort(tmpList);
+        Collections.sort(tmpList);
         for (KeyValIntPair p : tmpList)
             pw.println(String.format("%5d: %s", p.value, p.name));
         tmpList.clear();
@@ -332,11 +336,11 @@ public class ProcessListSummary implements java.io.Serializable {
         pw.println();
         pw.println("------ Query Summary With LIMIT Stripped------");
 
-        ArrayList<ProcessListEntryAggregate> tmpList2 = new ArrayList<ProcessListEntryAggregate>(this.queriesWithLimitStripped.size());
+        ArrayList<ProcessListEntryAggregate> tmpList2 = new ArrayList<>(this.queriesWithLimitStripped.size());
         for (Map.Entry<String, ProcessListEntryAggregate> e : this.queriesWithLimitStripped.entrySet()) {
             tmpList2.add(e.getValue());
         }
-        java.util.Collections.sort(tmpList2, new ProcessListEntryAggregate.SortByCount());
+        Collections.sort(tmpList2, new ProcessListEntryAggregate.SortByCount());
         count = 0;
         for (ProcessListEntryAggregate p : tmpList2) {
             pw.println(p.getChecksum() + ": " + p.getSql());
@@ -350,7 +354,7 @@ public class ProcessListSummary implements java.io.Serializable {
         pw.println();
         pw.println("------ Query Time Summary With LIMIT Stripped------");
 
-        java.util.Collections.sort(tmpList2);
+        Collections.sort(tmpList2);
         count = 0;
         for (ProcessListEntryAggregate p : tmpList2) {
             pw.println(p.getChecksum() + ": " + p.getSql());
@@ -363,11 +367,11 @@ public class ProcessListSummary implements java.io.Serializable {
 
         pw.println();
         pw.println("------ Normalized Queries------");
-        tmpList2 = new ArrayList<ProcessListEntryAggregate>(this.normalizedQueries.size());
+        tmpList2 = new ArrayList<>(this.normalizedQueries.size());
         for (Map.Entry<String, ProcessListEntryAggregate> e : this.normalizedQueries.entrySet()) {
             tmpList2.add(e.getValue());
         }
-        java.util.Collections.sort(tmpList2, new ProcessListEntryAggregate.SortByCount());
+        Collections.sort(tmpList2, new ProcessListEntryAggregate.SortByCount());
 
         count = 0;
         for (ProcessListEntryAggregate p : tmpList2) {
@@ -382,7 +386,7 @@ public class ProcessListSummary implements java.io.Serializable {
         pw.println();
         pw.println("------ Time Summary With Normalized Queries------");
 
-        java.util.Collections.sort(tmpList2);
+        Collections.sort(tmpList2);
         count = 0;
         for (ProcessListEntryAggregate p : tmpList2) {
             pw.println(p.getChecksum() + ": " + p.getSql());
@@ -397,7 +401,7 @@ public class ProcessListSummary implements java.io.Serializable {
         for (ProcessListEntryProcessor pr : this.appProcessorList)
             pr.dumpSummary(pw);
 
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         pw.println();
@@ -410,7 +414,7 @@ public class ProcessListSummary implements java.io.Serializable {
             pw.println(e.getInfo());
             String ts = "";
             try {
-                ts = sdf.format(new java.util.Date(this.reportTimestamp - e.getTime() * 1000));
+                ts = sdf.format(new Date(this.reportTimestamp - e.getTime() * 1000));
             } catch (Exception ex) {
             }
             pw.println("Time: " + e.getTime() + ", Ts: " + ts + ", State: " + e.getState() + ", User: " + e.getUser() + ", DB: " + e.getDb() + ", Host: " + e.getHost());
@@ -424,8 +428,8 @@ public class ProcessListSummary implements java.io.Serializable {
             pw.println();
             pw.println("------ Innodb Status ------");
 
-            java.io.StringReader reader = new java.io.StringReader(this.innodbStatus);
-            java.io.BufferedReader bufReader = new java.io.BufferedReader(reader);
+            StringReader reader = new StringReader(this.innodbStatus);
+            BufferedReader bufReader = new BufferedReader(reader);
             String line = null;
             boolean skip = false;
             try {

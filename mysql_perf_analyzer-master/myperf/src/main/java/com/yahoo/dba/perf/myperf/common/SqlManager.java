@@ -14,6 +14,11 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Serializable;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Handle all supported performance related sql statements.
@@ -21,14 +26,14 @@ import javax.xml.stream.XMLStreamReader;
  * @author xrao
  */
 @Slf4j
-public class SqlManager implements java.io.Serializable {
+public class SqlManager implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private XMLInputFactory inputFactory = XMLInputFactory.newInstance();//will be used only once at startup time
 
     //store all predefined sqls. the key is the handle.
     @Getter
-    private java.util.Map<String, Sql> sqlMap = new java.util.TreeMap<String, Sql>();
+    private Map<String, Sql> sqlMap = new TreeMap<>();
 
     //for now, we use default path "sql.xml" under classes
     @Getter
@@ -51,10 +56,10 @@ public class SqlManager implements java.io.Serializable {
      * @return
      * @throws XMLStreamException
      */
-    public boolean load(java.io.InputStream in) throws XMLStreamException {
+    public boolean load(InputStream in) throws XMLStreamException {
         XMLStreamReader reader = null;
         try {
-            reader = inputFactory.createXMLStreamReader(new java.io.InputStreamReader(in));
+            reader = inputFactory.createXMLStreamReader(new InputStreamReader(in));
             while (reader.hasNext()) {
                 //loop till one sql tag is found
                 int evtType = reader.next();
@@ -166,7 +171,7 @@ public class SqlManager implements java.io.Serializable {
     }
 
     public boolean init() {
-        java.io.InputStream in = null;
+        InputStream in = null;
 
         try {
             in = this.getClass().getClassLoader().getResourceAsStream(sqlPath);

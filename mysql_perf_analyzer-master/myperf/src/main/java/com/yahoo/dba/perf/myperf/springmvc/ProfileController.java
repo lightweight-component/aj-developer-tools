@@ -42,7 +42,7 @@ public class ProfileController extends MyPerfBaseController {
         }
         log.info("profiling " + sqltext);
         ResultList rList = null;
-        LinkedHashMap<String, ResultList> listMap = new LinkedHashMap<String, ResultList>();
+        LinkedHashMap<String, ResultList> listMap = new LinkedHashMap<>();
         String jsonString = null;
         MyProfiler profiler = new MyProfiler();
         DBInstanceInfo dbinfo = null;

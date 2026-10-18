@@ -17,6 +17,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 
 /**
  * This will be all the connections held by a specific user.
@@ -28,7 +30,7 @@ public class UserDBConnections {
     @Getter
     @Setter
     private String appUser;//application user name
-    private List<DBConnectionWrapper> connections = new java.util.ArrayList<DBConnectionWrapper>();
+    private List<DBConnectionWrapper> connections = new ArrayList<>();
     @Getter
     @Setter
     private volatile boolean valid = true;  //if this is still valid
@@ -115,8 +117,8 @@ public class UserDBConnections {
                 Throwable cause = ex.getCause();
                 String msg = cause.getMessage();
                 //suppress log messages for certain error
-                if (cause instanceof java.net.UnknownHostException
-                        || (cause instanceof java.net.ConnectException && msg != null && msg.indexOf("Connection refused") >= 0)) {
+                if (cause instanceof UnknownHostException
+                        || (cause instanceof ConnectException && msg != null && msg.indexOf("Connection refused") >= 0)) {
                     log.error("Exception cause when connecting to (" + dbinfo + "): msg, no retry.");
                     throw new RuntimeException(Constants.CONN_MSG_NORETRY);
                 } else
@@ -265,7 +267,7 @@ public class UserDBConnections {
      */
     public void closeExpired(long timeMillis) {
         if (timeMillis <= 0) timeMillis = this.connectionIdleTimeout;
-        List<DBConnectionWrapper> idleList = new ArrayList<DBConnectionWrapper>();
+        List<DBConnectionWrapper> idleList = new ArrayList<>();
         synchronized (this.connections) {
             for (int i = this.connections.size() - 1; i >= 0; i--) {
                 DBConnectionWrapper conn = this.connections.get(i);
@@ -285,7 +287,7 @@ public class UserDBConnections {
     public void closeIdle(String clusterName, String hostName) {
         log.debug("Close idle connections (" + clusterName + "," + hostName + ")");
         this.valid = false;
-        List<DBConnectionWrapper> idleConnections = new ArrayList<DBConnectionWrapper>();
+        List<DBConnectionWrapper> idleConnections = new ArrayList<>();
         //remove from reuse
         synchronized (this) {
             for (int i = this.connections.size() - 1; i >= 0; i--) {
@@ -314,7 +316,7 @@ public class UserDBConnections {
     }
 
     synchronized public TreeMap<String, Integer> retrieveConnectionMap() {
-        TreeMap<String, Integer> connMap = new TreeMap<String, Integer>();
+        TreeMap<String, Integer> connMap = new TreeMap<>();
         for (int i = this.connections.size() - 1; i >= 0; i--) {
             DBConnectionWrapper conn = this.connections.get(i);
             String dbname = conn.getDb().getDbGroupName();

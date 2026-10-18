@@ -7,13 +7,15 @@ package com.yahoo.dba.perf.myperf.common;
 
 import java.util.Comparator;
 import java.util.List;
+import java.io.Serializable;
+import java.util.ArrayList;
 
 /**
  * Compare two ResultRows based on keyList. For simplicity, the column descriptors for both rows should be provided
  *
  * @author xrao
  */
-public class ResultRowKeyComparator implements Comparator<ResultRow>, java.io.Serializable {
+public class ResultRowKeyComparator implements Comparator<ResultRow>, Serializable {
     private static final long serialVersionUID = 2243120460008043846L;
     private List<String> keyList;
     private List<Integer> index1List;
@@ -22,8 +24,8 @@ public class ResultRowKeyComparator implements Comparator<ResultRow>, java.io.Se
 
     public ResultRowKeyComparator(List<String> keyList, ColumnDescriptor descA, ColumnDescriptor descB) {
         this.keyList = keyList;
-        this.index1List = new java.util.ArrayList<Integer>(this.keyList.size());
-        this.index2List = new java.util.ArrayList<Integer>(this.keyList.size());
+        this.index1List = new ArrayList<>(this.keyList.size());
+        this.index2List = new ArrayList<>(this.keyList.size());
 
         for (int i = 0; i < keyList.size(); i++) {
             this.index1List.add(descA.getColumnIndex(keyList.get(i)));

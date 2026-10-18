@@ -11,6 +11,7 @@ import com.yahoo.dba.perf.myperf.common.QueryParameters;
 import com.yahoo.dba.perf.myperf.common.ResultList;
 
 import java.util.Map;
+import java.sql.SQLException;
 
 public interface CustomQueryProcessor {
     /**
@@ -23,7 +24,7 @@ public interface CustomQueryProcessor {
      * @throws java.sql.SQLException
      */
     void queryMultiple(MyPerfContext context, DBInstanceInfo dbinfo, String appUser, DBConnectionWrapper connWrapper, QueryParameters qps, Map<String, ResultList> rListMap)
-            throws java.sql.SQLException;
+            throws SQLException;
 
     /**
      * @param context
@@ -35,7 +36,7 @@ public interface CustomQueryProcessor {
      * @throws java.sql.SQLException
      */
     ResultList querySingle(MyPerfContext context, DBInstanceInfo dbinfo, String appUser, DBConnectionWrapper connWrapper, QueryParameters qps)
-            throws java.sql.SQLException;
+            throws SQLException;
 
     /**
      * indicate if it is multiple

@@ -14,6 +14,8 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import java.util.*;
+import java.io.ByteArrayInputStream;
+import javax.json.Json;
 
 
 /**
@@ -33,7 +35,7 @@ public class AlertSubscribers {
         public Map<String, String> params;
 
         public Subscription() {
-            params = new HashMap<String, String>();
+            params = new HashMap<>();
         }
 
         //parse and set params
@@ -41,7 +43,7 @@ public class AlertSubscribers {
             if (paramString == null || paramString.isEmpty()) return;
             JsonReader jsonReader = null;
             try {
-                jsonReader = javax.json.Json.createReader(new java.io.ByteArrayInputStream(paramString.getBytes()));
+                jsonReader = Json.createReader(new ByteArrayInputStream(paramString.getBytes()));
                 JsonObject jsonObject = jsonReader.readObject();
                 jsonReader.close();
 
@@ -93,8 +95,8 @@ public class AlertSubscribers {
         private Map<String, Subscription> subscriptionsMap; //internal index
 
         public HostSubscriptions() {
-            subscriptions = new ArrayList<Subscription>();
-            subscriptionsMap = new HashMap<String, Subscription>();
+            subscriptions = new ArrayList<>();
+            subscriptionsMap = new HashMap<>();
         }
 
         public void addSubscription(Subscription sub) {
@@ -126,9 +128,9 @@ public class AlertSubscribers {
         private Map<String, Subscription> subscriptionsMap; //internal index
 
         public GroupSubscriptions() {
-            subscriptions = new ArrayList<Subscription>();
-            hostsSubscriptions = new HashMap<String, HostSubscriptions>();
-            subscriptionsMap = new HashMap<String, Subscription>();
+            subscriptions = new ArrayList<>();
+            hostsSubscriptions = new HashMap<>();
+            subscriptionsMap = new HashMap<>();
         }
 
         public void addSubscription(Subscription sub) {
@@ -167,8 +169,8 @@ public class AlertSubscribers {
         }
 
         public List<Subscription> getSubscription(String host) {
-            HashSet<String> alertnames = new HashSet<String>();
-            List<Subscription> mysubs = new ArrayList<Subscription>();
+            HashSet<String> alertnames = new HashSet<>();
+            List<Subscription> mysubs = new ArrayList<>();
             if (this.hostsSubscriptions.containsKey(host)) {
                 for (Subscription sub : this.hostsSubscriptions.get(host).getSubscriptions()) {
                     mysubs.add(sub);
@@ -192,7 +194,7 @@ public class AlertSubscribers {
     private MyPerfContext context; //framework context to access metrics db
 
     public AlertSubscribers() {
-        groupSubscriptions = new HashMap<String, GroupSubscriptions>();
+        groupSubscriptions = new HashMap<>();
     }
 
     /**

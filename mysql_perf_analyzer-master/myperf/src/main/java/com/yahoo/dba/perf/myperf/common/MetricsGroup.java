@@ -11,6 +11,8 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
+import java.util.HashMap;
 
 /**
  * MetricsGroup groups related metrics, for example, metrics can be gathered by a single SQL call.
@@ -34,7 +36,7 @@ public class MetricsGroup {
     private Map<String, Metric> metricsNameMap;
 
     @Getter
-    private List<MetricsGroup> subGroups = new ArrayList<MetricsGroup>();
+    private List<MetricsGroup> subGroups = new ArrayList<>();
 
     @Getter
     @Setter
@@ -78,14 +80,14 @@ public class MetricsGroup {
     private boolean udmFlagged;//flag this is user defined metrics group, not builtin
 
     public MetricsGroup() {
-        this.metrics = new java.util.ArrayList<Metric>();
-        this.metricsNameMap = new java.util.HashMap<String, Metric>();
+        this.metrics = new ArrayList<>();
+        this.metricsNameMap = new HashMap<>();
     }
 
     public MetricsGroup(String groupName) {
         this.groupName = groupName;
-        this.metrics = new java.util.ArrayList<Metric>();
-        this.metricsNameMap = new java.util.HashMap<String, Metric>();
+        this.metrics = new ArrayList<>();
+        this.metricsNameMap = new HashMap<>();
     }
 
     /**
@@ -94,7 +96,7 @@ public class MetricsGroup {
      * @return
      */
     public List<Metric> getMetrics() {
-        return java.util.Collections.unmodifiableList(metrics);
+        return Collections.unmodifiableList(metrics);
     }
 
     public void addMetrics(Metric metric) {

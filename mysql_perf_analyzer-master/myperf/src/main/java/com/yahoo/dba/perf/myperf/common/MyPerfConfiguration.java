@@ -14,6 +14,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.io.Serializable;
+import java.util.Properties;
 
 /**
  * Consolidate main configurations here
@@ -21,7 +23,7 @@ import java.io.PrintWriter;
  * @author xrao
  */
 @Slf4j
-public class MyPerfConfiguration implements java.io.Serializable {
+public class MyPerfConfiguration implements Serializable {
     private static final long serialVersionUID = 1L;
 
     //configuration default path
@@ -178,7 +180,7 @@ public class MyPerfConfiguration implements java.io.Serializable {
         FileInputStream in = null;
         try {
             in = new FileInputStream(cfgFile);
-            java.util.Properties props = new java.util.Properties();
+            Properties props = new Properties();
             props.load(in);
             this.metricsScannerUser = props.getProperty("metricsScannerUser");
             if (this.metricsScannerUser == null) return false;

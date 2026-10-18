@@ -7,13 +7,14 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
+import java.io.Serializable;
 
 /**
  * an AppUser is the user who is going to use this app.
  *
  * @author xrao
  */
-public class AppUser implements java.io.Serializable {
+public class AppUser implements Serializable {
     private static final long serialVersionUID = 1L;
     public static final int PRIV_USER_STANDARD = 0; //standard user.
     public static final int PRIV_USER_POWER = 1;    //power user, can manage this app.

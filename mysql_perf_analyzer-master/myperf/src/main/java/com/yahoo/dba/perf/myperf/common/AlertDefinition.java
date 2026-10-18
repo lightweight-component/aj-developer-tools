@@ -17,6 +17,9 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.InputStream;
+import java.io.Serializable;
+import javax.json.Json;
 
 
 /**
@@ -25,7 +28,7 @@ import java.util.Map;
  * @author xrao
  */
 @Slf4j
-public class AlertDefinition implements java.io.Serializable {
+public class AlertDefinition implements Serializable {
     private static final long serialVersionUID = 7023147712745750436L;
 
     public static final String SOURCE_SQL = "SQL"; //need an sql statement or build in sql
@@ -66,7 +69,7 @@ public class AlertDefinition implements java.io.Serializable {
     private String metricValueType = METRICS_VALUE_TYPE_VALUE;//use last value, or changes per second
 
     @Getter
-    private Map<String, String> params = new HashMap<String, String>();
+    private Map<String, String> params = new HashMap<>();
 
     public AlertDefinition(String name) {
         this.name = name != null ? name.trim() : null;
@@ -86,11 +89,11 @@ public class AlertDefinition implements java.io.Serializable {
         this.params.put(name, defaultValue);
     }
 
-    public static AlertDefinition createFromJson(java.io.InputStream in) {
+    public static AlertDefinition createFromJson(InputStream in) {
         JsonReader jsonReader = null;
         AlertDefinition alert = null;
         try {
-            jsonReader = javax.json.Json.createReader(in);
+            jsonReader = Json.createReader(in);
             JsonObject jsonObject = jsonReader.readObject();
             jsonReader.close();
             alert = new AlertDefinition(jsonObject.getString("name"));

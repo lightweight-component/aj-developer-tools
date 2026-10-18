@@ -12,6 +12,8 @@ import com.yahoo.dba.perf.myperf.common.MyPerfContext;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Map.Entry;
+import java.sql.SQLException;
+import java.util.Properties;
 
 
 /**
@@ -32,8 +34,8 @@ public class ConnectionFactory {
      * @throws java.sql.SQLException
      */
     public static Connection connect(DBInstanceInfo db, DBCredential cred, MyPerfContext context)
-            throws java.sql.SQLException {
-        java.util.Properties info = new java.util.Properties();
+            throws SQLException {
+        Properties info = new Properties();
         info.put("user", cred.getUsername());
         info.put("password", cred.getPassword());
         if ("oracle".equalsIgnoreCase(db.getDbType())) {
@@ -48,8 +50,8 @@ public class ConnectionFactory {
     }
 
     public static Connection connect(DBInstanceInfo db, String username, String password, MyPerfContext context)
-            throws java.sql.SQLException {
-        java.util.Properties info = new java.util.Properties();
+            throws SQLException {
+        Properties info = new Properties();
         info.put("user", username);
         info.put("password", password);
         if ("oracle".equalsIgnoreCase(db.getDbType())) {
@@ -74,9 +76,9 @@ public class ConnectionFactory {
      * @return
      * @throws java.sql.SQLException
      */
-    public static Connection connect(DBInstanceInfo db, String username, String password, MyPerfContext context, java.util.Properties myinfo)
-            throws java.sql.SQLException {
-        java.util.Properties info = new java.util.Properties();
+    public static Connection connect(DBInstanceInfo db, String username, String password, MyPerfContext context, Properties myinfo)
+            throws SQLException {
+        Properties info = new Properties();
         info.put("user", username);
         info.put("password", password);
         if ("oracle".equalsIgnoreCase(db.getDbType())) {

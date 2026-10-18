@@ -9,6 +9,10 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Map;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Represent a predefined sql statement.
@@ -17,7 +21,7 @@ import java.util.Map;
  *
  * @author xrao
  */
-public class Sql implements java.io.Serializable {
+public class Sql implements Serializable {
     private static final long serialVersionUID = 1L;
 
     //keep those for Oracle expansion
@@ -59,29 +63,29 @@ public class Sql implements java.io.Serializable {
     private int paramCount = 0;//total parameters, if any. Parameter will start from &p_1 to &p_{paramCount}
     //private java.util.List<String> paramNames = new java.util.ArrayList<String>();//comments or names for the parameters
     @Getter
-    private java.util.List<SqlParameter> parameters = new java.util.ArrayList<SqlParameter>();//comments or names for the parameters
+    private List<SqlParameter> parameters = new ArrayList<>();//comments or names for the parameters
     @Getter
     @Setter
     private String queryProcessor;//customized executor
 
     //When requested metrics are contained in rows, flat function will transpose it to rows.
     @Getter
-    private java.util.List<String> keyList = new java.util.ArrayList<String>();//used for flat rows to columns
+    private List<String> keyList = new ArrayList<>();//used for flat rows to columns
     @Getter
-    private java.util.List<String> valueList = new java.util.ArrayList<String>();//used for flat rows to columns
+    private List<String> valueList = new ArrayList<>();//used for flat rows to columns
     @Getter
     @Setter
     private String flatKey;//allow to flat a single key
     @Getter
-    private java.util.List<String> flatValueList = new java.util.ArrayList<String>();//create new columns with those value
+    private List<String> flatValueList = new ArrayList<>();//create new columns with those value
     @Getter
     @Setter
-    private Map<String, String> flatValueAbbrMap = new java.util.LinkedHashMap<String, String>();//create new columns with those value
+    private Map<String, String> flatValueAbbrMap = new LinkedHashMap<>();//create new columns with those value
     @Getter
-    private java.util.LinkedHashMap<String, String> metrics = new java.util.LinkedHashMap<String, String>();
+    private LinkedHashMap<String, String> metrics = new LinkedHashMap<>();
 
     //SQL specific to a version
-    private java.util.ArrayList<VSql> vsqls = new java.util.ArrayList<VSql>();
+    private ArrayList<VSql> vsqls = new ArrayList<>();
 
     /**
      * SQL with restriction on version

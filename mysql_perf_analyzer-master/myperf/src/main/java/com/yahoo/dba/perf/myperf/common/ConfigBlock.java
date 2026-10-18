@@ -10,6 +10,7 @@ import lombok.Setter;
 
 import java.util.Map;
 import java.util.TreeMap;
+import java.io.Serializable;
 
 /**
  * A config block includes the time the data was gathered
@@ -20,7 +21,7 @@ import java.util.TreeMap;
  *
  * @author xrao
  */
-public class ConfigBlock implements java.io.Serializable {
+public class ConfigBlock implements Serializable {
 
     private static final long serialVersionUID = 1L;
     @Getter
@@ -31,7 +32,7 @@ public class ConfigBlock implements java.io.Serializable {
     private Map<String, String> variables;//well, in MySQL, there are called variables
 
     public ConfigBlock() {
-        this.variables = new TreeMap<String, String>();
+        this.variables = new TreeMap<>();
     }
 
     public void addVariable(String name, String value) {

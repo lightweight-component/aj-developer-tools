@@ -17,12 +17,13 @@ import java.io.FileWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.Serializable;
 
 /**
  * Store SNMP settings for community, version, etc.
  */
 @Slf4j
-public class SNMPSettings implements java.io.Serializable {
+public class SNMPSettings implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static class SNMPSetting {
@@ -85,10 +86,10 @@ public class SNMPSettings implements java.io.Serializable {
     @Setter
     private SNMPSetting siteSetting;//default site setting, if provided
     //group level setting, if any. The key is dbGroupName
-    private Map<String, SNMPSetting> groupSettings = new HashMap<String, SNMPSetting>();
+    private Map<String, SNMPSetting> groupSettings = new HashMap<>();
     //host level settings, if any. The key is dbGroupName+"|"+hostName
     @Getter
-    private Map<String, SNMPSetting> hostSettings = new HashMap<String, SNMPSetting>();
+    private Map<String, SNMPSetting> hostSettings = new HashMap<>();
     private String myperfSnmpConfigPath;
     @Getter
     @Setter
@@ -201,7 +202,7 @@ public class SNMPSettings implements java.io.Serializable {
         FileInputStream in = null;
         try {
             in = new FileInputStream(cfgFile);
-            JsonReader jr = javax.json.Json.createReader(in);
+            JsonReader jr = Json.createReader(in);
             JsonObject jsonObject = jr.readObject();
             jr.close();
             this.setSiteSetting(readFromJson(jsonObject.getJsonObject("site")));
@@ -271,7 +272,7 @@ public class SNMPSettings implements java.io.Serializable {
     }
 
     private boolean writeToJson(Writer writer) {
-        javax.json.JsonWriter wr = null;
+        JsonWriter wr = null;
         try {
             JsonObjectBuilder settingBuilder = Json.createObjectBuilder();
             settingBuilder.add("site", toJson(this.siteSetting));
@@ -292,7 +293,7 @@ public class SNMPSettings implements java.io.Serializable {
             }
             settingBuilder.add("host", hostBuilder);
 
-            wr = javax.json.Json.createWriter(writer);
+            wr = Json.createWriter(writer);
 
             JsonObject jsonObj = settingBuilder.build();
             wr.writeObject(jsonObj);

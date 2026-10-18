@@ -23,6 +23,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import javax.servlet.ServletContainerInitializer;
 import java.io.File;
 import java.io.FileInputStream;
+import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
 import java.net.URI;
@@ -30,6 +31,10 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.util.Properties;
 
 public class App {
     public static String PID_FILE = "framework.pid";
@@ -225,7 +230,7 @@ public class App {
         }
 
         try {
-            java.util.Properties props = new java.util.Properties();
+            Properties props = new Properties();
             props.load(new FileInputStream(path));
             String useHttpsStr = props.getProperty("useHttps", "no");
             useHttpsStr = useHttpsStr.trim().toLowerCase();
@@ -447,8 +452,7 @@ public class App {
      */
     public static int getPid() {
         try {
-            RuntimeMXBean runtime = java.lang.management.ManagementFactory
-                    .getRuntimeMXBean();
+            RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             String jvmName = runtime.getName();
             String ss = jvmName.substring(0, jvmName.indexOf('@'));
             return Integer.parseInt(ss);
@@ -462,7 +466,7 @@ public class App {
         if (pid < 0)
             return;// not supported
         try {
-            java.io.FileWriter fw = new java.io.FileWriter(PID_FILE);
+            FileWriter fw = new FileWriter(PID_FILE);
             fw.write(String.valueOf(pid));
             fw.close();
         } catch (Exception ex) {
@@ -472,8 +476,8 @@ public class App {
 
     private static int getHistoryPid() {
         try {
-            java.io.BufferedReader fr = new java.io.BufferedReader(
-                    new java.io.FileReader(PID_FILE));
+            BufferedReader fr = new BufferedReader(
+                    new FileReader(PID_FILE));
             String line = fr.readLine();
             fr.close();
             return Integer.parseInt(line);
@@ -503,7 +507,7 @@ public class App {
         JettyJasperInitializer sci = new JettyJasperInitializer();
         ContainerInitializer initializer = new ContainerInitializer(
                 (ServletContainerInitializer) sci, null);
-        List<ContainerInitializer> initializers = new ArrayList<ContainerInitializer>();
+        List<ContainerInitializer> initializers = new ArrayList<>();
         initializers.add(initializer);
         return initializers;
     }

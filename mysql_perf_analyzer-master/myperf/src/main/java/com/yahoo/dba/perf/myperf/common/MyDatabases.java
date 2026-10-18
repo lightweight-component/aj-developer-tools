@@ -8,15 +8,17 @@ package com.yahoo.dba.perf.myperf.common;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.io.Serializable;
+import java.util.Collections;
 
-public class MyDatabases implements java.io.Serializable {
+public class MyDatabases implements Serializable {
 
     private static final long serialVersionUID = -8586381924495834726L;
 
-    private Set<String> myDbSet = new TreeSet<String>();
+    private Set<String> myDbSet = new TreeSet<>();
 
     synchronized public Set<String> getMyDbList() {
-        return java.util.Collections.unmodifiableSet(this.myDbSet);
+        return Collections.unmodifiableSet(this.myDbSet);
     }
 
     synchronized public void addDb(String name) {

@@ -16,6 +16,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 
 /**
@@ -56,7 +58,7 @@ public class UserReportManager {
         @Setter
         private String filename;//file name will be type dependent
         @Getter
-        private java.util.LinkedHashMap<String, String> parameters = new java.util.LinkedHashMap<String, String>();
+        private LinkedHashMap<String, String> parameters = new LinkedHashMap<>();
 
         public void addParameter(String name, String value) {
             this.parameters.put(name, value);
@@ -179,7 +181,7 @@ public class UserReportManager {
     }
 
     synchronized public List<UserReport> list() {
-        List<UserReport> repList = new java.util.ArrayList<UserReport>();
+        List<UserReport> repList = new ArrayList<>();
         File idxFile = new File(userroot, idxfile);
         if (idxFile.exists()) {
             BufferedReader br = null;
@@ -229,7 +231,7 @@ public class UserReportManager {
         for (int i = repList.size() - 1; i >= 0; i--) {
             UserReport urp = repList.get(i);
             ResultRow row = new ResultRow();
-            List<String> cols = new java.util.ArrayList<String>(8);
+            List<String> cols = new ArrayList<>(8);
             row.setColumnDescriptor(desc);
             row.setColumns(cols);
             cols.add(String.valueOf(urp.getId()));

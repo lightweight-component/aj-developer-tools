@@ -57,7 +57,7 @@ public class VarhistoryController extends MyPerfBaseController {
             if (ch != null && ch.getChanges().size() > 0) {
                 {
                     ResultRow row = new ResultRow();
-                    List<String> cols = new ArrayList<String>();
+                    List<String> cols = new ArrayList<>();
                     cols.add("CHANGES");
                     cols.add("");
                     cols.add(ch.getStartingConfig().getTime() + " - " + ch.getLastCheckedConfig().getTime());
@@ -71,7 +71,7 @@ public class VarhistoryController extends MyPerfBaseController {
                     ConfigBlock cb = ch.getChanges().get(i);
 
                     ResultRow row = new ResultRow();
-                    List<String> cols = new ArrayList<String>();
+                    List<String> cols = new ArrayList<>();
                     cols.add("CHANGE TIME");
                     cols.add(cb.getTime());
                     cols.add("Timestamp (UTC) when checked");
@@ -79,7 +79,7 @@ public class VarhistoryController extends MyPerfBaseController {
                     row.setColumnDescriptor(desc);
                     rList.addRow(row);
 
-                    HashMap<String, String> changes = new HashMap<String, String>();
+                    HashMap<String, String> changes = new HashMap<>();
                     //scan changes with old value
                     for (Map.Entry<String, String> e : cb.getVariables().entrySet()) {
                         String key = e.getKey();
@@ -93,7 +93,7 @@ public class VarhistoryController extends MyPerfBaseController {
                         String key = e.getKey();
                         String v = e.getValue();
                         row = new ResultRow();
-                        cols = new ArrayList<String>();
+                        cols = new ArrayList<>();
                         if (key.startsWith("+-"))
                             continue;//skip
                         else if (key.startsWith("+-"))
@@ -113,7 +113,7 @@ public class VarhistoryController extends MyPerfBaseController {
                     }
                     //add an empty line
                     row = new ResultRow();
-                    cols = new ArrayList<String>();
+                    cols = new ArrayList<>();
                     cols.add("");
                     cols.add("");
                     cols.add("");
@@ -127,7 +127,7 @@ public class VarhistoryController extends MyPerfBaseController {
                 ConfigBlock cb = ch.getStartingConfig();
 
                 ResultRow row = new ResultRow();
-                List<String> cols = new ArrayList<String>();
+                List<String> cols = new ArrayList<>();
                 cols.add("FIRST RECORD TIME");
                 cols.add(cb.getTime());
                 if (ch != null && ch.getChanges().size() > 0)
@@ -142,7 +142,7 @@ public class VarhistoryController extends MyPerfBaseController {
                     String key = e.getKey();
                     String v = e.getValue();
                     row = new ResultRow();
-                    cols = new ArrayList<String>();
+                    cols = new ArrayList<>();
                     cols.add(key);
                     cols.add(v);
                     cols.add("");

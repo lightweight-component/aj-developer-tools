@@ -7,13 +7,15 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MetricsResultObject implements CustomResultObject {
     private static final long serialVersionUID = 1L;
 
     @Getter
     @Setter
-    private java.util.List<Metric> metrics;
+    private List<Metric> metrics;
 
     public MetricsResultObject() {
 
@@ -54,7 +56,7 @@ public class MetricsResultObject implements CustomResultObject {
     }
 
     //will prefix metricsGroupname
-    public void setMetrics(java.util.List<Metric> metrics, String metricsGroupName) {
+    public void setMetrics(List<Metric> metrics, String metricsGroupName) {
         if (metrics != null && metricsGroupName != null && !metricsGroupName.isEmpty() && !"globalstatus".equals(metricsGroupName)) {
             for (Metric m : metrics) {
                 m.setName(metricsGroupName + "." + m.getName());
@@ -64,7 +66,7 @@ public class MetricsResultObject implements CustomResultObject {
     }
 
     public void addMetric(Metric m) {
-        if (this.metrics == null) this.metrics = new java.util.ArrayList<Metric>();
+        if (this.metrics == null) this.metrics = new ArrayList<>();
         this.metrics.add(m);
     }
 }

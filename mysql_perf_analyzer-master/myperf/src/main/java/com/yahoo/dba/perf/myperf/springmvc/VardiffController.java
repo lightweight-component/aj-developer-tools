@@ -116,8 +116,8 @@ public class VardiffController extends MyPerfBaseController {
         if (status == Constants.STATUS_BAD)
             return this.respondFailure(message, req);
 
-        HashMap<String, String> param1 = new HashMap<String, String>(rList.getRows().size());
-        HashMap<String, String> param2 = new HashMap<String, String>(rList2.getRows().size());
+        HashMap<String, String> param1 = new HashMap<>(rList.getRows().size());
+        HashMap<String, String> param2 = new HashMap<>(rList2.getRows().size());
         for (ResultRow r : rList.getRows()) {
             param1.put(r.getColumns().get(0).toUpperCase(), r.getColumns().get(1));
         }
@@ -132,7 +132,7 @@ public class VardiffController extends MyPerfBaseController {
         ResultList fList = new ResultList();
         fList.setColumnDescriptor(desc);
 
-        HashSet<String> diffSet = new HashSet<String>();
+        HashSet<String> diffSet = new HashSet<>();
         for (Map.Entry<String, String> e : param1.entrySet()) {
             String k = e.getKey();
             String v = e.getValue();
@@ -145,7 +145,7 @@ public class VardiffController extends MyPerfBaseController {
             else v2 = "";
             if (!v.equals(v2)) {
                 ResultRow row = new ResultRow();
-                List<String> cols = new ArrayList<String>();
+                List<String> cols = new ArrayList<>();
                 cols.add(k);
                 cols.add(v);
                 cols.add(v2);
@@ -162,7 +162,7 @@ public class VardiffController extends MyPerfBaseController {
             if (v == null || v.isEmpty()) continue;
             if (diffSet.contains(k) || param1.containsKey(k)) continue;
             ResultRow row = new ResultRow();
-            List<String> cols = new ArrayList<String>();
+            List<String> cols = new ArrayList<>();
             cols.add(k);
             cols.add("");
             cols.add(v);

@@ -21,7 +21,7 @@ import java.util.Map;
  * @author xrao
  */
 @Slf4j
-public class InstanceStatesManager implements java.io.Serializable {
+public class InstanceStatesManager implements Serializable {
     private static final long serialVersionUID = 1L;
     public static String OBJ_FILE_NAME = "instance_status.ser";
     public static final String STORAGE_DIR = "autoscan";
@@ -29,7 +29,7 @@ public class InstanceStatesManager implements java.io.Serializable {
     @Setter
     private String rootPath = "myperf_reports";//data will be stored under $rootPath/autoscan
 
-    private Map<Integer, InstanceStates> statesMap = new HashMap<Integer, InstanceStates>();
+    private Map<Integer, InstanceStates> statesMap = new HashMap<>();
 
     public InstanceStatesManager() {
 

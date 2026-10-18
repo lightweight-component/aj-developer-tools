@@ -7,13 +7,14 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
+import java.io.Serializable;
 
 /**
  * Result column descriptor
  *
  * @author xrao
  */
-public class ColumnInfo implements java.io.Serializable {
+public class ColumnInfo implements Serializable {
 
     private static final long serialVersionUID = 2467837325706019159L;
     @Getter

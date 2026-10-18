@@ -13,6 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.nio.ByteBuffer;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 
 @Slf4j
@@ -35,16 +38,16 @@ public class MetricsBuffer {
     }
 
 
-    public java.nio.ByteBuffer recordOneRowBymetricsName2(java.sql.ResultSet rs, int snap_id, long timestamp, int sql_time)
-            throws java.sql.SQLException {
-        HashMap<String, String> hs = new HashMap<String, String>();
+    public ByteBuffer recordOneRowBymetricsName2(ResultSet rs, int snap_id, long timestamp, int sql_time)
+            throws SQLException {
+        HashMap<String, String> hs = new HashMap<>();
         while (rs != null && rs.next()) {
             hs.put(rs.getString(metrics.getMetricNameColumn()).toUpperCase(), rs.getString(metrics.getMetricValueColumn()));
         }
         if (hs.size() == 0) return null;//TODO log error
 
         byte[] buf = new byte[this.recordLength];
-        java.nio.ByteBuffer buf2 = java.nio.ByteBuffer.wrap(buf);
+        ByteBuffer buf2 = ByteBuffer.wrap(buf);
 
         int pos = 0;
         buf2.putInt(pos, dbid);
@@ -102,10 +105,10 @@ public class MetricsBuffer {
         return buf2;
     }
 
-    public java.nio.ByteBuffer recordOneRowByMetricsMap(java.util.Map<String, String> rs, int snap_id, long timestamp, int sql_time)
-            throws java.sql.SQLException {
+    public ByteBuffer recordOneRowByMetricsMap(Map<String, String> rs, int snap_id, long timestamp, int sql_time)
+            throws SQLException {
         if (rs.size() == 0) return null;//TODO log error
-        HashMap<String, String> hs = new HashMap<String, String>();
+        HashMap<String, String> hs = new HashMap<>();
         for (Map.Entry<String, String> e : rs.entrySet()) {
             //skip null
             if (e.getKey() == null || e.getValue() == null) continue;
@@ -113,7 +116,7 @@ public class MetricsBuffer {
         }
 
         byte[] buf = new byte[this.recordLength];
-        java.nio.ByteBuffer buf2 = java.nio.ByteBuffer.wrap(buf);
+        ByteBuffer buf2 = ByteBuffer.wrap(buf);
 
         int pos = 0;
         buf2.putInt(pos, dbid);

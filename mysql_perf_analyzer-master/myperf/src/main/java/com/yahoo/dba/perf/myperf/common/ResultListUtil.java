@@ -13,6 +13,9 @@ import javax.xml.stream.XMLStreamReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.io.CharArrayReader;
+import java.sql.ResultSetMetaData;
+import java.sql.Types;
 
 @Slf4j
 public class ResultListUtil {
@@ -26,20 +29,20 @@ public class ResultListUtil {
      * @throws SQLException
      */
     public static ResultList fromSqlResultSet(ResultSet rs, int maxCount) throws SQLException {
-        log.debug(new java.util.Date() + ": Process results ...");
+        log.debug(new Date() + ": Process results ...");
         ResultList resList = new ResultList();
         if (rs == null) return resList;
-        java.sql.ResultSetMetaData meta = rs.getMetaData();
+        ResultSetMetaData meta = rs.getMetaData();
         int colCnt = meta.getColumnCount();
         ColumnDescriptor desc = new ColumnDescriptor();
-        desc.setColumns(new java.util.ArrayList<ColumnInfo>(colCnt));
+        desc.setColumns(new ArrayList<>(colCnt));
         for (int i = 1; i <= colCnt; i++) {
             //for now, we only record name
             ColumnInfo col = new ColumnInfo(meta.getColumnName(i));
             int sqlt = meta.getColumnType(i);
-            if (sqlt == java.sql.Types.BIGINT || sqlt == java.sql.Types.DECIMAL || sqlt == java.sql.Types.DOUBLE
-                    || sqlt == java.sql.Types.FLOAT || sqlt == java.sql.Types.INTEGER || sqlt == java.sql.Types.NUMERIC
-                    || sqlt == java.sql.Types.TINYINT || sqlt == java.sql.Types.SMALLINT)
+            if (sqlt == Types.BIGINT || sqlt == Types.DECIMAL || sqlt == Types.DOUBLE
+                    || sqlt == Types.FLOAT || sqlt == Types.INTEGER || sqlt == Types.NUMERIC
+                    || sqlt == Types.TINYINT || sqlt == Types.SMALLINT)
                 col.setNumberType(true);
             col.setPosition(i);
             desc.getColumns().add(col);
@@ -51,7 +54,7 @@ public class ResultListUtil {
             //log.info(new java.util.Date()+": process "+rowCnt+" rows");
             ResultRow row = new ResultRow();
             row.setColumnDescriptor(desc);
-            java.util.ArrayList<String> cols2 = new java.util.ArrayList<String>(colCnt);
+            ArrayList<String> cols2 = new ArrayList<>(colCnt);
             row.setColumns(cols2);
             for (int i = 1; i <= colCnt; i++) {
                 String val = rs.getString(i);
@@ -67,7 +70,7 @@ public class ResultListUtil {
             rowCnt++;
             if (maxCount > 0 && rowCnt >= maxCount) break;
         }
-        log.debug(new java.util.Date() + ": Process results done: " + resList.getRows().size());
+        log.debug(new Date() + ": Process results done: " + resList.getRows().size());
         return resList;
     }
 
@@ -89,16 +92,16 @@ public class ResultListUtil {
 
         ResultList resList = new ResultList();
         if (rs == null) return resList;
-        java.sql.ResultSetMetaData meta = rs.getMetaData();
+        ResultSetMetaData meta = rs.getMetaData();
         int colCnt = meta.getColumnCount();
         ColumnDescriptor desc = new ColumnDescriptor();
-        desc.setColumns(new java.util.ArrayList<ColumnInfo>(colCnt));
+        desc.setColumns(new ArrayList<>(colCnt));
 
-        Map<String, Integer> typeMap = new HashMap<String, Integer>();
+        Map<String, Integer> typeMap = new HashMap<>();
         for (int i = 1; i <= colCnt; i++) {
             typeMap.put(meta.getColumnName(i), meta.getColumnType(i));
         }
-        Map<String, Integer> flatkeyIdx = new HashMap<String, Integer>();
+        Map<String, Integer> flatkeyIdx = new HashMap<>();
         for (int i = 0; i < sql.getFlatValueList().size(); i++) {
             //log.info("Add "+sql.getFlatValueList().get(i));
             flatkeyIdx.put(sql.getFlatValueList().get(i), i);
@@ -109,9 +112,9 @@ public class ResultListUtil {
             ColumnInfo col = new ColumnInfo(k);
             col.setPosition(colIndex);
             int sqlt = typeMap.get(k);
-            if (sqlt == java.sql.Types.BIGINT || sqlt == java.sql.Types.DECIMAL || sqlt == java.sql.Types.DOUBLE
-                    || sqlt == java.sql.Types.FLOAT || sqlt == java.sql.Types.INTEGER || sqlt == java.sql.Types.NUMERIC
-                    || sqlt == java.sql.Types.TINYINT || sqlt == java.sql.Types.SMALLINT)
+            if (sqlt == Types.BIGINT || sqlt == Types.DECIMAL || sqlt == Types.DOUBLE
+                    || sqlt == Types.FLOAT || sqlt == Types.INTEGER || sqlt == Types.NUMERIC
+                    || sqlt == Types.TINYINT || sqlt == Types.SMALLINT)
                 col.setNumberType(true);
             desc.getColumns().add(col);
             colIndex++;
@@ -122,9 +125,9 @@ public class ResultListUtil {
                 ColumnInfo col = new ColumnInfo(sql.getFlatValueAbbrMap().get(s) + e.getValue());
                 col.setPosition(colIndex);
                 int sqlt = typeMap.get(e.getKey());
-                if (sqlt == java.sql.Types.BIGINT || sqlt == java.sql.Types.DECIMAL || sqlt == java.sql.Types.DOUBLE
-                        || sqlt == java.sql.Types.FLOAT || sqlt == java.sql.Types.INTEGER || sqlt == java.sql.Types.NUMERIC
-                        || sqlt == java.sql.Types.TINYINT || sqlt == java.sql.Types.SMALLINT)
+                if (sqlt == Types.BIGINT || sqlt == Types.DECIMAL || sqlt == Types.DOUBLE
+                        || sqlt == Types.FLOAT || sqlt == Types.INTEGER || sqlt == Types.NUMERIC
+                        || sqlt == Types.TINYINT || sqlt == Types.SMALLINT)
                     col.setNumberType(true);
                 desc.getColumns().add(col);
                 colIndex++;
@@ -145,7 +148,7 @@ public class ResultListUtil {
             {
                 row = new ResultRow();
                 row.setColumnDescriptor(desc);
-                row.setColumns(new java.util.ArrayList<String>(cols.size()));
+                row.setColumns(new ArrayList<>(cols.size()));
                 //initialize it
                 for (int i = 0; i < cols.size(); i++)
                     row.getColumns().add("");
@@ -200,7 +203,7 @@ public class ResultListUtil {
         desc.addColumn("VALUE", false, 2);
         resList.setColumnDescriptor(desc);
 
-        java.sql.ResultSetMetaData meta = rs.getMetaData();
+        ResultSetMetaData meta = rs.getMetaData();
         int colCnt = meta.getColumnCount();
 
         int rowCnt = 0;
@@ -234,7 +237,7 @@ public class ResultListUtil {
         col1.setPosition(1);
         ColumnInfo col2 = new ColumnInfo("TEST2");
         col2.setPosition(2);
-        java.util.ArrayList<ColumnInfo> colInfoList = new java.util.ArrayList<ColumnInfo>(2);
+        ArrayList<ColumnInfo> colInfoList = new ArrayList<>(2);
         colInfoList.add(col1);
         colInfoList.add(col2);
         ColumnDescriptor desc = new ColumnDescriptor();
@@ -242,12 +245,12 @@ public class ResultListUtil {
         resList.setColumnDescriptor(desc);
         ResultRow row1 = new ResultRow();
         row1.setColumnDescriptor(desc);
-        java.util.ArrayList<String> cols = new java.util.ArrayList<String>();
+        ArrayList<String> cols = new ArrayList<>();
         cols.add("GOOD");
         cols.add("BAD");
         row1.setColumns(cols);
         ResultRow row2 = new ResultRow();
-        cols = new java.util.ArrayList<String>();
+        cols = new ArrayList<>();
         cols.add("LONG");
         cols.add("SHORT");
         row2.setColumns(cols);
@@ -408,7 +411,7 @@ public class ResultListUtil {
 
         int idx = rlist.getColumnIndex(keyColumn);
         int rows = rlist.getRows().size();
-        Map<String, Integer> keys = new TreeMap<String, Integer>();
+        Map<String, Integer> keys = new TreeMap<>();
         for (int i = 0; i < rows; i++)
             keys.put(rlist.getRows().get(i).getColumns().get(idx), 1);
 
@@ -432,7 +435,7 @@ public class ResultListUtil {
         if (keys == null || keys.length == 0 || groupByColumns == null || groupByColumns.length == 0) //we don't want to bother about the case without multiple key values
             return toJSONString(rs, qps, status, message);
 
-        Map<String, String> keyMap = new HashMap<String, String>(keys.length);
+        Map<String, String> keyMap = new HashMap<>(keys.length);
         for (int i = 0; i < keys.length; i++)
             keyMap.put(keys[i], "k" + i);
 
@@ -506,7 +509,7 @@ public class ResultListUtil {
                 grpKeyIdx[i] = rs.getColumnIndex(groupByColumns[i]);//don't expect invalid
             }
             sb.append("\"results\":[");
-            Map<String, String> valueMap = new TreeMap<String, String>();//to store values temporarily
+            Map<String, String> valueMap = new TreeMap<>();//to store values temporarily
             for (ResultRow row : rs.getRows()) {
                 for (int i = 0; i < groupByColumns.length; i++) {
                     newGrpKey[i] = row.getColumns().get(grpKeyIdx[i]);
@@ -590,7 +593,7 @@ public class ResultListUtil {
      * @return
      */
     public static String toJSONStringSubset(ResultList rs, QueryParameters qps, int status, String message, String[] subset) {
-        HashSet<String> ms = new HashSet<String>();
+        HashSet<String> ms = new HashSet<>();
         if (subset != null)
             for (int i = 0; i < subset.length; i++)
                 ms.add(subset[i]);
@@ -960,10 +963,10 @@ public class ResultListUtil {
 
     private static List<BindVariable> parseBinds(String binds, XMLInputFactory inputFactory) {
         if (binds == null) return null;
-        List<BindVariable> vars = new java.util.ArrayList<BindVariable>();
+        List<BindVariable> vars = new ArrayList<>();
         //<binds><bind name=":1" pos="1" dty="1" dtystr="VARCHAR2(2000)" maxlen="2000" csid="873" len="15">Billing Contact</bind></binds>
 
-        java.io.CharArrayReader in = new java.io.CharArrayReader(binds.toCharArray());
+        CharArrayReader in = new CharArrayReader(binds.toCharArray());
         XMLStreamReader reader = null;
         try {
             reader = inputFactory.createXMLStreamReader(in);
@@ -1036,7 +1039,7 @@ public class ResultListUtil {
                 if (binds == null || binds.size() == 0) {
                     ResultRow newRow = new ResultRow();
                     newRow.setColumnDescriptor(desc);
-                    List<String> cols = new java.util.ArrayList<String>(row.getColumns().size() + 5);
+                    List<String> cols = new ArrayList<>(row.getColumns().size() + 5);
                     for (int i = 0; i < row.getColumns().size(); i++) {
                         if (i == idx) continue;
                         cols.add(row.getColumns().get(i));
@@ -1053,7 +1056,7 @@ public class ResultListUtil {
                     for (BindVariable var : binds) {
                         ResultRow newRow = new ResultRow();
                         newRow.setColumnDescriptor(desc);
-                        List<String> cols = new java.util.ArrayList<String>(row.getColumns().size() + 5);
+                        List<String> cols = new ArrayList<>(row.getColumns().size() + 5);
                         for (int i = 0; i < row.getColumns().size(); i++) {
                             if (i == idx) continue;
                             cols.add(row.getColumns().get(i));

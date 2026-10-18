@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.io.Serializable;
 
 
 /**
@@ -23,9 +24,9 @@ import java.util.Map;
  * @author xrao
  */
 @Slf4j
-public class InstanceStates implements java.io.Serializable {
+public class InstanceStates implements Serializable {
     private static final long serialVersionUID = 1L;
-    private java.util.Date lastAccessTime;
+    private Date lastAccessTime;
     private StateSnapshot prevSnapshot = new StateSnapshot();
     private StateSnapshot currSnapshot = new StateSnapshot();
 
@@ -77,11 +78,11 @@ public class InstanceStates implements java.io.Serializable {
 
     }
 
-    synchronized public java.util.Date getLastAccessTime() {
+    synchronized public Date getLastAccessTime() {
         return lastAccessTime;
     }
 
-    synchronized public void setLastAccessTime(java.util.Date dt) {
+    synchronized public void setLastAccessTime(Date dt) {
         lastAccessTime = dt;
     }
 
@@ -101,7 +102,7 @@ public class InstanceStates implements java.io.Serializable {
         //use hard coded threshold for now
         boolean isSnapValid = this.prevSnapshot.getTimestamp() >= 0L && this.currSnapshot.getTimestamp() > this.prevSnapshot.getTimestamp();
         long interval = this.currSnapshot.getTimestamp() - this.prevSnapshot.getTimestamp();
-        Date dt = new java.util.Date(stat.getTimestamp());
+        Date dt = new Date(stat.getTimestamp());
         String alertType = null;
         String alertValue = null;
         if (isSnapValid) //need two snapshots
@@ -149,7 +150,7 @@ public class InstanceStates implements java.io.Serializable {
             } else if (swapout > thresholds.get("SWAPOUT")) {
                 alertType = "SWAPOUT";
                 alertValue = String.valueOf(swapout);
-                log.info("DEBUG_SWAPOUT, " + (new java.util.Date()) + " value: " + swapout + ", prev: " + this.prevSnapshot.getSwapout() + ", new: " + this.currSnapshot.getSwapout());
+                log.info("DEBUG_SWAPOUT, " + (new Date()) + " value: " + swapout + ", prev: " + this.prevSnapshot.getSwapout() + ", new: " + this.currSnapshot.getSwapout());
             } else if (slowCount >= thresholds.get("SLOW")) {
                 alertType = "SLOW";
                 alertValue = String.format("%.3f", slowCount);
@@ -211,7 +212,7 @@ public class InstanceStates implements java.io.Serializable {
         if (this.currSnapshot.getMetricsMap() == null
                 || this.currSnapshot.getMetricsMap().size() == 0)
             return null;
-        List<AlertEntry> alerts = new ArrayList<AlertEntry>();
+        List<AlertEntry> alerts = new ArrayList<>();
         //loop entry by entry
         for (Map.Entry<String, Float> entry : this.currSnapshot.getMetricsMap().entrySet()) {
             String alertName = entry.getKey();

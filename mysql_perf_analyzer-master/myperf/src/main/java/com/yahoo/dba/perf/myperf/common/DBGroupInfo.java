@@ -9,16 +9,18 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
+import java.io.Serializable;
+import java.util.ArrayList;
 
 /**
  * Information about a group of DB, such as a DB cluster
  *
  * @author xrao
  */
-public class DBGroupInfo implements java.io.Serializable {
+public class DBGroupInfo implements Serializable {
     private static final long serialVersionUID = 1L;
     @Getter
-    private List<DBInstanceInfo> instances = new java.util.ArrayList<DBInstanceInfo>();
+    private List<DBInstanceInfo> instances = new ArrayList<>();
     @Getter
     @Setter
     private String groupName;

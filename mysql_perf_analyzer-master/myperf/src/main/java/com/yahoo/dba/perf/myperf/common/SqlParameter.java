@@ -9,8 +9,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.io.Serializable;
 
-public class SqlParameter implements java.io.Serializable {
+public class SqlParameter implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

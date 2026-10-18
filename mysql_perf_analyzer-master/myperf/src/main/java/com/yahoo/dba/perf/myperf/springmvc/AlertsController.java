@@ -47,7 +47,7 @@ public class AlertsController extends MyPerfBaseController {
         qps = WebAppUtil.parseRequestParameter(req);
 
         AppUser appUser = retrieveAppUser(req);
-        HashSet<String> filteredGroups = new HashSet<String>();
+        HashSet<String> filteredGroups = new HashSet<>();
         boolean useFilter = false;
         if (appUser != null && appUser.isRestrictedUser()) {
             useFilter = true;
@@ -62,8 +62,8 @@ public class AlertsController extends MyPerfBaseController {
         //starting and ending dates, and their defaults. All values are in UTC, assume format "yyyy-MM-dd HH"
         String startDate = req.getParameter("start");
         String endDate = req.getParameter("end");
-        List<Integer> dbIdList = new ArrayList<Integer>();
-        Map<Integer, DBInstanceInfo> dbs = new HashMap<Integer, DBInstanceInfo>();
+        List<Integer> dbIdList = new ArrayList<>();
+        Map<Integer, DBInstanceInfo> dbs = new HashMap<>();
         do {
 
             try {

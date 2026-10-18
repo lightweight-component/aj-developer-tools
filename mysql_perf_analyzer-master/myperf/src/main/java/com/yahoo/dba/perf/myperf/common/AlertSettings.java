@@ -33,7 +33,7 @@ public class AlertSettings {
     public static final String[] COMMON_ALERTS = new String[]{"CPU", "IO", "LOADAVG", "THREAD", "REPLLAG",
             "SLOW", "CONNECT_FAILURE", "DEADLOCKS", "DISKUSAGE", "DEADLOCK", "SWAPOUT"};
 
-    private static final HashMap<String, Float> DEFAULT_THRESHOLD = new HashMap<String, Float>();
+    private static final HashMap<String, Float> DEFAULT_THRESHOLD = new HashMap<>();
 
     static {
         DEFAULT_THRESHOLD.put("CPU", CPU_THRESHOLD);
@@ -50,7 +50,7 @@ public class AlertSettings {
     }
 
     static class HostSettings {
-        private HashMap<String, Float> thresholds = new HashMap<String, Float>();
+        private HashMap<String, Float> thresholds = new HashMap<>();
         @Getter
         @Setter
         private String notificationEmails; //emails to alert if something happens
@@ -68,8 +68,8 @@ public class AlertSettings {
     }
 
     static class GroupSettings {
-        private HashMap<String, Float> groupThresholds = new HashMap<String, Float>();
-        private HashMap<String, HostSettings> hostSettings = new HashMap<String, HostSettings>();
+        private HashMap<String, Float> groupThresholds = new HashMap<>();
+        private HashMap<String, HostSettings> hostSettings = new HashMap<>();
         @Getter
         @Setter
         private String notificationEmails; //emails to alert if something happens
@@ -105,12 +105,12 @@ public class AlertSettings {
 
     }
 
-    private HashMap<String, GroupSettings> groupSettings = new HashMap<String, GroupSettings>();
+    private HashMap<String, GroupSettings> groupSettings = new HashMap<>();
     @Getter
     @Setter
     private MyPerfContext context;
     @Getter
-    private List<AlertDefinition> alertDefinitions = new ArrayList<AlertDefinition>();
+    private List<AlertDefinition> alertDefinitions = new ArrayList<>();
 
     public AlertSettings() {
 

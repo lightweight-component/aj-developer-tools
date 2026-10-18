@@ -48,7 +48,7 @@ public class ReportController extends AbstractController {
      * @return
      */
     private Map<String, String> parseURL(HttpServletRequest req) {
-        Map<String, String> reqParams = new HashMap<String, String>();
+        Map<String, String> reqParams = new HashMap<>();
         String path = req.getServletPath();
         if (path != null) {
             String[] paths = path.split("/");

@@ -14,6 +14,7 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Set;
+import java.util.ArrayList;
 
 /**
  * Used by UI to retrieve data lists
@@ -29,8 +30,7 @@ public class DatalistController extends MyPerfBaseController {
     private String jsonView;
 
     @Override
-    protected ModelAndView handleRequestImpl(HttpServletRequest req,
-                                             HttpServletResponse resp) throws Exception {
+    protected ModelAndView handleRequestImpl(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         String dataType = req.getParameter("t");
         String contentType = req.getParameter("ct");
         ModelAndView mv = null;
@@ -67,7 +67,7 @@ public class DatalistController extends MyPerfBaseController {
         if (cls != null) {
             ResultList rs = new ResultList();
             ColumnDescriptor desc = new ColumnDescriptor();
-            desc.setColumns(new java.util.ArrayList<ColumnInfo>(1));
+            desc.setColumns(new ArrayList<>(1));
             ColumnInfo col = new ColumnInfo("host");
             col.setPosition(1);
             desc.getColumns().add(col);
@@ -75,7 +75,7 @@ public class DatalistController extends MyPerfBaseController {
             for (DBInstanceInfo db : cls.getInstances()) {
                 ResultRow row = new ResultRow();
                 row.setColumnDescriptor(desc);
-                row.setColumns(new java.util.ArrayList<String>(1));
+                row.setColumns(new ArrayList<>(1));
                 row.getColumns().add(db.getHostName());
                 rs.addRow(row);
             }
@@ -91,7 +91,7 @@ public class DatalistController extends MyPerfBaseController {
         if (db != null) {
             ResultList rs = new ResultList();
             ColumnDescriptor desc = new ColumnDescriptor();
-            desc.setColumns(new java.util.ArrayList<ColumnInfo>(1));
+            desc.setColumns(new ArrayList<>(1));
             ColumnInfo col = new ColumnInfo("host");
             col.setPosition(1);
             desc.getColumns().add(col);
@@ -117,7 +117,7 @@ public class DatalistController extends MyPerfBaseController {
             rs.setColumnDescriptor(desc);
             ResultRow row = new ResultRow();
             row.setColumnDescriptor(desc);
-            row.setColumns(new java.util.ArrayList<String>(1));
+            row.setColumns(new ArrayList<>(1));
             row.getColumns().add(db.getHostName());
             row.getColumns().add(String.valueOf(db.getPort()));
             row.getColumns().add(db.getDatabaseName());

@@ -13,6 +13,7 @@ import com.yahoo.dba.perf.myperf.common.MetricsGroup;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.io.Serializable;
 
 
 /**
@@ -21,7 +22,7 @@ import java.sql.DriverManager;
  * @author xrao
  */
 @Slf4j
-public class DerbyMetricsDb extends MetricsDbBase implements java.io.Serializable, Runnable {
+public class DerbyMetricsDb extends MetricsDbBase implements Serializable, Runnable {
     private static final long serialVersionUID = 1L;
 
 

@@ -64,7 +64,7 @@ public class AutoScanner {
     private MonitorTask monitorTask = null;
 
     //store data. the first key is dbgroupname;dbhost, the second key is metrics group name
-    private HashMap<String, Map<String, MetricsBuffer>> buffer = new HashMap<String, Map<String, MetricsBuffer>>();
+    private HashMap<String, Map<String, MetricsBuffer>> buffer = new HashMap<>();
 
     private boolean firstScan = true;//we just started
     private long lastScanTime = System.currentTimeMillis();

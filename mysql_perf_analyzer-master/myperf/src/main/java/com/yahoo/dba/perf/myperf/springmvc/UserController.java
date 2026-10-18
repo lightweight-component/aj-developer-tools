@@ -489,7 +489,7 @@ public class UserController extends MyPerfBaseController {
         rList.setColumnDescriptor(desc);
         if (au != null) {
             ResultRow row = new ResultRow();
-            ArrayList<String> cols = new ArrayList<String>();
+            ArrayList<String> cols = new ArrayList<>();
             cols.add(au.getName());
             cols.add(au.getEmail());
             cols.add(String.valueOf(au.getUserprivilege()));
@@ -581,8 +581,8 @@ public class UserController extends MyPerfBaseController {
     private void appendUserListToModel(HttpServletRequest req, ModelAndView mv) {
         AppUser appUser = retrieveAppUser(req);
         if (appUser == null || !appUser.isAdminUser()) return;
-        List<String> allUsers = new ArrayList<String>();
-        List<String> newUsers = new ArrayList<String>();
+        List<String> allUsers = new ArrayList<>();
+        List<String> newUsers = new ArrayList<>();
         List<AppUser> userList = this.frameworkContext.getMetaDb().retrieveAllUsers();
         for (AppUser u : userList) {
             if (!u.getName().equalsIgnoreCase(appUser.getName()))

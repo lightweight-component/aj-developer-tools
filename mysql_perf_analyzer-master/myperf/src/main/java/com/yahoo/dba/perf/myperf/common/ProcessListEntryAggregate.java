@@ -9,13 +9,16 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Map;
+import java.io.Serializable;
+import java.security.MessageDigest;
+import java.util.Comparator;
 
 /**
  * The default compartor is sorted by total_time_sec
  *
  * @author xrao
  */
-public class ProcessListEntryAggregate implements java.io.Serializable, Comparable<ProcessListEntryAggregate> {
+public class ProcessListEntryAggregate implements Serializable, Comparable<ProcessListEntryAggregate> {
     private static final long serialVersionUID = 1L;
 
     static final char HEXES[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
@@ -35,7 +38,7 @@ public class ProcessListEntryAggregate implements java.io.Serializable, Comparab
     @Setter
     private String checksum;
 
-    public static class SortByCount implements java.util.Comparator<ProcessListEntryAggregate> {
+    public static class SortByCount implements Comparator<ProcessListEntryAggregate> {
 
         @Override
         public int compare(ProcessListEntryAggregate obj1,
@@ -101,7 +104,7 @@ public class ProcessListEntryAggregate implements java.io.Serializable, Comparab
     public static String generateDigest(String str) {
         if (str == null || str.isEmpty()) return "00000000";
         try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA1");
+            MessageDigest md = MessageDigest.getInstance("SHA1");
             md.update(str.getBytes());
             byte[] digest = md.digest();
             StringBuilder sb = new StringBuilder();

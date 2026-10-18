@@ -9,13 +9,14 @@ import lombok.Getter;
 import lombok.Setter;
 
 import com.yahoo.dba.perf.myperf.meta.KeyTool;
+import java.io.Serializable;
 
 /**
  * Database access user name and password
  *
  * @author xrao
  */
-public class DBCredential implements java.io.Serializable {
+public class DBCredential implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

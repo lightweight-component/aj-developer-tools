@@ -8,13 +8,14 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
+import java.io.Serializable;
 
 /**
  * Information about an individual database server
  *
  * @author xrao
  */
-public class DBInstanceInfo implements java.io.Serializable {
+public class DBInstanceInfo implements Serializable {
     private static final long serialVersionUID = 1L;
     private static final int MAX_16BIT_UINT = 65536;
 

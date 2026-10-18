@@ -11,6 +11,7 @@ import com.yahoo.dba.perf.myperf.common.*;
 
 import java.io.File;
 import java.util.*;
+import java.text.SimpleDateFormat;
 
 /**
  * Handle metrics retention
@@ -49,7 +50,7 @@ public class MetricsRetentionTask implements Runnable {
             return;
         }
         //get all dbids
-        List<Integer> ids = new ArrayList<Integer>();
+        List<Integer> ids = new ArrayList<>();
         if (this.dbidToPurge == null) {
             for (Map.Entry<String, DBGroupInfo> e : context.getDbInfoManager().getClusters().entrySet()) {
                 DBGroupInfo g = e.getValue();
@@ -66,10 +67,10 @@ public class MetricsRetentionTask implements Runnable {
         Date dt = c.getTime();
 
         //now get current timestamp
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         long endDate = Long.parseLong(sdf.format(dt));
-        List<MetricsGroup> mgs = new ArrayList<MetricsGroup>();
+        List<MetricsGroup> mgs = new ArrayList<>();
 
         String[] groupNames = this.context.getMetricsDef().getGroupNames();
         for (String grpName : groupNames) {
@@ -99,7 +100,7 @@ public class MetricsRetentionTask implements Runnable {
                     this.context.getMetricDb().purge(g.getSinkTableName(), dbid, endDate);
             }
         }
-        java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyyMMdd");
+        SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         purgeAlertReports(Integer.parseInt(sdf2.format(dt)));
         log.info("Ended metrics purge job");

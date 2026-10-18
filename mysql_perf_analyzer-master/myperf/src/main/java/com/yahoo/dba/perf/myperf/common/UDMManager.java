@@ -15,6 +15,8 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.InputStream;
 import java.util.*;
+import java.io.FilenameFilter;
+import java.io.Serializable;
 
 /**
  * Manage user defined metrics and db association
@@ -22,13 +24,13 @@ import java.util.*;
  * @author xrao
  */
 @Slf4j
-public class UDMManager implements java.io.Serializable {
+public class UDMManager implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     //UDM definition. key is the name
     @Getter
-    private Map<String, UserDefinedMetrics> udms = java.util.Collections.synchronizedSortedMap(new java.util.TreeMap<String, UserDefinedMetrics>());
+    private Map<String, UserDefinedMetrics> udms = Collections.synchronizedSortedMap(new TreeMap<>());
     private Object udmUpdateLock = new Object();
     @Getter
     private MetricsSubscribers metricsSubscriptions = new MetricsSubscribers();
@@ -36,7 +38,7 @@ public class UDMManager implements java.io.Serializable {
 
     //User defined alerts
     @Getter
-    private Map<String, AlertDefinition> alerts = java.util.Collections.synchronizedSortedMap(new java.util.TreeMap<String, AlertDefinition>());
+    private Map<String, AlertDefinition> alerts = Collections.synchronizedSortedMap(new TreeMap<>());
     private Object alertDefUpdateLock = new Object();
     @Getter
     private AlertSubscribers alertSubscriptions = new AlertSubscribers();
@@ -52,7 +54,7 @@ public class UDMManager implements java.io.Serializable {
 
     //mapping to builtin metrics
     //for each builtin MetricsGroup, possibly we take advantage of the same query
-    private Map<String, List<String>> builtinMapping = java.util.Collections.synchronizedMap(new HashMap<String, List<String>>());
+    private Map<String, List<String>> builtinMapping = Collections.synchronizedMap(new HashMap<>());
 
     public UDMManager() {
 
@@ -95,10 +97,10 @@ public class UDMManager implements java.io.Serializable {
         List<String> subList = this.metricsSubscriptions.getSubscribedUDMs(group, host);
         if (subList == null || subList.size() == 0)
             return null;
-        Set<String> mlist = new HashSet<String>();
+        Set<String> mlist = new HashSet<>();
         for (String s : this.builtinMapping.get(metricsGroup))
             mlist.add(s);
-        List<String> outList = new ArrayList<String>(mlist.size());
+        List<String> outList = new ArrayList<>(mlist.size());
         for (String s : subList) {
             if (mlist.contains(s))
                 outList.add(s);
@@ -115,7 +117,7 @@ public class UDMManager implements java.io.Serializable {
      * @return
      */
     public List<AlertSubscribers.Subscription> getAlertsAttachedToBuiltinMetrics(String metricsGroup, String group, String host) {
-        List<AlertSubscribers.Subscription> attachedList = new ArrayList<AlertSubscribers.Subscription>();
+        List<AlertSubscribers.Subscription> attachedList = new ArrayList<>();
         List<AlertSubscribers.Subscription> subs = this.getAlertSubscriptions().getSubscriptions(group, host);
         if (subs != null && subs.size() > 0) {
             for (AlertSubscribers.Subscription sub : subs) {
@@ -144,7 +146,7 @@ public class UDMManager implements java.io.Serializable {
      * @return
      */
     public List<AlertSubscribers.Subscription> getAlertsAttachedToGlobalStatus(String group, String host) {
-        List<AlertSubscribers.Subscription> attachedList = new ArrayList<AlertSubscribers.Subscription>();
+        List<AlertSubscribers.Subscription> attachedList = new ArrayList<>();
         List<AlertSubscribers.Subscription> subs = this.getAlertSubscriptions().getSubscriptions(group, host);
         if (subs != null && subs.size() > 0) {
             for (AlertSubscribers.Subscription sub : subs) {
@@ -199,7 +201,7 @@ public class UDMManager implements java.io.Serializable {
             return;
         }
 
-        File[] udmFiles = root.listFiles(new java.io.FilenameFilter() {
+        File[] udmFiles = root.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
                 if (name != null && name.endsWith(".json") && !name.equals(UDM_DB_FILE))
@@ -226,7 +228,7 @@ public class UDMManager implements java.io.Serializable {
                     String src = udm.getSource();
                     if (!"SQL".equalsIgnoreCase(src)) {
                         if (!this.builtinMapping.containsKey(src))
-                            this.builtinMapping.put(src, new ArrayList<String>());
+                            this.builtinMapping.put(src, new ArrayList<>());
                         this.builtinMapping.get(src).add(udm.getName());
                     }
                 }
@@ -248,7 +250,7 @@ public class UDMManager implements java.io.Serializable {
             return;
         }
 
-        File[] alertFiles = root.listFiles(new java.io.FilenameFilter() {
+        File[] alertFiles = root.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
                 if (name != null && name.endsWith(".json"))
@@ -350,7 +352,7 @@ public class UDMManager implements java.io.Serializable {
             String src = udm.getSource();
             if (!"SQL".equalsIgnoreCase(src)) {
                 if (!this.builtinMapping.containsKey(src))
-                    this.builtinMapping.put(src, new ArrayList<String>());
+                    this.builtinMapping.put(src, new ArrayList<>());
                 this.builtinMapping.get(src).add(udm.getName());
             }
         }

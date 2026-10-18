@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.text.SimpleDateFormat;
 
 /**
  * A thread runner executing the real metrics gathering tasks
@@ -41,7 +42,7 @@ public class MetricScannerRunner implements Runnable {
     private int snap_id;
     private AtomicBoolean running = new AtomicBoolean();
 
-    protected java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
+    protected SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
 
     public MetricScannerRunner(MyPerfContext frameworkContext,
                                LinkedBlockingQueue<DBInstanceInfo> dbqueue,
@@ -87,7 +88,7 @@ public class MetricScannerRunner implements Runnable {
     }
 
     private Map<String, Float> getAlertThreshold(DBInstanceInfo dbinfo) {
-        HashMap<String, Float> thresholds = new HashMap<String, Float>(AlertSettings.COMMON_ALERTS.length);
+        HashMap<String, Float> thresholds = new HashMap<>(AlertSettings.COMMON_ALERTS.length);
         for (String alertType : AlertSettings.COMMON_ALERTS)
             thresholds.put(alertType, this.frameworkContext
                     .getAlertSettings()
@@ -97,7 +98,7 @@ public class MetricScannerRunner implements Runnable {
 
     private void reportOffline(DBInstanceInfo dbinfo) {
         try {
-            java.util.Date dt = new java.util.Date();
+            Date dt = new Date();
             if (dbinfo.isAlertEnabled() && this.frameworkContext.getInstanceStatesManager().getStates(dbinfo.getDbid()).reportOffline(true, dt)) {
                 AlertEntry alert = new AlertEntry(dt.getTime(), "OFFLINE", null, dbinfo.getDbGroupName(), dbinfo.getHostName());
                 this.frameworkContext.getAutoScanner().getMetricDb().addNewAlert(Long.parseLong(sdf.format(dt)), dbinfo.getDbid(), "OFFLINE", "OFFLINE");
@@ -116,7 +117,7 @@ public class MetricScannerRunner implements Runnable {
             return;
         }
         try {
-            java.util.Date dt = new java.util.Date();
+            Date dt = new Date();
             if (dbinfo.isAlertEnabled()
                     && this.frameworkContext.getInstanceStatesManager().getStates(
                     dbinfo.getDbid()).reportUserAlert(dt, "DISKUSAGE", diskMount + " " + String.valueOf(value) + "%")) {
@@ -161,7 +162,7 @@ public class MetricScannerRunner implements Runnable {
                 Map<String, List<SNMPClient.SNMPTriple>> diskStats = snmpClient.getMultiDiskData();
                 long ts2 = System.currentTimeMillis();
                 for (Map.Entry<String, List<SNMPClient.SNMPTriple>> entry : diskStats.entrySet()) {
-                    Map<String, String> snmpRes = new HashMap<String, String>();
+                    Map<String, String> snmpRes = new HashMap<>();
                     for (SNMPClient.SNMPTriple e : entry.getValue()) {
                         if (entry.getKey().equals(e.value)) continue;
                         try {
@@ -204,7 +205,7 @@ public class MetricScannerRunner implements Runnable {
                             || "Physical memory".equals(key) || "/dev/shm".equals(key)
                             || "Swap space".equals(key) || "Virtual memory".endsWith(key))
                         continue;
-                    Map<String, String> snmpRes = new HashMap<String, String>();
+                    Map<String, String> snmpRes = new HashMap<>();
                     long diskUsed = 0L;
                     long diskSize = 0L;
                     for (SNMPClient.SNMPTriple e : entry.getValue()) {
@@ -253,7 +254,7 @@ public class MetricScannerRunner implements Runnable {
                 if (diskStats != null && diskStats.size() > 0) {
                     for (Map.Entry<String, List<SNMPClient.SNMPTriple>> entry : diskStats.entrySet()) {
                         if (entry.getValue().size() == 0) continue;
-                        Map<String, String> snmpRes = new HashMap<String, String>();
+                        Map<String, String> snmpRes = new HashMap<>();
                         for (SNMPClient.SNMPTriple e : entry.getValue()) {
                             if (entry.getKey().equals(e.value)) continue;
                             try {
@@ -368,7 +369,7 @@ public class MetricScannerRunner implements Runnable {
             rs = mp.process(rs);
 
             long ts2 = System.currentTimeMillis();
-            HashMap<String, String> resMap = new HashMap<String, String>(rs.getRows().size());
+            HashMap<String, String> resMap = new HashMap<>(rs.getRows().size());
             for (ResultRow row : rs.getRows()) {
                 if (row.getColumns() == null || row.getColumns().size() < 2) continue;//skip null
                 resMap.put(row.getColumns().get(0), row.getColumns().get(1));
@@ -433,7 +434,7 @@ public class MetricScannerRunner implements Runnable {
             }
             try {
                 byte[] buf = new byte[28];
-                java.nio.ByteBuffer buf2 = java.nio.ByteBuffer.wrap(buf);
+                ByteBuffer buf2 = ByteBuffer.wrap(buf);
                 int pos = 0;
                 buf2.putInt(pos, scanData.dbinfo.getDbid());
                 pos += 4;
@@ -585,7 +586,7 @@ public class MetricScannerRunner implements Runnable {
                 storeKVTabularData(scanData, mg, kvEntry.getKey(), kvEntry.getValue(), (int) (System.currentTimeMillis() - q_startTime));
             }
         }
-        java.util.Date dt = new java.util.Date();
+        Date dt = new Date();
         this.frameworkContext.getDbInfoManager().updateLastScanTime(scanData.dbinfo.getDbGroupName(), scanData.dbinfo.getHostName(), dt);
         this.frameworkContext.getInstanceStatesManager().getStates(scanData.dbinfo.getDbid()).setLastAccessTime(dt);
     }
@@ -707,8 +708,8 @@ public class MetricScannerRunner implements Runnable {
             {
                 InstanceStates ist = this.frameworkContext.getInstanceStatesManager().getStates(dbinfo.getDbid());
                 if (ist != null) {
-                    java.util.Date lastAlertTime = ist.getLastAlertTime();
-                    java.util.Date lastAlertEndTime = ist.getLastAlertEndTime();
+                    Date lastAlertTime = ist.getLastAlertTime();
+                    Date lastAlertEndTime = ist.getLastAlertEndTime();
                     String lastAlertType = ist.getLastAlertType();
 
                     ist.update(scanData.stateSnap, this.getAlertThreshold(dbinfo));
@@ -742,7 +743,7 @@ public class MetricScannerRunner implements Runnable {
                             ist.resetNotification();
                         }
                     } else if (scanData.hasSnapAlert) {
-                        ist.updateAlert(false, new java.util.Date(scanData.startTimestamp), scanData.snapAlertType, scanData.snapAlertValue, false);
+                        ist.updateAlert(false, new Date(scanData.startTimestamp), scanData.snapAlertType, scanData.snapAlertValue, false);
                     }
                     if (ist.getLastAlertTime() != null && ist.getLastAlertEndTime() == null) {
                         //if IO, and it is not current one, skip it unless certain minutes have passed

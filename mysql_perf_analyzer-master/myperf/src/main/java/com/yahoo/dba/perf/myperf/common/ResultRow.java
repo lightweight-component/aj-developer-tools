@@ -7,8 +7,11 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ResultRow implements java.io.Serializable {
+public class ResultRow implements Serializable {
     private static final long serialVersionUID = 2131095887594423404L;
 
     @Getter
@@ -16,7 +19,7 @@ public class ResultRow implements java.io.Serializable {
     private ColumnDescriptor columnDescriptor;
     @Getter
     @Setter
-    private java.util.List<String> columns;//we only need string value for display
+    private List<String> columns;//we only need string value for display
 
     public ResultRow() {
 
@@ -31,7 +34,7 @@ public class ResultRow implements java.io.Serializable {
      */
     public void addColumn(String s) {
         if (this.columns == null)
-            this.columns = new java.util.ArrayList<String>();
+            this.columns = new ArrayList<>();
         this.columns.add(s);
     }
 }

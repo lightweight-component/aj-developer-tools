@@ -22,7 +22,7 @@ public class TableMetaProcessor implements CustomQueryProcessor {
     @Override
     public void queryMultiple(MyPerfContext context, DBInstanceInfo dbinfo, String appUser,
                               DBConnectionWrapper connWrapper, QueryParameters qps, Map<String, ResultList> rListMap)
-            throws java.sql.SQLException {
+            throws SQLException {
         for (int i = 0; i < TBL_QUERIES.length; i++) {
             QueryParameters qps2 = new QueryParameters();
             qps2.setSql(TBL_QUERIES[i]);

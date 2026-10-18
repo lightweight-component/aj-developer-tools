@@ -8,6 +8,7 @@ package com.yahoo.dba.perf.myperf.common;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Writer;
+import java.io.OutputStreamWriter;
 
 @Slf4j
 public class MailUtil {
@@ -29,7 +30,7 @@ public class MailUtil {
         String[] cmd = {mailCommand, "-s", subject, receiver};
         try {
             Process p = Runtime.getRuntime().exec(cmd);
-            Writer w = new java.io.OutputStreamWriter(p.getOutputStream());
+            Writer w = new OutputStreamWriter(p.getOutputStream());
             w.append(msg);
             w.flush();
             w.close();

@@ -15,22 +15,23 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.sql.SQLException;
 import java.util.*;
+import com.yahoo.dba.perf.myperf.snmp.SNMPQueryProcessor;
 
 @Slf4j
 public class QueryController extends MyPerfBaseController {
     private static Map<String, CustomQueryProcessor> CUSTOMER_PROCESSOR
-            = new HashMap<String, CustomQueryProcessor>();
+            = new HashMap<>();
 
     private static Map<String, PostQueryResultProcessor> POST_PROCESSOR
-            = new HashMap<String, PostQueryResultProcessor>();
+            = new HashMap<>();
 
     static {
         //current implementation requires the customized processor to be specified in sql.xml
         CUSTOMER_PROCESSOR.put("TableMetaProcessor", new TableMetaProcessor());
-        CUSTOMER_PROCESSOR.put("SNMPQueryProcessor", new com.yahoo.dba.perf.myperf.snmp.SNMPQueryProcessor());
-        CUSTOMER_PROCESSOR.put("ReplLagQueryProcessor", new com.yahoo.dba.perf.myperf.db.ReplLagQueryProcessor());
-        CUSTOMER_PROCESSOR.put("ReplShowProcessor", new com.yahoo.dba.perf.myperf.db.ReplShowProcessor());
-        CUSTOMER_PROCESSOR.put("MySQLStatusQueryProcessor", new com.yahoo.dba.perf.myperf.db.MySQLStatusQueryProcessor());
+        CUSTOMER_PROCESSOR.put("SNMPQueryProcessor", new SNMPQueryProcessor());
+        CUSTOMER_PROCESSOR.put("ReplLagQueryProcessor", new ReplLagQueryProcessor());
+        CUSTOMER_PROCESSOR.put("ReplShowProcessor", new ReplShowProcessor());
+        CUSTOMER_PROCESSOR.put("MySQLStatusQueryProcessor", new MySQLStatusQueryProcessor());
 
         POST_PROCESSOR.put("mysql_innodb_mutex", new InnoDbMutexPostProccessor());
     }
@@ -96,7 +97,7 @@ public class QueryController extends MyPerfBaseController {
             {
                 CustomQueryProcessor prc = CUSTOMER_PROCESSOR.get(sql.getQueryProcessor());
                 if (prc.isMultiple()) {
-                    listMap = new LinkedHashMap<String, ResultList>();
+                    listMap = new LinkedHashMap<>();
                     prc.queryMultiple(frameworkContext, dbinfo, findUserFromRequest(req), connWrapper, qps, listMap);
                 } else
                     rList = prc.querySingle(this.frameworkContext, dbinfo, findUserFromRequest(req), connWrapper, qps);
@@ -158,7 +159,7 @@ public class QueryController extends MyPerfBaseController {
 
             String[] filtered_vals = req.getParameterValues("rfv");
             if (filtered_vals == null || filtered_vals.length == 0) return rList;
-            Set<String> filteredSet = new HashSet<String>(filtered_vals.length);
+            Set<String> filteredSet = new HashSet<>(filtered_vals.length);
             for (String s : filtered_vals) filteredSet.add(s.toLowerCase());
 
             ResultList newList = new ResultList();

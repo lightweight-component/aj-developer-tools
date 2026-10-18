@@ -12,6 +12,10 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import java.io.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import javax.crypto.BadPaddingException;
+import javax.crypto.NoSuchPaddingException;
 
 @Slf4j
 public class KeyTool {
@@ -79,9 +83,9 @@ public class KeyTool {
                 ecipher.init(Cipher.ENCRYPT_MODE, key);
                 dcipher.init(Cipher.DECRYPT_MODE, key);
                 maskFileReadonly(".des");
-            } catch (javax.crypto.NoSuchPaddingException e) {
-            } catch (java.security.NoSuchAlgorithmException e) {
-            } catch (java.security.InvalidKeyException e) {
+            } catch (NoSuchPaddingException e) {
+            } catch (NoSuchAlgorithmException e) {
+            } catch (InvalidKeyException e) {
             }
         }
 
@@ -95,10 +99,10 @@ public class KeyTool {
 
                 // Encode bytes to base64 to get a string
                 return tob64(enc);
-            } catch (javax.crypto.BadPaddingException e) {
+            } catch (BadPaddingException e) {
             } catch (IllegalBlockSizeException e) {
             } catch (UnsupportedEncodingException e) {
-            } catch (java.io.IOException e) {
+            } catch (IOException e) {
             }
             return null;
         }
@@ -113,10 +117,10 @@ public class KeyTool {
 
                 // Decode using utf-8
                 return new String(utf8, "UTF8");
-            } catch (javax.crypto.BadPaddingException e) {
+            } catch (BadPaddingException e) {
             } catch (IllegalBlockSizeException e) {
             } catch (UnsupportedEncodingException e) {
-            } catch (java.io.IOException e) {
+            } catch (IOException e) {
             }
             return null;
         }

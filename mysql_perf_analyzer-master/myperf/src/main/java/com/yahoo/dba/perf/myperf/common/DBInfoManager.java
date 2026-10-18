@@ -14,6 +14,7 @@ import com.yahoo.dba.perf.myperf.meta.MetaDB;
 import com.yahoo.dba.perf.myperf.metrics.MetricsDbBase;
 
 import java.util.*;
+import java.io.Serializable;
 
 
 /**
@@ -22,16 +23,16 @@ import java.util.*;
  * @author xrao
  */
 @Slf4j
-public class DBInfoManager implements java.io.Serializable {
+public class DBInfoManager implements Serializable {
     private static final long serialVersionUID = 1L;
     private MetaDB projectDb;//note we store user cred here
     @Setter
     @Getter
     private MetricsDbBase metricsDb;//db def
 
-    private Map<String, DBGroupInfo> groups = new java.util.TreeMap<String, DBGroupInfo>();
-    private Map<String, MyDatabases> mydbs = new java.util.HashMap<String, MyDatabases>();
-    private HashMap<String, java.util.Date> lastScanTime = new HashMap<String, java.util.Date>();
+    private Map<String, DBGroupInfo> groups = new TreeMap<>();
+    private Map<String, MyDatabases> mydbs = new HashMap<>();
+    private HashMap<String, Date> lastScanTime = new HashMap<>();
 
     public DBInfoManager() {
     }
@@ -85,8 +86,8 @@ public class DBInfoManager implements java.io.Serializable {
         this.projectDb.removeDbGroup(groupName);
     }
 
-    synchronized public java.util.List<String> listGroupNames() {
-        java.util.ArrayList<String> clist = new java.util.ArrayList<String>(this.groups.size());
+    synchronized public List<String> listGroupNames() {
+        ArrayList<String> clist = new ArrayList<>(this.groups.size());
         for (DBGroupInfo c : this.groups.values()) {
             clist.add(c.getGroupName());
         }
@@ -103,7 +104,7 @@ public class DBInfoManager implements java.io.Serializable {
     synchronized public boolean init() {
         log.info("Loading stored db info");
         mydbs.clear();//refill
-        java.util.List<DBInstanceInfo> dbList = null;
+        List<DBInstanceInfo> dbList = null;
         if (this.metricsDb != null) {
             dbList = this.metricsDb.SearchDbInfo(null);
             log.info("Find " + dbList.size() + " db info");
@@ -152,7 +153,7 @@ public class DBInfoManager implements java.io.Serializable {
      */
     public List<String> listDbsByUserInfo(String user, boolean restricted) {
         Set<String> mydb = this.getMyDatabases(user, restricted).getMyDbList();
-        List<String> alldb = new ArrayList<String>(this.groups.size());
+        List<String> alldb = new ArrayList<>(this.groups.size());
 
         synchronized (this) {
             for (String db : mydb) {
@@ -167,13 +168,13 @@ public class DBInfoManager implements java.io.Serializable {
         return alldb;
     }
 
-    public void updateLastScanTime(String dbgroup, String dbhost, java.util.Date dt) {
+    public void updateLastScanTime(String dbgroup, String dbhost, Date dt) {
         synchronized (this.lastScanTime) {
             this.lastScanTime.put(dbgroup + ":" + dbhost, dt);
         }
     }
 
-    public java.util.Date getLastAccessDate(String dbgroup, String dbhost) {
+    public Date getLastAccessDate(String dbgroup, String dbhost) {
         synchronized (this.lastScanTime) {
             return this.lastScanTime.get(dbgroup + ":" + dbhost);
         }
@@ -205,10 +206,10 @@ public class DBInfoManager implements java.io.Serializable {
         return false;
     }
 
-    public java.util.List<DBInstanceInfo> SearchDbInfo(String keyword) {
+    public List<DBInstanceInfo> SearchDbInfo(String keyword) {
         if (this.metricsDb != null)
             return this.metricsDb.SearchDbInfo(keyword);
-        return new java.util.ArrayList<DBInstanceInfo>();
+        return new ArrayList<>();
 
     }
 

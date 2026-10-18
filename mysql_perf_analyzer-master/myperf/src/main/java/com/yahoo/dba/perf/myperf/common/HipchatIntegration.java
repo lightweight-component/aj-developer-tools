@@ -7,6 +7,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.HttpURLConnection;
 import java.net.UnknownHostException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.URL;
 
 /**
  * Add Hipchat integration. So far it is only for alert notification purpose.
@@ -34,7 +38,7 @@ public class HipchatIntegration {
     public void init(MyPerfContext ctx) {
         this.enabled = false;
         try {
-            this.hostname = java.net.InetAddress.getLocalHost().getHostName();
+            this.hostname = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
             log.warn("Failed to get local host name", e);
         }
@@ -61,13 +65,13 @@ public class HipchatIntegration {
             log.info("Hichat is not enabled, ignore.");
             return false;
         }
-        java.io.OutputStream out = null;
-        java.io.InputStream in = null;
+        OutputStream out = null;
+        InputStream in = null;
         String url = this.hipchatURL + "auth_token=" + this.authToken;
         try {
 
-            java.net.URL hipchatUrl = new java.net.URL(url);
-            java.net.HttpURLConnection conn = HttpURLConnection.class.cast(hipchatUrl.openConnection());
+            URL hipchatUrl = new URL(url);
+            HttpURLConnection conn = HttpURLConnection.class.cast(hipchatUrl.openConnection());
             conn.setDoOutput(true);
             conn.addRequestProperty("Content-Type", "application/json");
             String jsonMsg = this.constructJsonMessage("Source: " + this.hostname + "\n" + msg);

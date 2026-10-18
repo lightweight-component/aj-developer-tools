@@ -15,8 +15,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.util.LinkedHashMap;
 
-public class AlertReport implements java.io.Serializable {
+public class AlertReport implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Getter
@@ -40,7 +43,7 @@ public class AlertReport implements java.io.Serializable {
     private ProcessListSummary processListSummary;
     @Getter
     @Setter
-    private java.util.LinkedHashMap<String, String> replicationSummary;
+    private LinkedHashMap<String, String> replicationSummary;
     //user defined alerts, the key is alert name
     @Getter
     @Setter
@@ -59,8 +62,8 @@ public class AlertReport implements java.io.Serializable {
     }
 
     public void saveAsText() {
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
-        java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyyMMdd");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+        SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMdd");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         sdf2.setTimeZone(TimeZone.getTimeZone("UTC"));
         File dest = null;

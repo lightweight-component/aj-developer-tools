@@ -8,6 +8,7 @@ package com.yahoo.dba.perf.myperf.common;
 import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
+import java.text.SimpleDateFormat;
 
 /**
  * Some common utility functions are consolidated here for reuse purpose
@@ -92,7 +93,7 @@ public class CommonUtils {
      * @return If failed, return empty string ""
      */
     public static String formatTimeFromTimestamp(long ts, String fmt) {
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(fmt);
+        SimpleDateFormat sdf = new SimpleDateFormat(fmt);
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         try {
             return sdf.format(new Date(ts));

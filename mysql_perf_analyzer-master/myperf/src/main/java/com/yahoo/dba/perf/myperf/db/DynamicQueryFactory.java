@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DynamicQueryFactory {
-    private static Map<String, DynamicQuery> queryMap = new HashMap<String, DynamicQuery>();
+    private static Map<String, DynamicQuery> queryMap = new HashMap<>();
 
 
     static {

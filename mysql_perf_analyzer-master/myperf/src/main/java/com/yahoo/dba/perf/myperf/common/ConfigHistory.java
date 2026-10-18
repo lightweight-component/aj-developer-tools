@@ -19,10 +19,10 @@ import java.util.*;
  *
  * @author xrao
  */
-public class ConfigHistory implements java.io.Serializable {
+public class ConfigHistory implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private static Map<String, Integer> EXCLUDE_ENTRIES = new HashMap<String, Integer>();
+    private static Map<String, Integer> EXCLUDE_ENTRIES = new HashMap<>();
 
     @Getter
     @Setter
@@ -42,7 +42,7 @@ public class ConfigHistory implements java.io.Serializable {
     }
 
     public ConfigHistory() {
-        changes = new ArrayList<ConfigBlock>();
+        changes = new ArrayList<>();
     }
 
     public void addChange(ConfigBlock change) {
@@ -213,7 +213,7 @@ public class ConfigHistory implements java.io.Serializable {
         if (prev == null)//no change history yet
             prev = this.startingConfig;
 
-        Map<String, String> diffMap = new TreeMap<String, String>();
+        Map<String, String> diffMap = new TreeMap<>();
         Map<String, String> prevMap = prev.getVariables();
         Map<String, String> lastMap = last.getVariables();
         for (Map.Entry<String, String> e : lastMap.entrySet()) {

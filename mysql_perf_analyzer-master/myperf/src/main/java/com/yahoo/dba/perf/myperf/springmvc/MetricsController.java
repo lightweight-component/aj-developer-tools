@@ -34,7 +34,7 @@ public class MetricsController extends MyPerfBaseController {
      * @return
      */
     private Map<String, String> parseURL(HttpServletRequest req) {
-        Map<String, String> reqParams = new HashMap<String, String>();
+        Map<String, String> reqParams = new HashMap<>();
         String path = req.getServletPath();
         if (path != null) {
             String[] paths = path.split("/");
@@ -115,7 +115,7 @@ public class MetricsController extends MyPerfBaseController {
             String endTime = pathParameters.get(Constants.URL_PATH_END_TS);
             String[] ms = m.split(",");
             String[] dateRange = MyPerfBaseController.getDateRange(startTime, endTime);
-            HashMap<String, HashMap<String, ArrayList<String>>> metricsByGroup = new HashMap<String, HashMap<String, ArrayList<String>>>();
+            HashMap<String, HashMap<String, ArrayList<String>>> metricsByGroup = new HashMap<>();
             for (String s : ms) {   //all name should be in the form of {group}.{subgrp}.{metric name}
                 String[] cmp = s.split("\\."); //retrieve name component
                 if (cmp.length != 3) continue; //invalid name, ignore
@@ -127,10 +127,10 @@ public class MetricsController extends MyPerfBaseController {
                 if ("UDM".equals(mg))//need special processing for UDM
                     mg = "UDM_" + subGrpName;
                 if (!metricsByGroup.containsKey(mg))
-                    metricsByGroup.put(mg, new HashMap<String, ArrayList<String>>());
+                    metricsByGroup.put(mg, new HashMap<>());
                 HashMap<String, ArrayList<String>> subGrp = metricsByGroup.get(mg);
                 if (!subGrp.containsKey(subGrpName))
-                    subGrp.put(subGrpName, new ArrayList<String>());
+                    subGrp.put(subGrpName, new ArrayList<>());
                 subGrp.get(subGrpName).add(metricName);
             }
 
@@ -200,7 +200,7 @@ public class MetricsController extends MyPerfBaseController {
         } else {
 
             if (rlist != null && rlist.getCustomObjects() != null) {
-                HashMap<String, String> metricsMapping = new HashMap<String, String>(rlist.getCustomObjects().size());
+                HashMap<String, String> metricsMapping = new HashMap<>(rlist.getCustomObjects().size());
                 int idx = 0;
                 for (CustomResultObject obj : rlist.getCustomObjects().values()) {
                     if (obj instanceof MetricsResultObject) {
@@ -346,7 +346,7 @@ public class MetricsController extends MyPerfBaseController {
                 if (tmpList == null) continue;
                 Metric m = mg.getMetricByName(mname).copy();
                 m.setName(metricFullName);
-                List<Metric> mtrs = new java.util.ArrayList<Metric>(1);
+                List<Metric> mtrs = new ArrayList<>(1);
                 mtrs.add(m);
                 MetricsResultObject mrs = new MetricsResultObject();
                 mrs.setMetrics(mtrs);

@@ -7,13 +7,14 @@ package com.yahoo.dba.perf.myperf.common;
 
 import lombok.Getter;
 import lombok.Setter;
+import java.io.Serializable;
 
 /**
  * Place holder for alert information
  *
  * @author xrao
  */
-public class AlertEntry implements java.io.Serializable {
+public class AlertEntry implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Getter

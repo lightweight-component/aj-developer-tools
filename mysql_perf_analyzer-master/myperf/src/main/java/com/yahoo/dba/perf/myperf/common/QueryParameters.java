@@ -11,6 +11,7 @@ import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Wrap query parameters
@@ -35,7 +36,7 @@ public class QueryParameters implements Serializable {
     private int targetInstance = 0;//0 is invalid number, meaning no target instance is passed. If it is passed, it will be in higher priority than the one derived from host
 
     @Getter
-    private Map<String, String> sqlParams = new java.util.TreeMap<String, String>();
+    private Map<String, String> sqlParams = new TreeMap<>();
     //parameter in p_1, p_2,..., name convention
 
     @Getter

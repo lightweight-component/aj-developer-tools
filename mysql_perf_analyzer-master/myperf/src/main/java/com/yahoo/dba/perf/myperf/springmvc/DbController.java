@@ -262,7 +262,7 @@ public class DbController extends MyPerfBaseController {
 
             AppUser appUser = retrieveAppUser(request);
             if (appUser == null || !appUser.isAdminUser()) return mv;
-            List<String> restrictedUsers = new ArrayList<String>();
+            List<String> restrictedUsers = new ArrayList<>();
             List<AppUser> userList = this.frameworkContext.getMetaDb().retrieveAllUsers();
             for (AppUser u : userList) {
                 if (u.isRestrictedUser())
@@ -294,7 +294,7 @@ public class DbController extends MyPerfBaseController {
         {
             if (this.frameworkContext.getDbInfoManager().removeDbGroup(db.getDbGroupName(),
                     user.getName(), user.isAdminUser())) {
-                java.util.List<Integer> dbidList = new java.util.ArrayList<Integer>();
+                List<Integer> dbidList = new ArrayList<>();
                 for (DBInstanceInfo dbinfo : this.frameworkContext.getDbInfoManager().findGroup(db.getDbGroupName()).getInstances()) {
                     dbidList.add(dbinfo.getDbid());
                 }

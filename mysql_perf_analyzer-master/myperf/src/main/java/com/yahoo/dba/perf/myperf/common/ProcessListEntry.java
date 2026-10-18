@@ -9,13 +9,15 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.sql.ResultSet;
+import java.io.Serializable;
+import java.sql.SQLException;
 
 /**
  * MySQL process list info
  *
  * @author xrao
  */
-public class ProcessListEntry implements java.io.Serializable, Comparable<ProcessListEntry> {
+public class ProcessListEntry implements Serializable, Comparable<ProcessListEntry> {
 
     private static final long serialVersionUID = 1L;
 
@@ -67,7 +69,7 @@ public class ProcessListEntry implements java.io.Serializable, Comparable<Proces
      * @param rs
      */
     public ProcessListEntry(ResultSet rs)
-            throws java.sql.SQLException {
+            throws SQLException {
         this.setId(rs.getString("ID"));
         this.setUser(rs.getString("USER"));
         this.setHost(rs.getString("HOST"));
@@ -84,7 +86,7 @@ public class ProcessListEntry implements java.io.Serializable, Comparable<Proces
      * @throws java.sql.SQLException
      */
     public ProcessListEntry(ResultSet rs, boolean rowInfo, boolean hasRowsRead)
-            throws java.sql.SQLException {
+            throws SQLException {
         this.setId(rs.getString("ID"));
         this.setUser(rs.getString("USER"));
         this.setHost(rs.getString("HOST"));

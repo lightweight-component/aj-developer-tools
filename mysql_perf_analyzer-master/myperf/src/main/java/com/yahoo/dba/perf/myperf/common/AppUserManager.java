@@ -12,10 +12,12 @@ import com.yahoo.dba.perf.myperf.meta.MetaDB;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Collections;
+import java.util.HashMap;
 
 public class AppUserManager implements Serializable {
     private static final long serialVersionUID = 1L;
-    private Map<String, AppUser> userMap = new java.util.HashMap<String, AppUser>();
+    private Map<String, AppUser> userMap = new HashMap<>();
     @Getter
     @Setter
     private MetaDB metaDb; //to access meta db for persistent actions
@@ -45,8 +47,8 @@ public class AppUserManager implements Serializable {
         this.userMap.put(user.getName(), user);
     }
 
-    public java.util.Map<String, AppUser> getUserMap() {
-        return java.util.Collections.unmodifiableMap(this.userMap);
+    public Map<String, AppUser> getUserMap() {
+        return Collections.unmodifiableMap(this.userMap);
     }
 
     public AppUser retrieveUserInfoFromMetaDB(String username) {

@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 @Slf4j
 public class MetricScanner {
@@ -34,7 +36,7 @@ public class MetricScanner {
     @Getter
     @Setter
     private HashMap<String, Map<String, MetricsBuffer>> buffer;
-    protected java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
+    protected SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
 
     //private Map<String, List<MetricsGroup>> builtinMetrics = new HashMap<String, List<MetricsGroup>>();
 
@@ -43,13 +45,13 @@ public class MetricScanner {
     }
 
     public void scanAuto() {
-        log.info(new java.util.Date() + ": Starting auto metrics scan ...");
-        java.util.Date startDate = null;
-        java.util.Date endDate = null;
+        log.info(new Date() + ": Starting auto metrics scan ...");
+        Date startDate = null;
+        Date endDate = null;
 
         int snap_id = -1;
         try {
-            startDate = new java.util.Date();
+            startDate = new Date();
             snap_id = this.frameworkContext.getMetricDb().getNextSnapshotId(Long.parseLong(sdf.format(startDate)));
             if (snap_id >= 0)
                 scan(snap_id);
@@ -59,17 +61,17 @@ public class MetricScanner {
         } catch (Exception ex) {
             log.error("Exception", ex);
         }
-        this.frameworkContext.getMetricDb().updateSnapCompleteTime(snap_id, Long.parseLong(sdf.format(new java.util.Date())));
+        this.frameworkContext.getMetricDb().updateSnapCompleteTime(snap_id, Long.parseLong(sdf.format(new Date())));
         frameworkContext.getInstanceStatesManager().saveStatus();
-        endDate = new java.util.Date();
-        log.info(new java.util.Date() + ": Auto metrics scan done and status saved. Total Time in ms: " + (endDate.getTime() - startDate.getTime()));
+        endDate = new Date();
+        log.info(new Date() + ": Auto metrics scan done and status saved. Total Time in ms: " + (endDate.getTime() - startDate.getTime()));
     }
 
     //setup metrics buffer if need
     private void checkAndSetupMetricsBuffer(DBInstanceInfo dbinfo) {
         //will setup UDM buffer when need
         if (!buffer.containsKey(dbinfo.getDbGroupName() + ":" + dbinfo.getHostName())) {
-            Map<String, MetricsBuffer> ms = new HashMap<String, MetricsBuffer>();
+            Map<String, MetricsBuffer> ms = new HashMap<>();
             buffer.put(dbinfo.getDbGroupName() + ":" + dbinfo.getHostName(), ms);
         }
         String[] mgNames = this.frameworkContext.getMetricsDef().getGroupNames();
@@ -114,7 +116,7 @@ public class MetricScanner {
             log.error("Data buffer was not found. Scan cannot continue.");
             return;
         }
-        LinkedBlockingQueue<DBInstanceInfo> dbqueue = new LinkedBlockingQueue<DBInstanceInfo>();
+        LinkedBlockingQueue<DBInstanceInfo> dbqueue = new LinkedBlockingQueue<>();
         for (String cl : clusternames) {
             DBCredential cred = DBUtils.findDBCredential(frameworkContext, cl, appUser);
             if (cred == null) {

@@ -11,6 +11,8 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.*;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 
 public class StatusController extends MyPerfBaseController {
     @Override
@@ -18,7 +20,7 @@ public class StatusController extends MyPerfBaseController {
                                              HttpServletResponse resp) throws Exception {
 
         AppUser appUser = retrieveAppUser(req);
-        HashSet<String> filteredGroups = new HashSet<String>();
+        HashSet<String> filteredGroups = new HashSet<>();
         boolean useFilter = false;
         if (appUser != null && appUser.isRestrictedUser()) {
             useFilter = true;
@@ -33,7 +35,7 @@ public class StatusController extends MyPerfBaseController {
         if (dbgroup == null || dbgroup.trim().length() == 0) dbgroup = "all";
         String dbhost = req.getParameter("host");
 
-        java.util.Date now = new java.util.Date();
+        Date now = new Date();
         //the first scan yet to complete
         long oneinterval = (this.frameworkContext.getMyperfConfig().getScannerIntervalSeconds() + 1) * 1000;
         boolean withinOneScan = (now.getTime() - this.frameworkContext.getStartTime().getTime()) <= oneinterval;
@@ -66,10 +68,10 @@ public class StatusController extends MyPerfBaseController {
             desc.addColumn("SCAN TIME", true, 19);
 
             rList.setColumnDescriptor(desc);
-            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-            java.text.DecimalFormat df = new java.text.DecimalFormat("#.###");
+            DecimalFormat df = new DecimalFormat("#.###");
             for (Map.Entry<String, DBGroupInfo> e : this.frameworkContext.getDbInfoManager().getClusters().entrySet()) {
                 for (DBInstanceInfo dbinfo : e.getValue().getInstances()) {
 
@@ -80,7 +82,7 @@ public class StatusController extends MyPerfBaseController {
                     InstanceStates stateSnaps = this.frameworkContext.getInstanceStatesManager().getStates(dbinfo.getDbid());
                     if (stateSnaps == null) continue;
                     //java.util.Date lastConnectTime = this.frameworkContext.getDbInfoManager().getLastAccessDate(dbgroupName, dbHostName);
-                    java.util.Date lastConnectTime = stateSnaps.getLastAccessTime();
+                    Date lastConnectTime = stateSnaps.getLastAccessTime();
                     String dbstatus = "Green";
                     if (lastConnectTime == null && withinOneScan)
                         dbstatus = "Unknown";
@@ -93,7 +95,7 @@ public class StatusController extends MyPerfBaseController {
 
                     ResultRow row = new ResultRow();
                     row.setColumnDescriptor(desc);
-                    List<String> vals = new ArrayList<String>();
+                    List<String> vals = new ArrayList<>();
                     vals.add(dbgroupName);
                     vals.add(dbHostName);
 
@@ -253,7 +255,7 @@ public class StatusController extends MyPerfBaseController {
             c.add(Calendar.DATE, -7); //7 days
             d1 = c.getTime();
             d2 = new Date();
-            java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
+            SimpleDateFormat sdf2 = new SimpleDateFormat("yyyyMMddHHmmss");
             sdf2.setTimeZone(TimeZone.getTimeZone("UTC"));
             String startDate = sdf2.format(d1);
             String endDate = sdf2.format(d2);
@@ -261,8 +263,8 @@ public class StatusController extends MyPerfBaseController {
                 //TODO validate DB
                 rList = this.frameworkContext.getAutoScanner().getMetricDb().retrieveMetricsStatus("mysql_globalstatus".toUpperCase(),
                         this.frameworkContext.getDbInfoManager().findDB(dbgroup, dbhost).getDbid(), Long.parseLong(startDate), Long.parseLong(endDate));
-                HashMap<String, Integer> connectCounter = new HashMap<String, Integer>(24 * 8);
-                HashMap<String, Integer> slowCounter = new HashMap<String, Integer>(24 * 8);
+                HashMap<String, Integer> connectCounter = new HashMap<>(24 * 8);
+                HashMap<String, Integer> slowCounter = new HashMap<>(24 * 8);
                 if (rList != null && rList.getRows().size() > 0) {
                     for (ResultRow row : rList.getRows()) {
                         String ts = row.getColumns().get(1);

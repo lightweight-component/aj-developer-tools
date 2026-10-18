@@ -15,6 +15,11 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
+import java.io.InputStreamReader;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * A collection of metrics definitions.
@@ -22,7 +27,7 @@ import java.util.List;
  * @author xrao
  */
 @Slf4j
-public class MetricsDefManager implements java.io.Serializable {
+public class MetricsDefManager implements Serializable {
     private static final long serialVersionUID = 1L;
     private static String GROUP_TAG = "metricsGroup";
     private static String SUBGROUP_TAG = "subgroup";
@@ -30,7 +35,7 @@ public class MetricsDefManager implements java.io.Serializable {
     private static String BUILTIN_METRICS_FILE_NAME = "metrics.xml";
 
     // Metrics definition. the key is the group name
-    private java.util.Map<String, MetricsGroup> metricsGroups = new java.util.LinkedHashMap<String, MetricsGroup>();
+    private Map<String, MetricsGroup> metricsGroups = new LinkedHashMap<>();
 
     //user defined metrics
     @Getter
@@ -81,10 +86,10 @@ public class MetricsDefManager implements java.io.Serializable {
         }
         if (mg == null) return null;
 
-        HashMap<String, Metric> mmap = new HashMap<String, Metric>(mg.getMetrics().size());
+        HashMap<String, Metric> mmap = new HashMap<>(mg.getMetrics().size());
         for (Metric m : mg.getMetrics())
             mmap.put(m.getName(), m);
-        List<Metric> mList = new java.util.ArrayList<Metric>(ms.length);
+        List<Metric> mList = new ArrayList<>(ms.length);
         for (String mname : ms) {
             if (mmap.containsKey(mname))
                 mList.add(mmap.get(mname).copy());
@@ -102,7 +107,7 @@ public class MetricsDefManager implements java.io.Serializable {
     private void load() {
         log.info("Loading metrics definitions ...");
         //for now, we only load built in metrics
-        java.io.InputStream in = null;
+        InputStream in = null;
         try {
             in = this.getClass().getClassLoader().getResourceAsStream(BUILTIN_METRICS_FILE_NAME);
             if (in != null) {
@@ -126,13 +131,13 @@ public class MetricsDefManager implements java.io.Serializable {
 
     //make it generic so that later we can extend to load external definitions
     private List<MetricsGroup> load(InputStream in) {
-        List<MetricsGroup> groups = new java.util.ArrayList<MetricsGroup>();
+        List<MetricsGroup> groups = new ArrayList<>();
         if (in == null) return groups;
 
         XMLStreamReader reader = null;
         XMLInputFactory inputFactory = XMLInputFactory.newInstance();//will be used only once at startup time
         try {
-            reader = inputFactory.createXMLStreamReader(new java.io.InputStreamReader(in));
+            reader = inputFactory.createXMLStreamReader(new InputStreamReader(in));
             while (reader.hasNext()) {
                 int evtType = reader.next();
                 //try{log.info(evtType+"");log.info(reader.getLocalName());}catch(Exception ex){}
@@ -211,7 +216,7 @@ public class MetricsDefManager implements java.io.Serializable {
     private Metric parseMetric(XMLStreamReader reader) {
         //assume current tag is metric
         int attrCount2 = reader.getAttributeCount();
-        HashMap<String, String> pairs = new HashMap<String, String>(11);
+        HashMap<String, String> pairs = new HashMap<>(11);
         for (int i = 0; i < attrCount2; i++) {
             String attrName = reader.getAttributeLocalName(i);
             String attrValue = reader.getAttributeValue(i);
@@ -262,7 +267,7 @@ public class MetricsDefManager implements java.io.Serializable {
      */
     private MetricsGroup parseMetricsGroupAttribute(XMLStreamReader reader) {
         int attrCount2 = reader.getAttributeCount();
-        HashMap<String, String> pairs = new HashMap<String, String>(11);
+        HashMap<String, String> pairs = new HashMap<>(11);
         for (int i = 0; i < attrCount2; i++) {
             String attrName = reader.getAttributeLocalName(i);
             String attrValue = reader.getAttributeValue(i);

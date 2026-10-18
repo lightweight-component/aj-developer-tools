@@ -10,8 +10,9 @@ import lombok.Setter;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.io.Serializable;
 
-public class StateSnapshot implements java.io.Serializable {
+public class StateSnapshot implements Serializable {
     private static final long serialVersionUID = 1L;
     @Getter
     @Setter
@@ -89,7 +90,7 @@ public class StateSnapshot implements java.io.Serializable {
     private Map<String, Float> metricsMap;
 
     public StateSnapshot() {
-        metricsMap = new HashMap<String, Float>();
+        metricsMap = new HashMap<>();
     }
 
     /**
@@ -129,7 +130,7 @@ public class StateSnapshot implements java.io.Serializable {
 
     public void addMetric(String name, Float val) {
         if (this.metricsMap == null)
-            this.metricsMap = new HashMap<String, Float>();
+            this.metricsMap = new HashMap<>();
         this.metricsMap.put(name, val);
     }
 

@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.io.BufferedReader;
+import java.io.StringReader;
 
 @Slf4j
 public class InnoController extends MyPerfBaseController {
@@ -38,7 +40,7 @@ public class InnoController extends MyPerfBaseController {
         qps.setSql("mysql_innodb_engine_status");
 
         ResultList rList = null;
-        LinkedHashMap<String, ResultList> listMap = new LinkedHashMap<String, ResultList>();
+        LinkedHashMap<String, ResultList> listMap = new LinkedHashMap<>();
         DBInstanceInfo dbinfo = null;
         DBConnectionWrapper connWrapper = null;
         try {
@@ -94,15 +96,15 @@ public class InnoController extends MyPerfBaseController {
         final int SECTION_HEADER_ENDLINE = 3;
         int state = BEFORE_STARTLINE;
         String currentSection = null;
-        LinkedHashMap<String, ResultList> listMap = new LinkedHashMap<String, ResultList>();
-        java.io.StringReader reader = new java.io.StringReader(str);
-        java.io.BufferedReader bufReader = new java.io.BufferedReader(reader);
+        LinkedHashMap<String, ResultList> listMap = new LinkedHashMap<>();
+        StringReader reader = new StringReader(str);
+        BufferedReader bufReader = new BufferedReader(reader);
         String line = null;
 
-        Map<String, String> valMap = new java.util.LinkedHashMap<String, String>();
-        List<Transaction> txList = new ArrayList<Transaction>();
-        List<SemaphoreEntry> semapList = new ArrayList<SemaphoreEntry>();
-        List<String> deadLockInfo = new ArrayList<String>();//TODO not parsing the content for now
+        Map<String, String> valMap = new LinkedHashMap<>();
+        List<Transaction> txList = new ArrayList<>();
+        List<SemaphoreEntry> semapList = new ArrayList<>();
+        List<String> deadLockInfo = new ArrayList<>();//TODO not parsing the content for now
         Transaction curTx = null;
         SemaphoreEntry curSemap = null;
         try {
@@ -253,7 +255,7 @@ public class InnoController extends MyPerfBaseController {
             ResultRow row = new ResultRow();
             rList.addRow(row);
             row.setColumnDescriptor(desc);
-            List<String> cols = new ArrayList<String>(16);
+            List<String> cols = new ArrayList<>(16);
             row.setColumns(cols);
             cols.add(tx.thread_id);
             cols.add(tx.lock_type);
@@ -276,7 +278,7 @@ public class InnoController extends MyPerfBaseController {
         rList.setColumnDescriptor(desc);
         for (Map.Entry<String, String> e : valMap.entrySet()) {
             ResultRow row = new ResultRow();
-            List<String> vals = new ArrayList<String>(2);
+            List<String> vals = new ArrayList<>(2);
             vals.add(e.getKey());
             vals.add(e.getValue());
             row.setColumnDescriptor(desc);
@@ -670,7 +672,7 @@ public class InnoController extends MyPerfBaseController {
             ResultRow row = new ResultRow();
             rList.addRow(row);
             row.setColumnDescriptor(desc);
-            List<String> cols = new ArrayList<String>(16);
+            List<String> cols = new ArrayList<>(16);
             row.setColumns(cols);
             cols.add(tx.id);
             cols.add(tx.state);
@@ -704,7 +706,7 @@ public class InnoController extends MyPerfBaseController {
             ResultRow row = new ResultRow();
             rList.addRow(row);
             row.setColumnDescriptor(desc);
-            List<String> cols = new ArrayList<String>(1);
+            List<String> cols = new ArrayList<>(1);
             row.setColumns(cols);
             cols.add(tx);
         }

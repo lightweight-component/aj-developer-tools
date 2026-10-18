@@ -16,16 +16,19 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.util.Map;
 import java.util.TreeMap;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Serializable;
 
 
 @Slf4j
-public class StatDefManager implements java.io.Serializable {
+public class StatDefManager implements Serializable {
 
     private static final long serialVersionUID = 9087706748220206476L;
     @SuppressWarnings("restriction")
     static final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
     @Setter
-    private Map<String, String> statMap = new TreeMap<String, String>();
+    private Map<String, String> statMap = new TreeMap<>();
     @Getter
     @Setter
     private String sourcePath = "stats.xml";
@@ -69,10 +72,10 @@ public class StatDefManager implements java.io.Serializable {
      * @throws XMLStreamException
      */
     @SuppressWarnings("restriction")
-    public boolean load(java.io.InputStream in) throws XMLStreamException {
+    public boolean load(InputStream in) throws XMLStreamException {
         XMLStreamReader reader = null;
         try {
-            reader = inputFactory.createXMLStreamReader(new java.io.InputStreamReader(in));
+            reader = inputFactory.createXMLStreamReader(new InputStreamReader(in));
             while (reader.hasNext()) {
                 //loop till one sql tag is found
                 int evtType = reader.next();
@@ -96,7 +99,7 @@ public class StatDefManager implements java.io.Serializable {
     }
 
     public boolean init() {
-        java.io.InputStream in = null;
+        InputStream in = null;
 
         try {
             in = this.getClass().getClassLoader().getResourceAsStream(this.sourcePath);

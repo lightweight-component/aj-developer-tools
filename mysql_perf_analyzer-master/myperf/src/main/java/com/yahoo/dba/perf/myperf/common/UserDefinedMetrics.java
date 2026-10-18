@@ -15,6 +15,9 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.InputStream;
+import java.io.Serializable;
+import javax.json.Json;
 
 
 /**
@@ -23,7 +26,7 @@ import java.util.List;
  * @author xrao
  */
 @Slf4j
-public class UserDefinedMetrics implements java.io.Serializable {
+public class UserDefinedMetrics implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static class UserDefinedMetricsException extends Exception {
@@ -62,7 +65,7 @@ public class UserDefinedMetrics implements java.io.Serializable {
 
     @Getter
     @Setter
-    private List<Metric> metrics = new ArrayList<Metric>();
+    private List<Metric> metrics = new ArrayList<>();
 
     @Getter
     private MetricsGroup metricsGroup = new MetricsGroup();//wrap the content into a MetricsGroup
@@ -266,11 +269,11 @@ public class UserDefinedMetrics implements java.io.Serializable {
         return sb.toString();
     }
 
-    public static UserDefinedMetrics createFromJson(java.io.InputStream in) {
+    public static UserDefinedMetrics createFromJson(InputStream in) {
         JsonReader jsonReader = null;
         UserDefinedMetrics udm = null;
         try {
-            jsonReader = javax.json.Json.createReader(in);
+            jsonReader = Json.createReader(in);
             JsonObject jsonObject = jsonReader.readObject();
             jsonReader.close();
             udm = new UserDefinedMetrics(jsonObject.getString("groupName"));

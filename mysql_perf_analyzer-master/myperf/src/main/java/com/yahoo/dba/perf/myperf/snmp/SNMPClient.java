@@ -82,8 +82,8 @@ public class SNMPClient {
     //tcpCurrEstab
     public static OID[] COMMON_SYS_OIDS = null;
 
-    public static final Map<String, String> OID_MAP = new LinkedHashMap<String, String>(); //Name to OID
-    public static final Map<String, String> OID_NAME_MAP = new LinkedHashMap<String, String>(); //OID to Name
+    public static final Map<String, String> OID_MAP = new LinkedHashMap<>(); //Name to OID
+    public static final Map<String, String> OID_NAME_MAP = new LinkedHashMap<>(); //OID to Name
 
     Snmp snmp = null;
     String address = null;
@@ -190,7 +190,7 @@ public class SNMPClient {
     public Map<String, String> querySysData() throws IOException {
         log.debug("Query snmp for " + address);
         Map<String, String> resMap = null;
-        resMap = new java.util.LinkedHashMap<String, String>();
+        resMap = new LinkedHashMap<>();
         Map<OID, String> res = get(COMMON_SYS_OIDS);
         if (res != null) {
             for (Map.Entry<OID, String> e : res.entrySet()) {
@@ -207,7 +207,7 @@ public class SNMPClient {
      */
     public List<SNMPTriple> querySysData3() throws IOException {
         log.debug("Query snmp system data for " + address);
-        List<SNMPTriple> snmpList = new ArrayList<SNMPTriple>();
+        List<SNMPTriple> snmpList = new ArrayList<>();
         Map<OID, String> res = get(COMMON_SYS_OIDS);
         if (res != null) {
             for (Map.Entry<OID, String> e : res.entrySet()) {
@@ -283,7 +283,7 @@ public class SNMPClient {
             PDU pdu2 = event.getResponse();
             VariableBinding[] binds = pdu2 != null ? event.getResponse().toArray() : null;
             if (binds != null) {
-                Map<OID, String> res = new LinkedHashMap<OID, String>(binds.length);
+                Map<OID, String> res = new LinkedHashMap<>(binds.length);
                 for (VariableBinding b : binds)
                     res.put(b.getOid(), b.getVariable().toString());
                 return res;
@@ -374,7 +374,7 @@ public class SNMPClient {
 
         int index = this.getDiskIndex(device);
         if (index < 0) {
-            return new ArrayList<SNMPTriple>();
+            return new ArrayList<>();
         }
         log.debug("Query disk stats for " + index);
         PDU pdu = createPDU();
@@ -383,7 +383,7 @@ public class SNMPClient {
             pdu.add(new VariableBinding(new OID("." + DISK_TABLE_OID + "." + i + "." + index)));
         }
         pdu.setType(PDU.GET);
-        Map<String, String> res = new HashMap<String, String>(13);
+        Map<String, String> res = new HashMap<>(13);
         ResponseEvent event = snmp.send(pdu, getTarget(), null);
         if (event != null) {
             VariableBinding[] binds = event.getResponse().toArray();
@@ -391,7 +391,7 @@ public class SNMPClient {
                 res.put(b.getOid().toString(), b.getVariable().toString());
             //log.info(res.toString());
         }
-        List<SNMPTriple> resList = new ArrayList<SNMPTriple>(res.size());
+        List<SNMPTriple> resList = new ArrayList<>(res.size());
         for (int i = 1; i < DISK_TABLE_ENTRIES.length; i++) {
             if (DISK_TABLE_ENTRIES[i].length() == 0) continue;
             resList.add(new SNMPTriple("." + DISK_TABLE_OID + "." + i + "." + index, DISK_TABLE_ENTRIES[i], res.get(DISK_TABLE_OID + "." + i + "." + index)));
@@ -401,7 +401,7 @@ public class SNMPClient {
 
     public Map<String, List<SNMPTriple>> getMultiDiskData() throws IOException {
 
-        Map<String, List<SNMPTriple>> resMap = new HashMap<String, List<SNMPTriple>>();
+        Map<String, List<SNMPTriple>> resMap = new HashMap<>();
         Map<Integer, String> indexes = this.getDiskIndexes();
         if (indexes == null || indexes.size() == 0)
             return resMap;
@@ -417,7 +417,7 @@ public class SNMPClient {
             }
         }
         pdu.setType(PDU.GET);
-        Map<String, String> res = new HashMap<String, String>(13);
+        Map<String, String> res = new HashMap<>(13);
         ResponseEvent event = snmp.send(pdu, getTarget(), null);
         if (event != null) {
             PDU resp = event.getResponse();
@@ -431,7 +431,7 @@ public class SNMPClient {
             //log.info(res.toString());
         }
         for (Map.Entry<Integer, String> entry : indexes.entrySet()) {
-            List<SNMPTriple> resList = new ArrayList<SNMPTriple>(res.size());
+            List<SNMPTriple> resList = new ArrayList<>(res.size());
             for (int i = 1; i < DISK_TABLE_ENTRIES.length; i++) {
                 if (DISK_TABLE_ENTRIES[i].length() == 0) continue;
                 resList.add(new SNMPTriple("." + DISK_TABLE_OID + "." + i + "." + entry.getKey(), DISK_TABLE_ENTRIES[i],
@@ -475,7 +475,7 @@ public class SNMPClient {
     }
 
     private Map<Integer, String> getDiskIndexes() throws IOException {
-        Map<Integer, String> diskIndexes = new HashMap<Integer, String>();
+        Map<Integer, String> diskIndexes = new HashMap<>();
         TableUtils tUtils = new TableUtils(snmp, new DefaultPDUFactory());
 
         log.debug("Query " + this.address + " for disk oids");
@@ -540,7 +540,7 @@ public class SNMPClient {
             "ifCounterDiscontinuityTime"};
 
     private Map<Integer, String> getNetIfIndexes(String device) throws IOException {
-        Map<Integer, String> ifMaps = new HashMap<Integer, String>();
+        Map<Integer, String> ifMaps = new HashMap<>();
 
         TableUtils tUtils = new TableUtils(snmp, new DefaultPDUFactory());
 
@@ -576,9 +576,9 @@ public class SNMPClient {
 
     public Map<String, List<SNMPTriple>> getNetIfData(String device) throws IOException {
 
-        Map<Integer, String> ifMaps = new HashMap<Integer, String>();
-        Map<String, List<SNMPTriple>> resMap = new HashMap<String, List<SNMPTriple>>();
-        Map<String, String> res = new HashMap<String, String>();
+        Map<Integer, String> ifMaps = new HashMap<>();
+        Map<String, List<SNMPTriple>> resMap = new HashMap<>();
+        Map<String, String> res = new HashMap<>();
         TableUtils tUtils = new TableUtils(snmp, new DefaultPDUFactory());
 
         log.debug("Query " + this.address + " for network interface, excluding lo");
@@ -618,7 +618,7 @@ public class SNMPClient {
             //ignore the case with no incoming and no outgoing traffic
             if ("0".equals(res.get(IF_TABLE_OID + ".6." + index)) && "0".equals(res.get(IF_TABLE_OID + ".10." + index)))
                 continue;
-            resMap.put(ifName, new ArrayList<SNMPTriple>(IF_TABLE_ENTRIES.length));
+            resMap.put(ifName, new ArrayList<>(IF_TABLE_ENTRIES.length));
             for (int i = 1; i < IF_TABLE_ENTRIES.length; i++) {
                 if (IF_TABLE_ENTRIES[i].length() == 0) continue;
                 resMap.get(ifName).add(new SNMPTriple("." + IF_TABLE_OID + "." + i + "." + index, IF_TABLE_ENTRIES[i], res.get(IF_TABLE_OID + "." + i + "." + index)));
@@ -629,7 +629,7 @@ public class SNMPClient {
 
     public Map<String, List<SNMPTriple>> getNetIfData3(String device) throws IOException {
 
-        Map<String, List<SNMPTriple>> resMap = new HashMap<String, List<SNMPTriple>>();
+        Map<String, List<SNMPTriple>> resMap = new HashMap<>();
         Map<Integer, String> indexMap = this.getNetIfIndexes(device);
 
         if (indexMap == null || indexMap.size() == 0) {
@@ -645,7 +645,7 @@ public class SNMPClient {
                 pdu.add(new VariableBinding(new OID("." + IF_TABLE_OID + "." + i + "." + entry.getKey())));
             }
         pdu.setType(PDU.GET);
-        Map<String, String> res = new HashMap<String, String>(IF_TABLE_ENTRIES.length * indexMap.size());
+        Map<String, String> res = new HashMap<>(IF_TABLE_ENTRIES.length * indexMap.size());
         ResponseEvent event = snmp.send(pdu, getTarget(), null);
         if (event != null) {
             VariableBinding[] binds = event.getResponse().toArray();
@@ -659,7 +659,7 @@ public class SNMPClient {
             //ignore the case with no incoming and no outgoing traffic
             if ("0".equals(res.get(IF_TABLE_OID + ".6." + index)) && "0".equals(res.get(IF_TABLE_OID + ".10." + index)))
                 continue;
-            resMap.put(ifName, new ArrayList<SNMPTriple>(IF_TABLE_ENTRIES.length));
+            resMap.put(ifName, new ArrayList<>(IF_TABLE_ENTRIES.length));
             for (int i = 1; i < IF_TABLE_ENTRIES.length; i++) {
                 if (IF_TABLE_ENTRIES[i].length() == 0) continue;
                 resMap.get(ifName).add(new SNMPTriple("." + IF_TABLE_OID + "." + i + "." + index, IF_TABLE_ENTRIES[i], res.get(IF_TABLE_OID + "." + i + "." + index)));
@@ -681,8 +681,8 @@ public class SNMPClient {
 
     public Map<String, List<SNMPTriple>> getStorageData(String device) throws IOException {
         List<SNMPTriple> resList = querySingleSNMPTableByOID("." + STORAGE_TABLE_OID);
-        List<Integer> idxList = new ArrayList<Integer>();
-        Map<String, String> tmpMap = new HashMap<String, String>();
+        List<Integer> idxList = new ArrayList<>();
+        Map<String, String> tmpMap = new HashMap<>();
         for (SNMPTriple e : resList) {
             tmpMap.put(e.oid, e.value);
             if (e.oid.startsWith(STORAGE_TABLE_DEVICE_OID)) {
@@ -693,11 +693,11 @@ public class SNMPClient {
                 }
             }
         }
-        Map<String, List<SNMPTriple>> resMap = new HashMap<String, List<SNMPTriple>>();
+        Map<String, List<SNMPTriple>> resMap = new HashMap<>();
         for (int idx : idxList) {
             String name = tmpMap.get(STORAGE_TABLE_OID + "." + 3 + "." + idx);
             if (device != null && !name.equalsIgnoreCase(device)) continue;
-            List<SNMPTriple> entryList = new ArrayList<SNMPTriple>();
+            List<SNMPTriple> entryList = new ArrayList<>();
             for (int i = 1; i < STORAGE_TABLE_ENTRIES.length; i++) {
                 entryList.add(new SNMPTriple("." + STORAGE_TABLE_OID + "." + i + "." + idx, STORAGE_TABLE_ENTRIES[i], tmpMap.get(STORAGE_TABLE_OID + "." + i + "." + idx)));
             }
@@ -716,7 +716,7 @@ public class SNMPClient {
     public List<SNMPTriple> querySingleSNMPEntryByOID(String oid) throws IOException {
         if (oid == null || oid.isEmpty()) return null;
         if (!oid.startsWith(".")) oid = "." + oid;
-        List<SNMPTriple> snmpList = new ArrayList<SNMPTriple>();
+        List<SNMPTriple> snmpList = new ArrayList<>();
         Map<OID, String> res = get(new OID[]{new OID(oid)});
         if (res != null) {
             for (Map.Entry<OID, String> e : res.entrySet()) {
@@ -733,7 +733,7 @@ public class SNMPClient {
         TableUtils tUtils = new TableUtils(snmp, new DefaultPDUFactory());
         List<TableEvent> events = tUtils.getTable(getTarget(), new OID[]{new OID(oid)}, null, null);
 
-        List<SNMPTriple> snmpList = new ArrayList<SNMPTriple>();
+        List<SNMPTriple> snmpList = new ArrayList<>();
 
         for (TableEvent event : events) {
             if (event.isError()) {
@@ -763,7 +763,7 @@ public class SNMPClient {
      * @throws IOException
      */
     private List<Integer> getProcessIndexes(String process) throws IOException {
-        List<Integer> indexes = new ArrayList<Integer>();
+        List<Integer> indexes = new ArrayList<>();
         if (process == null || process.isEmpty()) return indexes;
 
         TableUtils tUtils = new TableUtils(snmp, new DefaultPDUFactory());
@@ -803,7 +803,7 @@ public class SNMPClient {
             "hrSWRunPerfMem"};
 
     public List<SNMPTriple> getProcessData(String processName) throws IOException {
-        List<SNMPTriple> resList = new ArrayList<SNMPTriple>();
+        List<SNMPTriple> resList = new ArrayList<>();
         List<Integer> prIndexes = this.getProcessIndexes(processName);
         if (prIndexes == null || prIndexes.size() == 0)
             return resList;
@@ -818,7 +818,7 @@ public class SNMPClient {
             }
         }
         pdu.setType(PDU.GET);
-        Map<String, String> res = new HashMap<String, String>(prIndexes.size() * 2);
+        Map<String, String> res = new HashMap<>(prIndexes.size() * 2);
         ResponseEvent event = snmp.send(pdu, getTarget(), null);
         if (event != null) {
             VariableBinding[] binds = event.getResponse().toArray();
@@ -842,7 +842,7 @@ public class SNMPClient {
     public Map<String, String> queryMysqld() throws IOException {
         log.debug("Query mysqld for " + address);
         Map<String, String> resMap = null;
-        resMap = new java.util.LinkedHashMap<String, String>();
+        resMap = new LinkedHashMap<>();
         List<SNMPTriple> res = this.getProcessData("mysqld");
         if (res != null) {
             for (SNMPTriple e : res) {

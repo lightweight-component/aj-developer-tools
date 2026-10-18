@@ -5,12 +5,14 @@
  */
 package com.yahoo.dba.perf.myperf.common;
 
+import java.io.Serializable;
+
 /**
  * An app specific object to be inserted into ResultList as part of result header
  *
  * @author xrao
  */
-public interface CustomResultObject extends java.io.Serializable {
+public interface CustomResultObject extends Serializable {
     String getName();//the name/key in json ResultList
 
     String getValueJsonString();//the value in json ResultList
