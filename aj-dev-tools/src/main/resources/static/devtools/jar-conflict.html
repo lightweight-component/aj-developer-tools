@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jar包冲突检测报告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>[v-cloak] { display: none; }</style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'severity-critical': '#dc2626',
+                        'severity-high': '#ea580c',
+                        'severity-medium': '#ca8a04',
+                        'severity-low': '#65a30d'
+                    }
+                }
+            }
+        }
+
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div id="app" v-cloak>
+    <!-- Header -->
+    <div class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <h1 class="text-3xl font-bold text-gray-900">Jar包冲突检测工具</h1>
+                <button type="button" @click="scan" :disabled="loading" :aria-busy="loading"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    {{ loading ? '扫描中...' : '开始扫描' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading" role="status" aria-live="polite"
+         class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-sm mx-4">
+            <div class="flex items-center space-x-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div class="text-lg font-medium text-gray-900">扫描中...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div v-if="error" role="alert" class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+            {{ error }}
+        </div>
+        <!-- Summary Cards -->
+        <div v-if="result" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">总Jar包数</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ result.summary.totalJars }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">总类数量</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ result.summary.totalClasses }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-lg">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.864-.833-2.634 0L4.18 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">冲突数量</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ result.summary.conflictCount }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">扫描耗时</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ result.scanTimeMs == null ? '—' : result.scanTimeMs + 'ms' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Severity Distribution -->
+        <div v-if="result" class="bg-white rounded-lg shadow mb-8">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">严重程度分布</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-red-600">{{ result.summary.criticalConflicts }}</div>
+                        <div class="text-sm text-gray-500">严重</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-orange-600">{{ result.summary.highConflicts }}</div>
+                        <div class="text-sm text-gray-500">高</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-yellow-600">{{ result.summary.mediumConflicts }}</div>
+                        <div class="text-sm text-gray-500">中</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600">{{ result.summary.lowConflicts }}</div>
+                        <div class="text-sm text-gray-500">低</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conflicts Table -->
+        <div v-if="result && result.conflicts.length > 0" class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">冲突详情</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            类名/Jar包名
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            冲突类型
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            严重程度
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            涉及Jar包
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            修复建议
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tr v-for="(conflict, index) in result.conflicts"
+                        :key="conflict.type + ':' + conflict.className + ':' + index"
+                        class="hover:bg-gray-50 align-top">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900 break-all">{{ conflict.className }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ conflictTypes[conflict.type] ||
+                            '未知' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                              :class="severityInfo(conflict.severity).color">{{ severityInfo(conflict.severity).text }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500 max-w-xs break-words">
+                            <div v-for="(jar, jarIndex) in conflict.conflictingJars" :key="jar.path + ':' + jarIndex"
+                                 :title="jar.path">
+                                {{ jar.name }} ({{ jar.version }})
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500 max-w-md">
+                            <div class="whitespace-pre-wrap break-words">{{ conflict.advice || '暂无建议' }}</div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- No Conflicts Message -->
+        <div v-if="result && result.conflicts.length === 0" class="bg-white rounded-lg shadow p-8 text-center">
+            <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">太棒了！</h3>
+            <p class="text-gray-500">没有检测到任何Jar包冲突</p>
+        </div>
+
+        <!-- Initial State -->
+        <div v-if="!result" class="bg-white rounded-lg shadow p-8 text-center">
+            <div class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Jar包冲突检测工具</h3>
+            <p class="text-gray-500 mb-6">点击上方"开始扫描"按钮，检测当前应用的Jar包冲突</p>
+            <div class="bg-gray-50 rounded-lg p-4 text-left max-w-2xl mx-auto">
+                <h4 class="font-medium text-gray-900 mb-2">功能特性：</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                    <li>• 扫描当前应用 classpath 中的 Jar 包</li>
+                    <li>• 检测类重复冲突</li>
+                    <li>• 检测版本冲突</li>
+                    <li>• 智能分析严重程度</li>
+                    <li>• 提供针对性修复建议</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const { createApp, ref } = Vue;
+
+    createApp({
+        setup() {
+            const loading = ref(false);
+            const result = ref(null);
+            const error = ref('');
+            const conflictTypes = {
+                CLASS_DUPLICATE: '类重复',
+                VERSION_CONFLICT: '版本冲突',
+                JAR_DUPLICATE: 'Jar重复'
+            };
+            const severities = {
+                CRITICAL: { text: '严重', color: 'bg-red-100 text-red-800' },
+                HIGH: { text: '高', color: 'bg-orange-100 text-orange-800' },
+                MEDIUM: { text: '中', color: 'bg-yellow-100 text-yellow-800' },
+                LOW: { text: '低', color: 'bg-green-100 text-green-800' }
+            };
+
+            function severityInfo(severity) {
+                return severities[severity] || { text: '未知', color: 'bg-gray-100 text-gray-800' };
+            }
+
+            async function scan() {
+                if (loading.value)
+                    return;
+                loading.value = true;
+                error.value = '';
+                try {
+                    // 相对路径兼容应用部署在非根 context path 的情况。
+                    const response = await fetch('../jar_conflict/scan', { headers: { Accept: 'application/json' } });
+                    if (!response.ok)
+                        throw new Error(`扫描请求失败（HTTP ${response.status}）`);
+                    const payload = await response.json();
+                    const data = payload?.data;
+                    if (!data || !Array.isArray(data.conflicts))
+                        throw new Error('扫描结果格式异常，请检查服务端响应');
+
+                    // 统计字段未返回时，从明细补充可计算项，其余显示为未知。
+                    const summary = data.summary || {};
+                    const severityCounts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+                    for (const conflict of data.conflicts) {
+                        if (Object.hasOwn(severityCounts, conflict.severity))
+                            severityCounts[conflict.severity]++;
+                    }
+                    result.value = {
+                        ...data,
+                        summary: {
+                            totalJars: summary.totalJars ?? (Array.isArray(data.jars) ? data.jars.length : '—'),
+                            totalClasses: summary.totalClasses ?? (Array.isArray(data.jars)
+                                ? data.jars.reduce((total, jar) => total + (jar.classes?.length || 0), 0) : '—'),
+                            conflictCount: summary.conflictCount ?? data.conflicts.length,
+                            criticalConflicts: summary.criticalConflicts ?? severityCounts.CRITICAL,
+                            highConflicts: summary.highConflicts ?? severityCounts.HIGH,
+                            mediumConflicts: summary.mediumConflicts ?? severityCounts.MEDIUM,
+                            lowConflicts: summary.lowConflicts ?? severityCounts.LOW
+                        }
+                    };
+                } catch (cause) {
+                    console.error('扫描失败:', cause);
+                    error.value = cause instanceof Error ? cause.message : '扫描失败，请稍后重试';
+                } finally {
+                    loading.value = false;
+                }
+            }
+
+            return { loading, result, error, conflictTypes, severityInfo, scan };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>

@@ -167,49 +167,50 @@
             gap: 10px;
             flex-wrap: wrap;
         }
+
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🔥 Spring Boot Hot CPU Analyzer</h1>
-        <p>实时CPU采样火焰图工具 - 快速定位性能热点</p>
-    </div>
+<div class="header">
+    <h1>🔥 Spring Boot Hot CPU Analyzer</h1>
+    <p>实时CPU采样火焰图工具 - 快速定位性能热点</p>
+</div>
 
-    <div class="controls">
-        <button id="refreshBtn" class="btn-primary">🔄 刷新火焰图</button>
-        <button id="enableBtn" class="btn-success">▶️ 启用采样</button>
-        <button id="disableBtn" class="btn-warning">⏸️ 停止采样</button>
-        <button id="clearBtn" class="btn-danger">🗑️ 清空数据</button>
-        <button id="debugBtn" class="btn-primary">🔍 调试信息</button>
-        <button id="rawDataBtn" class="btn-primary">📄 原始数据</button>
-        <div id="status" class="status disabled">采样已停止</div>
-        <div id="dataCount" class="status">数据量: 0</div>
-    </div>
+<div class="controls">
+    <button id="refreshBtn" class="btn-primary">🔄 刷新火焰图</button>
+    <button id="enableBtn" class="btn-success">▶️ 启用采样</button>
+    <button id="disableBtn" class="btn-warning">⏸️ 停止采样</button>
+    <button id="clearBtn" class="btn-danger">🗑️ 清空数据</button>
+    <button id="debugBtn" class="btn-primary">🔍 调试信息</button>
+    <button id="rawDataBtn" class="btn-primary">📄 原始数据</button>
+    <div id="status" class="status disabled">采样已停止</div>
+    <div id="dataCount" class="status">数据量: 0</div>
+</div>
 
-    <div class="test-section">
-        <h3>🧪 测试工具</h3>
-        <p>使用以下测试接口产生CPU负载，然后查看火焰图效果：</p>
-        <div class="test-buttons">
-            <button onclick="testCpuIntensive()" class="btn-primary">CPU密集型任务</button>
-            <button onclick="testNestedCalls()" class="btn-primary">嵌套调用测试</button>
-            <button onclick="testMixedWorkload()" class="btn-primary">混合工作负载</button>
-        </div>
-        <div id="testResult"></div>
+<div class="test-section">
+    <h3>🧪 测试工具</h3>
+    <p>使用以下测试接口产生CPU负载，然后查看火焰图效果：</p>
+    <div class="test-buttons">
+        <button onclick="testCpuIntensive()" class="btn-primary">CPU密集型任务</button>
+        <button onclick="testNestedCalls()" class="btn-primary">嵌套调用测试</button>
+        <button onclick="testMixedWorkload()" class="btn-primary">混合工作负载</button>
     </div>
+    <div id="testResult"></div>
+</div>
 
-    <div class="chart-container">
-        <div id="chart-title">
-            <h3>🔥 CPU采样火焰图</h3>
-            <p>提示：点击方法块可以放大查看，双击可以重置视图</p>
-        </div>
-        <div id="chart"></div>
-        <div id="loading" class="loading" style="display: none;">正在加载火焰图数据...</div>
-        <div id="noData" class="info" style="display: none;">
-            暂无采样数据。请先启用采样，然后运行一些测试任务或等待应用产生CPU活动。
-        </div>
+<div class="chart-container">
+    <div id="chart-title">
+        <h3>🔥 CPU采样火焰图</h3>
+        <p>提示：点击方法块可以放大查看，双击可以重置视图</p>
     </div>
+    <div id="chart"></div>
+    <div id="loading" class="loading" style="display: none;">正在加载火焰图数据...</div>
+    <div id="noData" class="info" style="display: none;">
+        暂无采样数据。请先启用采样，然后运行一些测试任务或等待应用产生CPU活动。
+    </div>
+</div>
 
-    <script>
+<script>
         let flameChart = null;
         let flameGraphFactory = null; // 添加全局变量
         let samplingEnabled = false;
@@ -838,6 +839,7 @@
                 refreshFlameGraph();
             }
         });
-    </script>
+
+</script>
 </body>
 </html>

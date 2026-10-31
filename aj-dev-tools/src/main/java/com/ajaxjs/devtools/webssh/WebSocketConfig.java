@@ -11,7 +11,7 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 public class WebSocketConfig implements WebSocketConfigurer {
     @Autowired
     private SSHWebSocketHandler sshWebSocketHandler;
-    
+
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(sshWebSocketHandler, "/ssh").setAllowedOriginPatterns("*"); // 生产环境中应该限制域名

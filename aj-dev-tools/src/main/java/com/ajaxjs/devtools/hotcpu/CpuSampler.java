@@ -2,6 +2,7 @@ package com.ajaxjs.devtools.hotcpu;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -26,13 +27,17 @@ public class CpuSampler {
         return t;
     });
 
+    @Getter
     private final Map<String, AtomicInteger> stackCount = new ConcurrentHashMap<>();
 
     private final AtomicBoolean isEnabled = new AtomicBoolean(false);
 
     private final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 
-    private static final int SAMPLING_INTERVAL_MS = 10;    // 降低采样间隔到10ms，提高捕获概率
+    /**
+     * 降低采样间隔到10ms，提高捕获概率
+     */
+    private static final int SAMPLING_INTERVAL_MS = 10;
 
     private static final int MAX_STACK_DEPTH = 100;
 
@@ -64,55 +69,48 @@ public class CpuSampler {
         if (!isEnabled.get())
             return;
 
-        try {
-            long[] threadIds = threadMXBean.getAllThreadIds();
-            int totalThreads = threadIds.length;
-            int processedThreads = 0;
-            int recordedStacks = 0;
-            int testControllerStacks = 0;
+        long[] threadIds = threadMXBean.getAllThreadIds();
+        int totalThreads = threadIds.length;
+        int processedThreads = 0;
+        int recordedStacks = 0;
+        int testControllerStacks = 0;
 
-            for (long tid : threadIds) {
-                ThreadInfo info = threadMXBean.getThreadInfo(tid, MAX_STACK_DEPTH);
-                if (info == null || info.getStackTrace().length == 0)
-                    continue;
+        for (long tid : threadIds) {
+            ThreadInfo info = threadMXBean.getThreadInfo(tid, MAX_STACK_DEPTH);
 
-                processedThreads++;
+            if (info == null || info.getStackTrace().length == 0)
+                continue;
 
-                if (shouldSkipThread(info.getThreadName()))  // 现在重新启用所有过滤，因为我们要采集所有线程
-                    continue;
+            processedThreads++;
 
-                StringBuilder sb = new StringBuilder();
-                StackTraceElement[] stackTrace = info.getStackTrace();
+            if (shouldSkipThread(info.getThreadName()))  // 现在重新启用所有过滤，因为我们要采集所有线程
+                continue;
 
-                for (int i = stackTrace.length - 1; i >= 0; i--) { // 反转栈帧顺序，让调用链从根到叶子，包含所有栈帧
-                    StackTraceElement frame = stackTrace[i];
+            StringBuilder sb = new StringBuilder();
+            StackTraceElement[] stackTrace = info.getStackTrace();
 
-                    // 现在重新启用栈帧包含检查，但shouldIncludeFrame已经改为返回true
-                    if (shouldIncludeFrame(frame)) {
-                        // 使用完整的类名.方法名格式
-                        sb.append(frame.getClassName()).append(".").append(frame.getMethodName());
+            for (int i = stackTrace.length - 1; i >= 0; i--) { // 反转栈帧顺序，让调用链从根到叶子，包含所有栈帧
+                StackTraceElement frame = stackTrace[i];
 
-                        if (frame.getLineNumber() > 0) // 如果有行号信息，也包含进来
-                            sb.append(":").append(frame.getLineNumber());
+                if (shouldIncludeFrame(frame)) {   // 现在重新启用栈帧包含检查，但 shouldIncludeFrame 已经改为返回 true
+                    sb.append(frame.getClassName()).append(".").append(frame.getMethodName()); // 使用完整的类名.方法名格式
 
-                        sb.append(";");
-                    }
-                }
+                    if (frame.getLineNumber() > 0) // 如果有行号信息，也包含进来
+                        sb.append(":").append(frame.getLineNumber());
 
-                if (sb.length() > 0) {
-                    String stackLine = sb.toString();// 记录所有调用栈，完全不进行任何过滤
-                    stackCount.computeIfAbsent(stackLine, k -> new AtomicInteger(0)).incrementAndGet();
-                    recordedStacks++;
+                    sb.append(";");
                 }
             }
 
-            // 每10秒输出一次采样统计
-            if (System.currentTimeMillis() % 10000 < 100) { // 大约每10秒
-                //log.info("[SAMPLING STATS] Total threads: {}, Processed: {}, Recorded stacks: {}, TestController stacks: {}, Total unique stacks: {}",totalThreads, processedThreads, recordedStacks, testControllerStacks, stackCount.size());
+            if (sb.length() > 0) {
+                String stackLine = sb.toString();// 记录所有调用栈，完全不进行任何过滤
+                stackCount.computeIfAbsent(stackLine, k -> new AtomicInteger(0)).incrementAndGet();
+                recordedStacks++;
             }
-        } catch (Exception e) {
-            log.error("Error during sampling: {}", e.getMessage(), e);
         }
+
+//        if (System.currentTimeMillis() % 10000 < 100)  //  每10秒输出一次采样统计
+//            log.info("[SAMPLING STATS] Total threads: {}, Processed: {}, Recorded stacks: {}, TestController stacks: {}, Total unique stacks: {}",totalThreads, processedThreads, recordedStacks, testControllerStacks, stackCount.size());
     }
 
     private boolean shouldSkipThread(String threadName) {
@@ -129,10 +127,6 @@ public class CpuSampler {
             stackCount.entrySet().removeIf(entry -> entry.getValue().get() < 2);// 保留计数较高的条目
             log.info("After cleanup, stack data size: {}", stackCount.size());
         }
-    }
-
-    public Map<String, AtomicInteger> getStackCount() {
-        return stackCount;
     }
 
     public void enableSampling() {

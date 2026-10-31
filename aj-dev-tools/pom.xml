@@ -52,8 +52,8 @@
 
         <dependency>
             <groupId>com.ajaxjs</groupId>
-            <artifactId>ajaxjs-base</artifactId>
-            <version>1.2.9</version>
+            <artifactId>base</artifactId>
+            <version>1.4</version>
         </dependency>
 
         <!-- 系统监控 -->

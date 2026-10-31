@@ -1,6 +1,7 @@
 package com.ajaxjs.devtools.jmx;
 
-import com.ajaxjs.devtools.jmx.model.*;
+import com.ajaxjs.devtools.jmx.model.Node;
+import com.ajaxjs.devtools.jmx.model.NodeType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
@@ -56,7 +57,8 @@ public class JmxHelper {
 
                 fn.accept(key, value);
             }
-        } catch (MBeanException | AttributeNotFoundException | InstanceNotFoundException | ReflectionException | IOException e) {
+        } catch (MBeanException | AttributeNotFoundException | InstanceNotFoundException | ReflectionException |
+                 IOException e) {
             log.warn("Errors on everyAttribute", e);
         }
     }

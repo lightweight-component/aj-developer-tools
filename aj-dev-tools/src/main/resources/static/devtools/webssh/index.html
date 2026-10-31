@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web SSH 企业版客户端</title>
     <!-- 引入xterm.js -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css"/>
     <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
     <!-- 引入Font Awesome图标 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    
+
     <style>
         * {
             margin: 0;
@@ -688,188 +688,190 @@
                 grid-template-columns: 1fr;
             }
         }
+
     </style>
 </head>
 <body>
-    <div class="main-container">
-        <!-- 侧边栏 -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-title">
-                    <i class="fas fa-terminal"></i>
-                    <span id="sidebarTitle">Web SSH</span>
-                </div>
-                <button class="sidebar-toggle" onclick="toggleSidebar()">
-                    <i class="fas fa-bars"></i>
-                </button>
+<div class="main-container">
+    <!-- 侧边栏 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">
+                <i class="fas fa-terminal"></i>
+                <span id="sidebarTitle">Web SSH</span>
             </div>
-            
-            <nav class="sidebar-nav">
-                <div class="nav-item active" onclick="switchPage('ssh')">
-                    <i class="fas fa-terminal nav-icon"></i>
-                    <span class="nav-text">SSH连接</span>
-                </div>
-                <div class="nav-item" onclick="switchPage('files')">
-                    <i class="fas fa-folder nav-icon"></i>
-                    <span class="nav-text">文件管理</span>
-                </div>
-            </nav>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
-        
-        <!-- 主内容区 -->
-        <div class="main-content">
-            <!-- SSH连接页面 -->
-            <div class="page-content active" id="page-ssh">
-                <div class="content-header">
-                    <h1 class="content-title">SSH连接管理</h1>
-                    <div class="action-buttons">
-                        <button class="btn btn-secondary" onclick="loadSavedServers()">
-                            <i class="fas fa-download"></i> 加载保存的服务器
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- 连接面板 -->
-                <div class="connection-panel">
-                    <div class="connection-form">
-                        <div class="form-group">
-                            <label for="savedServers">快速连接</label>
-                            <select id="savedServers" onchange="loadServerConfig()">
-                                <option value="">选择已保存的服务器...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="host">服务器地址</label>
-                            <input type="text" id="host" placeholder="192.168.1.100 或 example.com" value="localhost">
-                        </div>
-                        <div class="form-group">
-                            <label for="port">端口</label>
-                            <input type="number" id="port" placeholder="22" value="22">
-                        </div>
-                        <div class="form-group">
-                            <label for="username">用户名</label>
-                            <input type="text" id="username" placeholder="root">
-                        </div>
-                        <div class="form-group">
-                            <label for="password">密码</label>
-                            <input type="password" id="password" placeholder="密码">
-                        </div>
-                        <div class="form-group">
-                            <label for="serverName">服务器名称（可选）</label>
-                            <input type="text" id="serverName" placeholder="给这个连接起个名字">
-                        </div>
-                    </div>
-                    
-                    
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="saveServer">
-                        <label for="saveServer">保存此服务器配置</label>
-                    </div>
-                    
-                    <div style="margin-top: 20px; display: flex; gap: 10px;">
-                        <button class="btn btn-primary" onclick="connectSSH()">
-                            <i class="fas fa-plug"></i> 连接
-                        </button>
-                        <button class="btn btn-success" onclick="testConnection()" id="testBtn">
-                            <i class="fas fa-check"></i> 测试连接
-                        </button>
-                        <button class="btn btn-danger" onclick="disconnectSSH()" disabled id="disconnectBtn">
-                            <i class="fas fa-times"></i> 断开连接
-                        </button>
-                    </div>
-                    
-                    <!-- 状态提示 -->
-                    <div id="alertContainer"></div>
-                </div>
-                
-                <!-- 终端容器 -->
-                <div class="terminal-container hidden" id="terminalContainer">
-                    <!-- Tab栏 -->
-                    <div class="terminal-tabs" id="terminalTabs">
-                        <!-- tabs will be added dynamically -->
-                    </div>
-                    
-                    <!-- Terminal内容区 -->
-                    <div class="terminal-content" id="terminalContent">
-                        <!-- terminals will be added dynamically -->
-                    </div>
-                    
-                    <div class="status-bar">
-                        <span id="statusBar">就绪</span>
-                        <span id="terminalStats">行: 24, 列: 80</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 文件管理页面 -->
-            <div class="page-content" id="page-files">
-                <div class="content-header">
-                    <h1 class="content-title">文件管理器</h1>
-                    <div class="action-buttons">
-                        <button class="btn btn-primary" onclick="showUploadModal()">
-                            <i class="fas fa-upload"></i> 上传文件
-                        </button>
-                        <button class="btn btn-success" onclick="createFolder()">
-                            <i class="fas fa-folder-plus"></i> 新建文件夹
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="file-manager" id="fileManager">
-                    <div class="file-manager-header">
-                        <div class="file-path">
-                            <button class="btn btn-secondary" onclick="navigateUp()">
-                                <i class="fas fa-arrow-up"></i>
-                            </button>
-                            <input type="text" id="currentPath" value="/" readonly>
-                            <button class="btn btn-secondary" onclick="refreshFiles()">
-                                <i class="fas fa-sync"></i>
-                            </button>
-                        </div>
-                        <div class="file-actions">
-                            <select id="fileServerSelect" onchange="switchFileServer()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white;">
-                                <option value="">选择服务器...</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="file-grid" id="fileGrid">
-                        <div class="alert alert-info">
-                            请先选择一个服务器来浏览文件
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-        </div>
-    </div>
-    
-    <!-- 弹窗 -->
-    <!-- 文件上传弹窗 -->
-    <div class="modal" id="uploadModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">上传文件</h3>
-                <button class="modal-close" onclick="closeModal('uploadModal')">&times;</button>
-            </div>
-            <div>
-                <div class="form-group">
-                    <label for="uploadFiles">选择文件</label>
-                    <input type="file" id="uploadFiles" multiple>
-                </div>
-                <div class="form-group">
-                    <label for="uploadPath">上传路径</label>
-                    <input type="text" id="uploadPath" value="/" required>
-                </div>
-                <div style="text-align: right; margin-top: 20px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('uploadModal')">取消</button>
-                    <button type="button" class="btn btn-primary" onclick="handleUpload(); return false;">上传</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
 
-    <!-- JavaScript代码 -->
-    <script src="webssh-multisession.js"></script>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" onclick="switchPage('ssh')">
+                <i class="fas fa-terminal nav-icon"></i>
+                <span class="nav-text">SSH连接</span>
+            </div>
+            <div class="nav-item" onclick="switchPage('files')">
+                <i class="fas fa-folder nav-icon"></i>
+                <span class="nav-text">文件管理</span>
+            </div>
+        </nav>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <!-- SSH连接页面 -->
+        <div class="page-content active" id="page-ssh">
+            <div class="content-header">
+                <h1 class="content-title">SSH连接管理</h1>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="loadSavedServers()">
+                        <i class="fas fa-download"></i> 加载保存的服务器
+                    </button>
+                </div>
+            </div>
+
+            <!-- 连接面板 -->
+            <div class="connection-panel">
+                <div class="connection-form">
+                    <div class="form-group">
+                        <label for="savedServers">快速连接</label>
+                        <select id="savedServers" onchange="loadServerConfig()">
+                            <option value="">选择已保存的服务器...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="host">服务器地址</label>
+                        <input type="text" id="host" placeholder="192.168.1.100 或 example.com" value="localhost">
+                    </div>
+                    <div class="form-group">
+                        <label for="port">端口</label>
+                        <input type="number" id="port" placeholder="22" value="22">
+                    </div>
+                    <div class="form-group">
+                        <label for="username">用户名</label>
+                        <input type="text" id="username" placeholder="root">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" placeholder="密码">
+                    </div>
+                    <div class="form-group">
+                        <label for="serverName">服务器名称（可选）</label>
+                        <input type="text" id="serverName" placeholder="给这个连接起个名字">
+                    </div>
+                </div>
+
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="saveServer">
+                    <label for="saveServer">保存此服务器配置</label>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="connectSSH()">
+                        <i class="fas fa-plug"></i> 连接
+                    </button>
+                    <button class="btn btn-success" onclick="testConnection()" id="testBtn">
+                        <i class="fas fa-check"></i> 测试连接
+                    </button>
+                    <button class="btn btn-danger" onclick="disconnectSSH()" disabled id="disconnectBtn">
+                        <i class="fas fa-times"></i> 断开连接
+                    </button>
+                </div>
+
+                <!-- 状态提示 -->
+                <div id="alertContainer"></div>
+            </div>
+
+            <!-- 终端容器 -->
+            <div class="terminal-container hidden" id="terminalContainer">
+                <!-- Tab栏 -->
+                <div class="terminal-tabs" id="terminalTabs">
+                    <!-- tabs will be added dynamically -->
+                </div>
+
+                <!-- Terminal内容区 -->
+                <div class="terminal-content" id="terminalContent">
+                    <!-- terminals will be added dynamically -->
+                </div>
+
+                <div class="status-bar">
+                    <span id="statusBar">就绪</span>
+                    <span id="terminalStats">行: 24, 列: 80</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文件管理页面 -->
+        <div class="page-content" id="page-files">
+            <div class="content-header">
+                <h1 class="content-title">文件管理器</h1>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="showUploadModal()">
+                        <i class="fas fa-upload"></i> 上传文件
+                    </button>
+                    <button class="btn btn-success" onclick="createFolder()">
+                        <i class="fas fa-folder-plus"></i> 新建文件夹
+                    </button>
+                </div>
+            </div>
+
+            <div class="file-manager" id="fileManager">
+                <div class="file-manager-header">
+                    <div class="file-path">
+                        <button class="btn btn-secondary" onclick="navigateUp()">
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                        <input type="text" id="currentPath" value="/" readonly>
+                        <button class="btn btn-secondary" onclick="refreshFiles()">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                    </div>
+                    <div class="file-actions">
+                        <select id="fileServerSelect" onchange="switchFileServer()"
+                                style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                            <option value="">选择服务器...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="file-grid" id="fileGrid">
+                    <div class="alert alert-info">
+                        请先选择一个服务器来浏览文件
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- 弹窗 -->
+<!-- 文件上传弹窗 -->
+<div class="modal" id="uploadModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">上传文件</h3>
+            <button class="modal-close" onclick="closeModal('uploadModal')">&times;</button>
+        </div>
+        <div>
+            <div class="form-group">
+                <label for="uploadFiles">选择文件</label>
+                <input type="file" id="uploadFiles" multiple>
+            </div>
+            <div class="form-group">
+                <label for="uploadPath">上传路径</label>
+                <input type="text" id="uploadPath" value="/" required>
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('uploadModal')">取消</button>
+                <button type="button" class="btn btn-primary" onclick="handleUpload(); return false;">上传</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- JavaScript代码 -->
+<script src="webssh-multisession.js"></script>
 </body>
 </html>

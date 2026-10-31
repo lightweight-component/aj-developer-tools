@@ -1,4 +1,4 @@
-package com.ajaxjs.devtools.hotcpu.model.vo;
+package com.ajaxjs.devtools.hotcpu.model;
 
 import lombok.Data;
 

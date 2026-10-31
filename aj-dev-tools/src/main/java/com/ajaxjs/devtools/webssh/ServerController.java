@@ -18,7 +18,7 @@ import java.util.Optional;
 public class ServerController {
     @Autowired
     private ServerService serverService;
-    
+
     /**
      * 获取服务器列表
      */
@@ -27,7 +27,7 @@ public class ServerController {
         List<ServerConfig> servers = serverService.getAllServers();
         return ResponseEntity.ok(servers);
     }
-    
+
     /**
      * 获取单个服务器配置
      */
@@ -44,7 +44,7 @@ public class ServerController {
             return ResponseEntity.badRequest().build();
         }
     }
-    
+
     /**
      * 添加服务器
      */
@@ -61,7 +61,7 @@ public class ServerController {
             if (server.getPassword() == null || server.getPassword().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("success", false, "message", "密码不能为空"));
             }
-            
+
             // 设置默认值
             if (server.getPort() == null) {
                 server.setPort(22);
@@ -69,7 +69,7 @@ public class ServerController {
             if (server.getName() == null || server.getName().trim().isEmpty()) {
                 server.setName(server.getUsername() + "@" + server.getHost());
             }
-            
+
             Long serverId = serverService.saveServer(server);
             return ResponseEntity.ok(Map.of("success", true, "id", serverId));
         } catch (Exception e) {
@@ -77,7 +77,7 @@ public class ServerController {
                     .body(Map.of("success", false, "message", e.getMessage()));
         }
     }
-    
+
     /**
      * 删除服务器
      */
@@ -91,7 +91,7 @@ public class ServerController {
                     .body(Map.of("success", false, "message", e.getMessage()));
         }
     }
-    
+
     /**
      * 测试服务器连接
      */
@@ -108,10 +108,10 @@ public class ServerController {
             if (server.getPassword() == null || server.getPassword().trim().isEmpty())
                 return ResponseEntity.badRequest().body(Map.of("success", false, "message", "密码不能为空"));
 
-            
+
             // 设置默认端口
             int port = server.getPort() != null ? server.getPort() : 22;
-            
+
             // 简单的连接测试
             JSch jsch = new JSch();
             Session session = jsch.getSession(server.getUsername(), server.getHost(), port);
@@ -119,7 +119,7 @@ public class ServerController {
             session.setConfig("StrictHostKeyChecking", "no");
             session.connect(5000); // 5秒超时
             session.disconnect();
-            
+
             return ResponseEntity.ok(Map.of("success", true, "message", "连接测试成功"));
         } catch (Exception e) {
             return ResponseEntity.ok(Map.of("success", false, "message", "连接测试失败: " + e.getMessage()));

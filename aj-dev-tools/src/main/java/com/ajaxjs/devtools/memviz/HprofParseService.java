@@ -11,14 +11,15 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Predicate;
 
-@Service
 @Slf4j
+@Service
 public class HprofParseService {
     /**
+     * 图上显示的类数
      * 安全阈值：最多加载多少对象/边进入图（避免前端崩溃）
      * 图上显示Top100类，保持完整但可读
      */
-    private static final int MAX_GRAPH_NODES = 100;  // 图上显示的类数
+    private static final int MAX_GRAPH_NODES = 100;
 
     /**
      * 收集的节点数，用于统计
@@ -50,8 +51,7 @@ public class HprofParseService {
         long freeMemory = runtime.freeMemory();
         long availableMemory = maxMemory - (totalMemory - freeMemory);
 
-        log.info("HPROF文件大小: {}MB, 可用内存: {}MB",
-                fileSize / 1024.0 / 1024.0, availableMemory / 1024.0 / 1024.0);
+        log.info("HPROF文件大小: {}MB, 可用内存: {}MB",fileSize / 1024.0 / 1024.0, availableMemory / 1024.0 / 1024.0);
 
         if (fileSize > availableMemory * 0.3) {// 如果文件太大，警告用户并尝试优化加载
             log.warn("检测到大型HPROF文件，启用内存优化加载模式");
@@ -98,12 +98,10 @@ public class HprofParseService {
         // 使用优先队列在收集过程中就维护Top对象，避免后期排序
         PriorityQueue<Instance> topInstances = new PriorityQueue<>(MAX_COLLECTION_NODES * 2, Comparator.comparingLong(Instance::getSize));
 
-        // 直接处理，不预扫描，使用更激进的策略
-        for (JavaClass javaClass : heap.getAllClasses()) {
+        for (JavaClass javaClass : heap.getAllClasses()) { // 直接处理，不预扫描，使用更激进的策略
             String className = javaClass.getName();
 
-            // 更严格的早期过滤 - 临时放宽过滤条件
-            if (classNameFilter != null && !classNameFilter.test(className)) {
+            if (classNameFilter != null && !classNameFilter.test(className)) { // 更严格的早期过滤 - 临时放宽过滤条件
                 // 为了调试，记录被过滤掉的重要类
                 if (className.contains("MemvizApplication") || className.contains("String") || className.contains("byte"))
                     log.info("类被过滤掉: {}", className);
@@ -116,8 +114,7 @@ public class HprofParseService {
                 continue;
             }*/
 
-            // 记录被处理的类
-            log.debug("处理类: {}", className);
+            log.debug("处理类: {}", className);  // 记录被处理的类
 
             // 定期检查内存使用情况
             if (++memoryCheckCounter % 100 == 0) {
@@ -144,8 +141,7 @@ public class HprofParseService {
             long classStart = System.currentTimeMillis();
 
             try {
-                // 直接获取实例，设置超时检查
-                List<Instance> instances = javaClass.getInstances();
+                List<Instance> instances = javaClass.getInstances(); // 直接获取实例，设置超时检查
                 int instanceCount = instances.size();
 
                 if (instanceCount == 0) {
@@ -155,33 +151,30 @@ public class HprofParseService {
 
                 // 智能采样：使用优先队列自动维护Top对象
                 if (instanceCount > LARGE_CLASS_THRESHOLD) {
-                    // 超大类：激进采样，直接加入优先队列
-                    int sampleSize = Math.min(100, instanceCount / 10);
+                    int sampleSize = Math.min(100, instanceCount / 10);// 超大类：激进采样，直接加入优先队列
                     int step = Math.max(1, instanceCount / sampleSize);
 
                     for (int i = 0; i < instanceCount; i += step) {
                         Instance inst = instances.get(i);
                         addToTopInstances(topInstances, inst, MAX_GRAPH_NODES * 2);
                     }
-                    log.debug("大类采样: {}, 采样数: {}", className, Math.min(sampleSize, instanceCount));
+
+                    log.debug("大类采样: {}, 采样数: {}", className, sampleSize);
                 } else {
                     for (Instance inst : instances)  // 小类：全部加入优先队列
                         addToTopInstances(topInstances, inst, MAX_COLLECTION_NODES * 2);
                 }
 
-                // 处理完大量数据后，帮助GC回收临时对象
-                if (instanceCount > 1000)
+                if (instanceCount > 1000)// 处理完大量数据后，帮助GC回收临时对象
                     instances = null; // 显式清除引用
 
                 processedClasses++;
                 long classEnd = System.currentTimeMillis();
 
-                // 只记录耗时较长的类
-                if (classEnd - classStart > 100)
+                if (classEnd - classStart > 100) // 只记录耗时较长的类
                     log.debug("耗时类: {}, 实例数: {}, 耗时: {}ms, 总计: {}", className, instanceCount, (classEnd - classStart), all.size());
 
-                // 每处理一定数量的类就检查是否应该停止
-                if (processedClasses % 50 == 0) {
+                if (processedClasses % 50 == 0) {// 每处理一定数量的类就检查是否应该停止
                     long elapsed = System.currentTimeMillis() - startTime;
 
                     if (elapsed > 30000) { // 30秒超时

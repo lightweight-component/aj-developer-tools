@@ -1,13 +1,11 @@
 package com.ajaxjs.devtools.hotcpu;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 
 @RestController
@@ -20,8 +18,7 @@ public class TestController {
         log.info("开始执行CPU密集型任务，迭代次数: {}", iterations);
         long startTime = System.currentTimeMillis();
 
-        // 模拟CPU密集型任务
-        double result = performComplexCalculation(iterations);
+        double result = performComplexCalculation(iterations); // 模拟CPU密集型任务
         long endTime = System.currentTimeMillis();
 
         Map<String, Object> response = new HashMap<>();

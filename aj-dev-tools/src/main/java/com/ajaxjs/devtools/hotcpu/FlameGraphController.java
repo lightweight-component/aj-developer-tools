@@ -1,13 +1,8 @@
 package com.ajaxjs.devtools.hotcpu;
 
-import com.ajaxjs.devtools.hotcpu.model.vo.ClearResult;
-import com.ajaxjs.devtools.hotcpu.model.vo.DebugInfo;
-import com.ajaxjs.devtools.hotcpu.model.vo.HealthStatus;
-import com.ajaxjs.devtools.hotcpu.model.vo.SamplingOperation;
-import com.ajaxjs.devtools.hotcpu.model.vo.SamplingStatus;
+import com.ajaxjs.devtools.hotcpu.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,10 +10,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@RestController
-@RequestMapping("/api")
-@CrossOrigin(origins = "*")
 @Slf4j
+//@RestController
+//@RequestMapping("/api")
+//@CrossOrigin(origins = "*")
 public class FlameGraphController {
     @Autowired
     private CpuSampler sampler;
@@ -94,7 +89,9 @@ public class FlameGraphController {
         int count = 0;
 
         for (Map.Entry<String, AtomicInteger> entry : stackCount.entrySet()) {
-            if (count >= 10) break;
+            if (count >= 10)
+                break;
+
             sampleData.put(entry.getKey(), entry.getValue().get());
             count++;
         }

@@ -28,26 +28,26 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
 
     private final Map<WebSocketSession, String> sessionConnections = new ConcurrentHashMap<>();
     private final Map<WebSocketSession, String> sessionUsers = new ConcurrentHashMap<>();
-    
+
     // 为每个WebSocket会话添加同步锁
     private final Map<WebSocketSession, Object> sessionLocks = new ConcurrentHashMap<>();
-    
+
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         log.info("WebSocket连接建立: {}", session.getId());
 
         sessionLocks.put(session, new Object());  // 为每个会话创建同步锁
     }
-    
+
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         try {
             String payload = message.getPayload();
             ObjectMapper mapper = new ObjectMapper();
             JsonNode jsonNode = mapper.readTree(payload);
-            
+
             String type = jsonNode.get("type").asText();
-            
+
             switch (type) {
                 case "connect":
                     handleConnect(session, jsonNode);
@@ -69,7 +69,7 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
             sendError(session, "处理消息失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 处理SSH连接请求
      */
@@ -91,13 +91,13 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
             response.put("type", "connected");
             response.put("message", "SSH连接建立成功");
             sendMessage(session, response);
-            
+
         } catch (Exception e) {
             log.error("建立SSH连接失败", e);
             sendError(session, "连接失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 处理命令执行请求
      */
@@ -107,11 +107,11 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
             sendError(session, "SSH连接未建立");
             return;
         }
-        
+
         String command = jsonNode.get("command").asText();
         ChannelShell channel = connectionManager.getChannel(connectionId);
         String username = sessionUsers.get(session);
-        
+
         if (channel != null && channel.isConnected()) {
             try {
                 // 发送命令到SSH通道
@@ -124,7 +124,7 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
             }
         }
     }
-    
+
     /**
      * 启动SSH通道并处理输出
      */
@@ -143,7 +143,7 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
 
                             if (len > 0) {
                                 String output = new String(buffer, 0, len, "UTF-8");
-                                
+
                                 // 发送给当前会话
                                 sendMessage(session, Map.of("type", "output", "data", output));
                             }
@@ -154,13 +154,13 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
                     log.warn("SSH输出读取中断: {}", e.getMessage());
                 }
             }, "SSH-Output-Reader-" + session.getId()).start();
-            
+
         } catch (JSchException | IOException e) {
             log.error("启动SSH通道失败", e);
             sendError(session, "通道启动失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 处理终端大小调整
      */
@@ -180,33 +180,33 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
             }
         }
     }
-    
+
     /**
      * 处理断开连接
      */
     private void handleDisconnect(WebSocketSession session) {
         String connectionId = sessionConnections.remove(session);
         String username = sessionUsers.remove(session);
-        
+
         if (connectionId != null)
             connectionManager.closeConnection(connectionId);
 
         sessionLocks.remove(session); // 清理锁资源
     }
-    
+
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         handleDisconnect(session);
         log.info("WebSocket连接关闭: {}", session.getId());
     }
-    
+
     /**
      * 发送消息到WebSocket客户端（线程安全）
      */
     private void sendMessage(WebSocketSession session, Object message) {
         Object lock = sessionLocks.get(session);
         if (lock == null) return;
-        
+
         synchronized (lock) {
             try {
                 if (session.isOpen()) {
@@ -219,21 +219,21 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
             }
         }
     }
-    
+
     /**
      * 发送错误消息
      */
     private void sendError(WebSocketSession session, String error) {
         sendMessage(session, Map.of("type", "error", "message", error));
     }
-    
+
     /**
      * 从会话中获取用户信息
      */
     private String getUserFromSession(WebSocketSession session) {
         return "anonymous";  // 简化实现，实际应用中可以从session中获取认证用户信息
     }
-    
+
     /**
      * 从会话中获取主机信息
      */

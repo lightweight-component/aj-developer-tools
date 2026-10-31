@@ -12,58 +12,72 @@ public class TopClassStat {
      * 类名
      */
     public String className;
+
     /**
      * 短类名
      */
     public String shortName;
+
     /**
      * 包名
      */
     public String packageName;
+
     /**
      * 类别
      */
     public String category;
+
     /**
      * 实例数量
      */
     public int instanceCount;
+
     /**
      * 该类所有实例的总内存（浅表大小）
      */
     public long totalSize;
+
     /**
      * 格式化的总内存
      */
     public String formattedTotalSize;
+
     /**
      * 该类所有实例的总深度大小
      */
     public long totalDeepSize;
+
     /**
      * 格式化的总深度大小
      */
     public String formattedTotalDeepSize;
+
     /**
      * 平均每个实例大小（浅表）
      */
     public long avgSize;
+
     /**
      * 格式化的平均大小
      */
     public String formattedAvgSize;
+
     /**
      * 平均每个实例深度大小
      */
     public long avgDeepSize;
+
     /**
      * 格式化的平均深度大小
      */
     public String formattedAvgDeepSize;
+
     /**
      * 排名
      */
     public int rank;
+
     /**
      * 该类中内存占用最大的实例列表
      */

@@ -1,0 +1,11 @@
+package com.ajaxjs.devtools.jarconflict;
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@ComponentScan(basePackages = "com.ajaxjs.devtools.jarconflict")
+@ConditionalOnProperty(name = "devtools.jarconflict.enable", havingValue = "true")
+public class JarConflictConfiguration {
+}
