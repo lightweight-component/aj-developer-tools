@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>依赖包安全扫描仪</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .risk-critical {
+            background-color: #fef2f2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .risk-high {
+            background-color: #fff7ed;
+            border-color: #f97316;
+            color: #9a3412;
+        }
+
+        .risk-medium {
+            background-color: #fefce8;
+            border-color: #eab308;
+            color: #854d0e;
+        }
+
+        .risk-low {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .statistics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* 表格优化样式 */
+        .dependency-cell {
+            max-width: 250px;
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+
+        .dependency-name {
+            font-weight: 600;
+            color: #1f2937;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .dependency-desc {
+            font-size: 0.75rem;
+            color: #6b7280;
+            line-height: 1.3;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            max-height: 2.6em;
+        }
+
+        .version-cell {
+            min-width: 90px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        .cve-cell {
+            min-width: 120px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        .risk-cell {
+            min-width: 80px;
+        }
+
+        .safe-version-cell {
+            min-width: 100px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        .details-cell {
+            max-width: 200px;
+            font-size: 0.875rem;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+
+        .action-cell {
+            min-width: 80px;
+        }
+
+        /* 表格紧凑模式 */
+        .compact-table td {
+            padding: 0.75rem 0.5rem;
+        }
+
+        .compact-table th {
+            padding: 0.75rem 0.5rem;
+        }
+
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+<noscript>请启用 JavaScript 后使用扫描功能。</noscript>
+<div id="app" v-cloak>
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-shield-alt text-blue-600 text-2xl"></i>
+                    <h1 class="text-xl font-bold text-gray-800">依赖包安全扫描仪</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600">Spring Boot 2.7.18</span>
+                    <div class="flex items-center space-x-2">
+                        <div v-show="!isLoading" class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <div v-show="isLoading" class="loading-spinner"></div>
+                        <span class="text-sm" role="status">{{ isLoading ? '扫描中...' : errorMessage ? '扫描失败' :
+                                hasScanned ? '扫描完成' : '就绪' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- 操作面板 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex flex-col space-y-4">
+                <div
+                        class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-2">扫描控制</h2>
+                        <p class="text-gray-600 text-sm">扫描当前应用的所有依赖包，检测已知安全漏洞</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button @click="startScan" :disabled="isLoading" :aria-busy="isLoading"
+                                class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+                            <i class="fas fa-search mr-2"></i>开始扫描
+                        </button>
+                        <button @click="exportResults" :disabled="isLoading || !hasScanned"
+                                class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+                            <i class="fas fa-download mr-2"></i>导出结果
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 风险等级过滤器 -->
+                <div v-if="hasScanned && allScanResults.length > 0"
+                     class="flex flex-wrap items-center space-x-4 pt-4 border-t border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">风险等级过滤:</span>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" v-model="allSelected"
+                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm text-gray-700">全部</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" v-model="selectedLevels" value="CRITICAL"
+                               class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                        <span class="text-sm text-red-700">严重</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" v-model="selectedLevels" value="HIGH"
+                               class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+                        <span class="text-sm text-orange-700">高危</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" v-model="selectedLevels" value="MEDIUM"
+                               class="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
+                        <span class="text-sm text-yellow-700">中危</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" v-model="selectedLevels" value="LOW"
+                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm text-blue-700">低危</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计信息 -->
+        <div v-if="hasScanned && statistics" class="statistics-grid mb-6">
+            <div class="statistics-card bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <i class="fas fa-cube text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">总依赖数</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ statistics.totalDependencies || 0 }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="statistics-card bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-red-100 text-red-600">
+                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">存在漏洞</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ statistics.vulnerableDependencies || 0 }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="statistics-card bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-red-100 text-red-600">
+                        <i class="fas fa-fire text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">严重/高危</p>
+                        <p class="text-2xl font-bold text-red-600">{{ (statistics.criticalCount || 0) +
+                            (statistics.highCount || 0) }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="statistics-card bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <i class="fas fa-exclamation-circle text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">中危/低危</p>
+                        <p class="text-2xl font-bold text-yellow-600">{{ (statistics.mediumCount || 0) +
+                            (statistics.lowCount || 0) }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="statistics-card bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                        <i class="fas fa-clock text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">扫描耗时</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ ((statistics.scanDuration || 0) /
+                            1000).toFixed(1) + 's' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 加载状态 -->
+        <div v-if="isLoading" class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+            <p class="text-gray-600">正在扫描依赖包...</p>
+        </div>
+
+        <!-- 扫描结果 -->
+        <div v-if="hasScanned && scanResults.length > 0" class="bg-white rounded-lg shadow-md">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">扫描结果</h3>
+                <p class="text-sm text-gray-600 mt-1">发现 <span>{{ scanResults.length }}</span> 个存在安全漏洞的依赖包
+                </p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 compact-table">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th
+                                class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider dependency-cell">
+                            依赖包
+                        </th>
+                        <th
+                                class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider version-cell">
+                            版本
+                        </th>
+                        <th
+                                class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider risk-cell">
+                            风险
+                        </th>
+                        <th
+                                class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider cve-cell">
+                            CVE编号
+                        </th>
+                        <th
+                                class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider safe-version-cell">
+                            安全版本
+                        </th>
+                        <th
+                                class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider details-cell">
+                            详情
+                        </th>
+                        <th
+                                class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider action-cell">
+                            操作
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tr v-for="(risk, index) in scanResults"
+                        :key="risk.groupId + ':' + risk.artifactId + ':' + risk.cve + ':' + index"
+                        class="hover:bg-gray-50">
+                        <td class="dependency-cell"><span class="dependency-name">{{ risk.groupId }}:{{
+                                        risk.artifactId }}</span>
+                            <div class="dependency-desc">{{ getPackageDescription(risk.groupId, risk.artifactId)
+                                }}
+                            </div>
+                        </td>
+                        <td class="version-cell">{{ risk.version }}</td>
+                        <td class="risk-cell"><span
+                                class="inline-flex px-2 py-1 text-xs font-semibold rounded-full border"
+                                :class="getRiskLevelClass(risk.riskLevel)">{{ getRiskLevelText(risk.riskLevel)
+                                        }}</span>
+                        </td>
+                        <td class="cve-cell">{{ formatCveId(risk.cve) }}</td>
+                        <td class="safe-version-cell text-green-700">{{ formatSafeVersion(risk.safeVersion) }}
+                        </td>
+                        <td class="details-cell" :title="risk.description">{{
+                            truncateDescription(risk.description, 60)
+                            }}
+                        </td>
+                        <td class="action-cell">
+                            <button @click="showDetails(risk, $event)"
+                                    class="rounded bg-blue-100 text-blue-700 px-3 py-2" aria-label="查看漏洞详情"><i
+                                    class="fas fa-eye"></i></button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 无结果提示 -->
+        <div v-if="hasScanned && scanResults.length === 0" class="bg-white rounded-lg shadow-md p-8 text-center">
+            <i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ allScanResults.length ? '当前筛选条件下无结果' :
+                '未发现已知安全漏洞' }}</h3>
+            <p class="text-gray-600">{{ allScanResults.length ? '请调整风险等级过滤条件。' :
+                '本次扫描未返回漏洞记录，请结合扫描日志确认查询是否完整。' }}</p>
+        </div>
+
+        <!-- 错误提示 -->
+        <div v-if="errorMessage" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
+                <div>
+                    <h4 class="text-red-800 font-medium">扫描失败</h4>
+                    <p class="text-red-700 text-sm mt-1">{{ errorMessage }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情模态框 -->
+    <div v-if="selectedResult" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+         @click.self="closeModal">
+        <div class="relative top-10 mx-auto p-6 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-lg rounded-lg bg-white max-h-screen overflow-y-auto"
+             role="dialog" aria-modal="true" aria-label="漏洞详情与解决方案" tabindex="-1" ref="modalElement">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 rounded-full">
+                        <i class="fas fa-shield-alt text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">漏洞详情与解决方案</h3>
+                        <p class="text-sm text-gray-600">{{ selectedResult.groupId }}:{{ selectedResult.artifactId }}
+                            的安全漏洞分析</p>
+                    </div>
+                </div>
+                <button @click="closeModal" aria-label="关闭详情"
+                        class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div id="modalContent">
+                <!-- 基本信息卡片 -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-info-circle text-blue-600 mr-2"></i>基本信息
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">依赖包</label>
+                            <p class="text-sm text-gray-900 font-mono bg-white p-2 rounded border">{{
+                                selectedResult.groupId + ':' + selectedResult.artifactId }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">当前版本</label>
+                            <p class="text-sm text-gray-900 font-mono bg-white p-2 rounded border">{{
+                                selectedResult.version }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">CVE编号</label>
+                            <p class="text-sm text-gray-900 font-mono bg-white p-2 rounded border">{{
+                                formatCveId(selectedResult.cve) }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">风险等级</label>
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full border"
+                                  :class="getRiskLevelClass(selectedResult.riskLevel)">{{
+                                    getRiskLevelText(selectedResult.riskLevel) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 漏洞详情卡片 -->
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <h4 class="text-lg font-semibold text-red-800 mb-3 flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>漏洞详情
+                    </h4>
+                    <div>
+                        <label class="block text-sm font-medium text-red-700 mb-2">漏洞描述</label>
+                        <div class="text-sm text-red-800 bg-white p-3 rounded border leading-relaxed">{{
+                            selectedResult.description || '暂无描述信息' }}
+                        </div>
+                    </div>
+
+                    <!-- 影响版本 -->
+                    <div v-if="selectedResult.vulnerableVersions" class="mt-4">
+                        <label class="block text-sm font-medium text-red-700 mb-2">影响版本</label>
+                        <p class="text-sm text-red-800 bg-white p-2 rounded border font-mono">{{
+                            selectedResult.vulnerableVersions }}</p>
+                    </div>
+                </div>
+
+                <!-- 解决方案卡片 -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <h4 class="text-lg font-semibold text-green-800 mb-3 flex items-center">
+                        <i class="fas fa-tools text-green-600 mr-2"></i>解决方案
+                    </h4>
+
+                    <!-- 推荐版本 -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-green-800 mb-2 flex items-center">
+                            <i class="fas fa-arrow-up text-green-600 mr-1"></i>推荐升级版本
+                        </label>
+                        <div class="flex items-center space-x-2 bg-white p-3 rounded border">
+                            <p class="text-sm text-green-700 font-medium flex-1">{{
+                                formatSafeVersion(selectedResult.safeVersion) }}</p>
+                            <button id="copyVersionBtn" @click="copyText(safeVersion)" :disabled="!safeVersion"
+                                    class="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100 transition-colors"
+                                    title="复制版本号">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div id="upgradeHint" class="mt-2 text-xs text-green-600 flex items-center">
+                            <i class="fas fa-lightbulb mr-1"></i>
+                            升级前请核对公告中的受影响范围，并验证兼容性。
+                        </div>
+                    </div>
+
+                    <!-- Maven 升级指令 -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-green-800 mb-2 flex items-center">
+                            <i class="fab fa-java text-green-600 mr-1"></i>Maven 升级指令
+                        </label>
+                        <div class="bg-gray-900 text-green-400 p-3 rounded font-mono text-sm relative">
+                            <pre class="whitespace-pre-wrap">{{ mavenCommand }}</pre>
+                            <button @click="copyText(mavenCommand)"
+                                    class="absolute top-2 right-2 text-green-400 hover:text-green-300 transition-colors"
+                                    title="复制Maven指令">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Gradle 升级指令 -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-green-800 mb-2 flex items-center">
+                            <i class="fas fa-cube text-green-600 mr-1"></i>Gradle 升级指令
+                        </label>
+                        <div class="bg-gray-900 text-blue-400 p-3 rounded font-mono text-sm relative">
+                            <pre class="whitespace-pre-wrap">{{ gradleCommand }}</pre>
+                            <button @click="copyText(gradleCommand)"
+                                    class="absolute top-2 right-2 text-blue-400 hover:text-blue-300 transition-colors"
+                                    title="复制Gradle指令">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 通用解决建议 -->
+                    <div id="solutionTips" class="bg-white border-l-4 border-green-500 p-3 rounded">
+                        <h5 class="font-medium text-green-800 mb-2 flex items-center">
+                            <i class="fas fa-list-ul mr-2"></i>修复建议
+                        </h5>
+                        <ul id="solutionList" class="text-sm text-green-700 space-y-1 list-disc list-inside">
+                            <li v-for="tip in solutionTips" :key="tip">{{ tip }}</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 相关信息 -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                        <i class="fas fa-external-link-alt text-blue-600 mr-2"></i>相关信息
+                    </h4>
+
+                    <div v-if="safeReference" class="mb-3">
+                        <label class="block text-sm font-medium text-blue-700 mb-2">官方参考链接</label>
+                        <a :href="safeReference" target="_blank" rel="noopener noreferrer"
+                           class="text-sm text-blue-600 hover:text-blue-800 underline break-all">{{ safeReference
+                            }}</a>
+                    </div>
+
+                    <!-- 相关资源链接 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <a :href="relatedLinks.cve" target="_blank" rel="noopener noreferrer"
+                           class="flex items-center p-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors">
+                            <i class="fas fa-search mr-2"></i>CVE详情查询
+                        </a>
+                        <a :href="relatedLinks.maven" target="_blank" rel="noopener noreferrer"
+                           class="flex items-center p-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors">
+                            <i class="fas fa-box mr-2"></i>Maven Central
+                        </a>
+                        <a :href="relatedLinks.osv" target="_blank" rel="noopener noreferrer"
+                           class="flex items-center p-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors">
+                            <i class="fas fa-database mr-2"></i>OSV数据库
+                        </a>
+                        <a :href="relatedLinks.github" target="_blank" rel="noopener noreferrer"
+                           class="flex items-center p-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors">
+                            <i class="fab fa-github mr-2"></i>GitHub安全公告
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="toast" role="status"
+         class="fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded shadow-lg z-50">
+        {{ toast }}
+    </div>
+</div>
+<script>
+
+        const { createApp, ref, computed, nextTick, onMounted, onUnmounted } = Vue;
+        createApp({
+            setup() {
+                const isLoading = ref(false), hasScanned = ref(false);
+                const allScanResults = ref([]), statistics = ref(null), errorMessage = ref('');
+                const selectedResult = ref(null), selectedLevels = ref(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']);
+                const modalElement = ref(null), toast = ref('');
+                let triggerElement = null, toastTimer;
+                const levels = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+                const allSelected = computed({
+                    get: () => levels.every(level => selectedLevels.value.includes(level)),
+                    set: value => { selectedLevels.value = value ? [...levels] : []; }
+                });
+                const scanResults = computed(() => allScanResults.value.filter(risk =>
+                    allSelected.value || selectedLevels.value.includes((risk.riskLevel || '').toUpperCase())));
+                const safeVersion = computed(() => {
+                    const value = (selectedResult.value?.safeVersion || '').trim();
+                    return /^(?:升级到\s+|📦\s*升级到\s+)?(\d[\w.+-]*)$/.exec(value)?.[1] || '';
+                });
+                const mavenCommand = computed(() => selectedResult.value ? `<dependency>
+    <groupId>${selectedResult.value.groupId}</groupId>
+    <artifactId>${selectedResult.value.artifactId}</artifactId>
+    <version>${safeVersion.value || '请核对公告后填写修复版本'}</version>
+</dependency>` : '');
+                const gradleCommand = computed(() => selectedResult.value ?
+                    `implementation '${selectedResult.value.groupId}:${selectedResult.value.artifactId}:${safeVersion.value || '请核对公告后填写修复版本'}'` : '');
+                const safeReference = computed(() => {
+                    try {
+                        const url = new URL(selectedResult.value?.reference || '');
+                        return ['https:', 'http:'].includes(url.protocol) ? url.href : '';
+                    } catch { return ''; }
+                });
+                const relatedLinks = computed(() => {
+                    const risk = selectedResult.value || {}, enc = encodeURIComponent;
+                    const query = enc(risk.cve && risk.cve !== 'OUTDATED-VERSION' ? risk.cve : risk.artifactId || '');
+                    return {
+                        cve: `https://www.cve.org/CVERecord?id=${query}`,
+                        maven: `https://search.maven.org/artifact/${enc(risk.groupId || '')}/${enc(risk.artifactId || '')}`,
+                        osv: `https://osv.dev/list?q=${enc((risk.groupId || '') + ':' + (risk.artifactId || ''))}`,
+                        github: `https://github.com/advisories?query=${query}`
+                    };
+                });
+                const solutionTips = computed(() => {
+                    const risk = selectedResult.value || {}, tips = [];
+                    if (risk.riskLevel === 'CRITICAL')
+                        tips.push('严重漏洞，请优先核对影响范围并安排修复。');
+                    else if (risk.riskLevel === 'HIGH')
+                        tips.push('高危漏洞，请尽快评估并安排升级。');
+                    else
+                        tips.push('将此依赖加入升级计划，结合实际使用情况评估风险。');
+                    if ((risk.groupId || '').includes('springframework'))
+                        tips.push('参考 Spring 官方迁移指南，核对配置和依赖版本管理。');
+                    if ((risk.groupId || '').includes('jackson'))
+                        tips.push('升级后测试 JSON 序列化与反序列化行为。');
+                    if ((risk.groupId || '').includes('log4j'))
+                        tips.push('核对日志配置及自定义 Appender 的兼容性。');
+                    tips.push('查看漏洞公告及 CHANGELOG，确认目标版本包含所需修复。', '先在测试环境验证核心功能，再执行升级。');
+                    return tips;
+                });
+                async function startScan() {
+                    if (isLoading.value)
+                        return;
+                    isLoading.value = true; hasScanned.value = false; errorMessage.value = '';
+                    allScanResults.value = []; statistics.value = null; closeModal();
+                    try {
+                        const response = await fetch('../dependency_scanner/dependencies/scan', { headers: { Accept: 'application/json' } });
+                        if (!response.ok)
+                            throw new Error(`扫描请求失败（HTTP ${response.status}）`);
+                        let data = await response.json();
+                        data = data.data;
+
+                        if (!data.success)
+                            throw new Error(data.message || '扫描失败，请重试');
+                        if (!Array.isArray(data.data) || !data.statistics)
+                            throw new Error('扫描结果格式异常');
+                        allScanResults.value = data.data; statistics.value = data.statistics;
+                        selectedLevels.value = [...levels]; hasScanned.value = true;
+                    } catch (error) {
+                        errorMessage.value = error instanceof Error ? error.message : '扫描失败，请稍后重试';
+                    } finally { isLoading.value = false; }
+                }
+                async function showDetails(risk, event) {
+                    triggerElement = event?.currentTarget;
+                    selectedResult.value = risk;
+                    await nextTick(); modalElement.value?.focus();
+                }
+                function closeModal() {
+                    selectedResult.value = null;
+                    triggerElement?.focus(); triggerElement = null;
+                }
+                function onKeydown(event) {
+                    if (!selectedResult.value)
+                        return;
+                    if (event.key === 'Escape')
+                        closeModal();
+                    if (event.key === 'Tab' && modalElement.value) {
+                        const elements = modalElement.value.querySelectorAll('button:not(:disabled), a[href], [tabindex="0"]');
+                        const first = elements[0], last = elements[elements.length - 1];
+                        if (event.shiftKey && (document.activeElement === first || document.activeElement === modalElement.value)) {
+                            event.preventDefault(); last?.focus();
+                        } else if (!event.shiftKey && document.activeElement === last) {
+                            event.preventDefault(); first?.focus();
+                        }
+                    }
+                }
+                function notify(message) {
+                    toast.value = message; clearTimeout(toastTimer);
+                    toastTimer = setTimeout(() => { toast.value = ''; }, 3000);
+                }
+                async function copyText(text) {
+                    if (!text)
+                        return;
+                    try { await navigator.clipboard.writeText(text); notify('已复制'); }
+                    catch { notify('复制失败，请选中文本手动复制'); }
+                }
+                function exportResults() {
+                    if (!hasScanned.value || isLoading.value)
+                        return;
+                    try {
+                        const blob = new Blob([JSON.stringify({ scanTime: new Date().toISOString(), statistics: statistics.value, results: scanResults.value }, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob), link = document.createElement('a');
+                        link.href = url; link.download = `dependency-scan-${new Date().toISOString().slice(0, 10)}.json`;
+                        document.body.appendChild(link); link.click(); link.remove();
+                        setTimeout(() => URL.revokeObjectURL(url), 1000); notify('已导出当前筛选结果');
+                    } catch { notify('导出失败，请重试'); }
+                }
+                onMounted(() => document.addEventListener('keydown', onKeydown));
+                onUnmounted(() => { document.removeEventListener('keydown', onKeydown); clearTimeout(toastTimer); });
+                function formatSafeVersion(safeVersion) {
+                    if (!safeVersion || safeVersion.trim() === '')
+                        return '未提供修复版本';
+
+                    if (safeVersion === '请查看最新版本' || safeVersion === '请查看官方文档')
+                        return '📖 请查看官方文档';
+
+                    // 检查是否为有效版本号格式
+                    if (/^[0-9]+(\.[0-9]+)*(\.[0-9]+)*(-[a-zA-Z0-9]+)?$/.test(safeVersion))
+                        return `📦 升级到 ${safeVersion}`;
+
+                    return safeVersion;
+                }
+                function formatCveId(cve) {
+                    if (!cve || cve.trim() === '')
+                        return 'N/A';
+
+                    if (cve === 'OUTDATED-VERSION')
+                        return '🔄 版本过期';
+
+                    return cve;
+                }
+                function getPackageDescription(groupId, artifactId) {
+                    const descriptions = {
+                        'org.springframework.boot:spring-boot-starter-actuator': '生产就绪功能，用于监控和管理应用',
+                        'org.springframework.boot:spring-boot-starter-web': 'Web应用开发，包含Spring MVC',
+                        'org.springframework.boot:spring-boot-starter-data-jpa': 'JPA数据访问，包含Hibernate',
+                        'org.springframework.boot:spring-boot-starter-security': 'Spring Security安全框架',
+                        'org.springframework.boot:spring-boot-starter-test': '测试支持，包含JUnit、Mockito',
+                        'com.fasterxml.jackson.core:jackson-databind': 'Jackson JSON数据绑定库',
+                        'com.fasterxml.jackson.core:jackson-core': 'Jackson核心库',
+                        'com.fasterxml.jackson.core:jackson-annotations': 'Jackson注解库',
+                        'org.apache.logging.log4j:log4j-core': 'Log4j核心日志框架',
+                        'org.apache.logging.log4j:log4j-api': 'Log4j API接口',
+                        'com.alibaba:fastjson': 'Alibaba高性能JSON解析库',
+                        'org.apache.struts:struts2-core': 'Apache Struts2 MVC框架',
+                        'org.slf4j:slf4j-api': 'Simple Logging Facade for Java',
+                        'org.hibernate:hibernate-core': 'Hibernate ORM核心库',
+                        'org.hibernate.validator:hibernate-validator': 'Hibernate Bean验证器',
+                        'mysql:mysql-connector-java': 'MySQL JDBC驱动',
+                        'redis.clients:jedis': 'Java Redis客户端',
+                        'org.apache.commons:commons-lang3': 'Apache Commons Lang工具库',
+                        'org.springframework:spring-core': 'Spring框架核心库',
+                        'org.springframework:spring-beans': 'Spring依赖注入容器',
+                        'org.springframework:spring-context': 'Spring应用上下文',
+                        'org.springframework:spring-web': 'Spring Web支持',
+                        'org.springframework:spring-webmvc': 'Spring Web MVC框架',
+                        'org.apache.tomcat.embed:tomcat-embed-core': 'Tomcat嵌入式核心',
+                        'ch.qos.logback:logback-classic': 'Logback经典日志实现',
+                        'ch.qos.logback:logback-core': 'Logback核心库',
+                        'org.yaml:snakeyaml': 'YAML解析库',
+                        'com.h2database:h2': 'H2内存数据库',
+                        'org.junit.jupiter:junit-jupiter': 'JUnit 5测试框架',
+                        'org.mockito:mockito-core': 'Mockito模拟测试框架'
+                    };
+
+                    const key = `${groupId}:${artifactId}`;
+                    let desc = descriptions[key];
+
+                    // 如果没有精确匹配，尝试通过artifactId模糊匹配
+                    if (!desc) {
+                        if (artifactId.includes('spring-boot-starter'))
+                            desc = 'Spring Boot启动器';
+                        else if (artifactId.includes('jackson'))
+                            desc = 'Jackson JSON处理库';
+                        else if (artifactId.includes('log4j'))
+                            desc = 'Log4j日志框架';
+                        else if (artifactId.includes('slf4j'))
+                            desc = 'SLF4J日志门面';
+                        else if (artifactId.includes('logback'))
+                            desc = 'Logback日志实现';
+                        else if (artifactId.includes('spring'))
+                            desc = 'Spring框架组件';
+                        else if (artifactId.includes('tomcat'))
+                            desc = 'Tomcat服务器组件';
+                        else if (artifactId.includes('hibernate'))
+                            desc = 'Hibernate ORM组件';
+                        else if (artifactId.includes('junit'))
+                            desc = 'JUnit测试框架';
+                        else if (artifactId.includes('mockito'))
+                            desc = 'Mockito测试框架';
+                        else
+                            desc = '第三方依赖包';
+                    }
+
+                    return desc;
+                }
+                function truncateDescription(text, maxLength) {
+                    if (!text || text.trim() === '')
+                        return '暂无描述';
+
+                    if (text.length <= maxLength)
+                        return text;
+
+                    return text.substring(0, maxLength) + '...';
+                }
+                function getRiskLevelClass(riskLevel) {
+                    const classes = {
+                        'CRITICAL': 'risk-critical',
+                        'HIGH': 'risk-high',
+                        'MEDIUM': 'risk-medium',
+                        'LOW': 'risk-low'
+                    };
+                    return classes[riskLevel] || 'bg-gray-100 border-gray-500 text-gray-800';
+                }
+                function getRiskLevelText(riskLevel) {
+                    const texts = {
+                        'CRITICAL': '严重',
+                        'HIGH': '高危',
+                        'MEDIUM': '中危',
+                        'LOW': '低危'
+                    };
+                    return texts[riskLevel] || riskLevel;
+                }
+                return {
+                    isLoading, hasScanned, allScanResults, statistics, errorMessage, selectedResult, selectedLevels,
+                    allSelected, scanResults, safeVersion, mavenCommand, gradleCommand, safeReference, relatedLinks,
+                    solutionTips, modalElement, toast, startScan, showDetails, closeModal, copyText, exportResults,
+                    formatSafeVersion, formatCveId, getPackageDescription, truncateDescription, getRiskLevelClass, getRiskLevelText
+                };
+            }
+        }).mount('#app');
+
+
+</script>
+</body>
+
+</html>

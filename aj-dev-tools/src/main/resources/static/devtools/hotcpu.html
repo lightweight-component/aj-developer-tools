@@ -168,6 +168,7 @@
             flex-wrap: wrap;
         }
 
+
     </style>
 </head>
 <body>
@@ -296,11 +297,43 @@
             }
         }
 
+        /**
+         * 读取统一响应；HTTP 错误和业务失败均抛出带讯息及错误码的异常。
+         */
+        async function requestApi(url, options = {}) {
+            const response = await fetch(url, options);
+            let payload;
+            try {
+                payload = await response.json();
+            } catch {
+                throw new Error(`接口响应不是有效 JSON（HTTP ${response.status}）`);
+            }
+
+            if (!response.ok || !payload || payload.status !== 1) {
+                const message = payload?.message || (response.ok ? '接口返回失败' : `请求失败（HTTP ${response.status}）`);
+                const error = new Error(payload?.errorCode ? `${message}（${payload.errorCode}）` : message);
+                error.errorCode = payload?.errorCode;
+                throw error;
+            }
+
+            return payload;
+        }
+
+        /**
+         * 火焰图的 data 是 collapsed 格式文本，外层仍使用统一 JSON 响应。
+         */
+        async function requestFlameGraph() {
+            const { data } = await requestApi('/hotcpu/flamegraph');
+            if (data == null)
+                return '';
+            if (typeof data !== 'string')
+                throw new Error('火焰图数据格式异常，应为文本');
+            return data;
+        }
+
         async function updateStatus() {
             try {
-                const response = await fetch('/api/sampling/status');
-                let data = await response.json();
-                data = data.data;
+                const { data } = await requestApi('/hotcpu/sampling/status');
                 samplingEnabled = data.enabled;
                 const statusElement = document.getElementById('status');
                 const dataCountElement = document.getElementById('dataCount');
@@ -316,6 +349,9 @@
                 dataCountElement.textContent = `数据量: ${data.stackCountSize}`;
             } catch (error) {
                 console.error('Error updating status:', error);
+                const statusElement = document.getElementById('status');
+                statusElement.textContent = error.message;
+                statusElement.className = 'status disabled';
             }
         }
 
@@ -329,8 +365,7 @@
             chartElement.innerHTML = '';
             
             try {
-                const response = await fetch('/api/flamegraph');
-                const data = await response.text();
+                const data = await requestFlameGraph();
                 
                 loadingElement.style.display = 'none';
                 
@@ -557,9 +592,8 @@
 
         async function enableSampling() {
             try {
-                const response = await fetch('/api/sampling/enable', { method: 'POST' });
-                const data = await response.json();
-                showSuccess(data.data.message);
+                const payload = await requestApi('/hotcpu/sampling/enable', { method: 'POST' });
+                showSuccess(payload.message || payload.data?.message || '采样已启用');
                 await updateStatus();
             } catch (error) {
                 showError('启用采样失败: ' + error.message);
@@ -568,9 +602,8 @@
 
         async function disableSampling() {
             try {
-                const response = await fetch('/api/sampling/disable', { method: 'POST' });
-                const data = await response.json();
-                showSuccess(data.data.message);
+                const payload = await requestApi('/hotcpu/sampling/disable', { method: 'POST' });
+                showSuccess(payload.message || payload.data?.message || '采样已停止');
                 await updateStatus();
             } catch (error) {
                 showError('停止采样失败: ' + error.message);
@@ -583,9 +616,8 @@
             }
             
             try {
-                const response = await fetch('/api/sampling/clear', { method: 'POST' });
-                const data = await response.json();
-                showSuccess(data.data.message);
+                const payload = await requestApi('/hotcpu/sampling/clear', { method: 'POST' });
+                showSuccess(payload.message || payload.data?.message || '采样数据已清空');
                 await updateStatus();
                 document.getElementById('chart').innerHTML = '';
                 document.getElementById('noData').style.display = 'block';
@@ -596,9 +628,7 @@
 
         async function showDebugInfo() {
             try {
-                const response = await fetch('/api/sampling/debug');
-                let data = await response.json();
-                data = data.data;
+                const { data } = await requestApi('/hotcpu/sampling/debug');
                 
                 let debugHtml = `
                     <div class="info">
@@ -632,8 +662,7 @@
 
         async function showRawData() {
             try {
-                const response = await fetch('/api/flamegraph');
-                const data = await response.text();
+                const data = await requestFlameGraph();
                 
                 let rawHtml = `
                     <div class="info">
@@ -675,13 +704,7 @@
             await checkSamplingData();
             
             try {
-                const response = await fetch('/test/cpu-intensive?iterations=2000');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                let data = await response.json();
-                data = data.data;
+                const { data } = await requestApi('/hotcpu/test/cpu-intensive?iterations=2000');
                 console.log('CPU intensive test response:', data);
                 showTestResult('CPU密集型任务完成', data);
                 
@@ -704,12 +727,7 @@
             await checkSamplingData();
             
             try {
-                const response = await fetch('/test/nested-calls?depth=15');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                let data = await response.json();
-                data = data.data;
+                const { data } = await requestApi('/hotcpu/test/nested-calls?depth=15');
                 console.log('Nested calls test response:', data);
                 showTestResult('嵌套调用测试完成', data);
                 
@@ -731,12 +749,7 @@
             await checkSamplingData();
             
             try {
-                const response = await fetch('/test/mixed-workload');
-                if (!response.ok)
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-
-                let data = await response.json();
-                data = data.data;
+                const { data } = await requestApi('/hotcpu/test/mixed-workload');
                 console.log('Mixed workload test response:', data);
                 showTestResult('混合工作负载完成', data);
                 
@@ -753,8 +766,7 @@
 
         async function checkSamplingData() {
             try {
-                const response = await fetch('/api/flamegraph');
-                const data = await response.text();
+                const data = await requestFlameGraph();
                 console.log('当前采样数据长度:', data.length);
                 console.log('当前采样数据前300字符:', data.substring(0, 300));
                 
@@ -839,6 +851,7 @@
                 refreshFlameGraph();
             }
         });
+
 
 </script>
 </body>

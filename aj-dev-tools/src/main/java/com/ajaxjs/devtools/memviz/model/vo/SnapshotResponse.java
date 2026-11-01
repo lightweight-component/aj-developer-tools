@@ -3,13 +3,13 @@ package com.ajaxjs.devtools.memviz.model.vo;
 import lombok.Data;
 
 /**
- * 快照响应对象
- * 用于返回生成的 HPROF 快照文件路径
+ * 堆快照创建结果，向客户端返回服务端 HPROF 文件的绝对路径。
+ * <p>不包含文件内容；Lombok 生成属性访问器及常规数据对象方法。</p>
  */
 @Data
 public class SnapshotResponse {
     /**
-     * HPROF 快照文件的绝对路径
+     * 服务端生成的 HPROF 文件绝对路径，供后续图模型查询使用。
      */
     private String file;
 }

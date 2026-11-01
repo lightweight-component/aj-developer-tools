@@ -3,3 +3,5 @@ com.ajaxjs.devtools.logview.LogViewConfiguration
 com.ajaxjs.devtools.hotcpu.HotCpuConfiguration
 com.ajaxjs.devtools.sysmonitor.SystemMonitorConfiguration
 com.ajaxjs.devtools.jarconflict.JarConflictConfiguration
+com.ajaxjs.devtools.dependencyscanner.DependencyScannerConfiguration
+com.ajaxjs.devtools.apidashboard.ApiDashboardConfiguration

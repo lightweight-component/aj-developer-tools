@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MemViz · JVM 内存对象拓扑图</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        [v-cloak] { display: none; }
+        body { margin: 0; font: 14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background: #0b0f14; color: #e6edf3; }
+        button,input,select { font: inherit; padding: 7px 10px; border: 1px solid #374151; border-radius: 6px; background: #111827; color: inherit; }
+        button { cursor: pointer; }
+        button:hover { background: #243247; }
+        button:disabled { opacity: .5; cursor: wait; }
+        header { padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border-bottom: 1px solid #253046; }
+        header label { display: flex; align-items: center; gap: 6px; }
+        .file-input { width: min(380px,60vw); }
+        .workspace { display: grid; grid-template-columns: minmax(0,1fr) 480px; height: calc(100dvh - var(--header-height, 100px)); min-height: 400px; }
+        .graph-area { position: relative; min-height: 350px; }
+        .graph { width: 100%; height: 100%; }
+        .empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; padding: 24px; }
+        aside { background: #0f172a; border-left: 1px solid #253046; padding: 14px; overflow: auto; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .stat { background: #1b2638; border-radius: 6px; text-align: center; padding: 8px; }
+        .stat strong { display: block; color: #60a5fa; font-size: 18px; }
+        .muted { color: #9ca3af; }
+        .tabs { display: flex; gap: 6px; margin: 16px 0; }
+        .active { background: #2563eb; }
+        .row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin: 8px 0; }
+        .row span:last-child { text-align: right; overflow-wrap: anywhere; }
+        .item { display: block; width: 100%; text-align: left; margin: 6px 0; background: #1b2638; overflow-wrap: anywhere; }
+        .item small { display: block; color: #9ca3af; }
+        .notice { padding: 10px 16px; background: #173524; overflow-wrap: anywhere; }
+        .error { background: #49232b; color: #fecaca; }
+        .table-wrap { overflow: auto; margin: 12px 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th,td { padding: 7px; text-align: left; border-bottom: 1px solid #283449; vertical-align: top; overflow-wrap: anywhere; }
+        th { white-space: nowrap; color: #9ca3af; }
+        .value { min-width: 140px; max-width: 260px; white-space: pre-wrap; }
+        h3 { margin: 14px 0 8px; }
+        .legend { padding-top: 12px; border-top: 1px solid #283449; font-size: 12px; }
+        .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; }
+        .overlay { position: fixed; inset: 0; display: grid; place-items: center; background: #0009; z-index: 20; }
+        .loading { padding: 24px; border-radius: 10px; background: #1b2638; text-align: center; }
+        .spinner { width: 34px; height: 34px; margin: 0 auto 12px; border: 3px solid #374151; border-top-color: #60a5fa; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        svg { display: block; width: 100%; height: 100%; }
+        .link { stroke: #8793a4; stroke-opacity: .45; }
+        .node circle { stroke: #111827; stroke-width: 1.5; cursor: grab; }
+        .node text { fill: #d1d5db; font-size: 11px; pointer-events: none; }
+        .node .highlight { stroke: #fbbf24; stroke-width: 3; }
+        @media (max-width: 900px) { .workspace { grid-template-columns: 1fr; height: auto; } .graph-area { height: 55vh; } aside { border-left: 0; border-top: 1px solid #253046; } header label { flex-wrap: wrap; } }
+
+    </style>
+</head>
+<body>
+<div id="app" v-cloak>
+    <header ref="headerElement">
+        <strong>MemViz</strong>
+        <button :disabled="busy" @click="createSnapshot">生成快照</button>
+        <label>HPROF 文件 <input class="file-input" v-model.trim="file" placeholder="/tmp/memviz/heap_*.hprof"
+                                 @keyup.enter="loadGraph"></label>
+        <label>类过滤 <input v-model.trim="include" placeholder="com.myapp.,java.util."
+                             @keyup.enter="loadGraph"></label>
+        <label>折叠集合 <select v-model="collapseCollections">
+            <option :value="true">是</option>
+            <option :value="false">否</option>
+        </select></label>
+        <button :disabled="busy" @click="loadGraph">加载图</button>
+    </header>
+    <div v-if="message" class="notice" :class="{ error: isError }" role="status">{{ message }}</div>
+    <main class="workspace">
+        <section class="graph-area" aria-label="类引用拓扑图">
+            <div ref="graphElement" class="graph"></div>
+            <div v-if="!graph.nodes.length" class="empty muted">{{ loaded ? '当前筛选条件下没有可展示的类' : '生成堆快照或填写已有
+                HPROF 路径，然后加载图' }}
+            </div>
+        </section>
+        <aside>
+            <div class="stats">
+                <div class="stat"><strong>{{ loaded ? graph.totalObjects : '-' }}</strong><span
+                        class="muted">总对象数</span></div>
+                <div class="stat"><strong>{{ loaded ? (graph.formattedTotalMemory || formatBytes(graph.totalMemory)) :
+                    '-' }}</strong><span class="muted">总浅表内存</span></div>
+                <div class="stat"><strong>{{ loaded ? graph.nodes.length : '-' }}</strong><span
+                        class="muted">图中类节点</span></div>
+                <div class="stat"><strong>{{ loaded ? graphMemory : '-' }}</strong><span
+                        class="muted">图中浅表内存</span></div>
+            </div>
+            <nav class="tabs" aria-label="分析视图">
+                <button :class="{ active: tab === 'detail' }" @click="tab = 'detail'">详情</button>
+                <button :class="{ active: tab === 'classes' }" @click="tab = 'classes'">Top100 类</button>
+                <button v-if="selectedClass" :class="{ active: tab === 'instances' }" @click="tab = 'instances'">
+                    类实例
+                </button>
+            </nav>
+            <section v-if="tab === 'classes'">
+                <h3>按保留大小汇总排序的类</h3>
+                <p v-if="!graph.top100Classes.length" class="muted">{{ loaded ? '暂无类统计' : '加载图后显示' }}</p>
+                <button v-for="item in graph.top100Classes" :key="item.className" class="item"
+                        @click="selectClass(item, 'instances')">
+                    <strong>#{{ item.rank }} {{ item.shortName || item.className }}</strong>
+                    <small>{{ item.instanceCount }} 个实例 · 浅表 {{ item.formattedTotalSize ||
+                        formatBytes(item.totalSize) }}</small>
+                    <small>保留汇总 {{ item.formattedTotalDeepSize || formatBytes(item.totalDeepSize) }}</small>
+                    <small>平均浅表 {{ item.formattedAvgSize || formatBytes(item.avgSize) }} · 平均保留 {{
+                        item.formattedAvgDeepSize || formatBytes(item.avgDeepSize) }}</small>
+                    <small>{{ item.category }} · {{ item.packageName }}</small>
+                </button>
+            </section>
+            <section v-else-if="tab === 'instances' && selectedClass">
+                <button @click="tab = 'classes'">← 返回类排行</button>
+                <h3>{{ selectedClass.shortName || selectedClass.className }}</h3>
+                <p class="muted">共 {{ selectedClass.instanceCount }} 个实例；显示较大实例，占比按类内保留大小计算。</p>
+                <p v-if="!instances.length" class="muted">该类暂无实例明细</p>
+                <button v-for="item in instances" :key="item.id" class="item" @click="selectInstance(item)">
+                    <strong>#{{ item.rank }} 对象@{{ item.id }}</strong>
+                    <small>浅表 {{ item.formattedSize || formatBytes(item.size) }} · 保留 {{ item.formattedRetainedSize
+                        || formatBytes(item.retainedSize) }}</small>
+                    <small>类内占比 {{ percent(item.sizePercentInClass) }} · {{ item.objectType }} · {{ item.packageName
+                        }}</small>
+                </button>
+            </section>
+            <section v-else>
+                <template v-if="detail">
+                    <button v-if="selectedInstance" @click="selectedInstance = null">← 返回类信息</button>
+                    <h3>{{ selectedInstance ? '实例详情' : '类详情' }}</h3>
+                    <div class="row"><span class="muted">{{ selectedInstance ? '实例 ID' : '节点 ID' }}</span><span>{{ detail.id || '-' }}</span>
+                    </div>
+                    <div class="row"><span class="muted">类名</span><span>{{ detailClassName }}</span></div>
+                    <div class="row"><span class="muted">浅表大小</span><span>{{ detailShallow }}</span></div>
+                    <div class="row"><span
+                            class="muted">{{ selectedInstance ? '保留大小' : '保留大小汇总' }}</span><span>{{ detailRetained }}</span>
+                    </div>
+                    <template v-if="selectedInstance">
+                        <div class="row"><span class="muted">类内排名</span><span>#{{ selectedInstance.rank }}</span>
+                        </div>
+                        <div class="row"><span class="muted">类内占比</span><span>{{ percent(selectedInstance.sizePercentInClass) }}</span>
+                        </div>
+                    </template>
+                    <div v-else class="row"><span
+                            class="muted">实例数量</span><span>{{ detail.instanceCount ?? 0 }}</span></div>
+                    <div class="row"><span class="muted">包名</span><span>{{ detail.packageName || '默认包' }}</span>
+                    </div>
+                    <div class="row"><span class="muted">类别 / 类型</span><span>{{ detail.category || selectedClass?.category || '-' }} / {{ detail.objectType || '普通类' }}</span>
+                    </div>
+                    <button v-if="!selectedInstance && selectedClass" @click="tab = 'instances'">查看 {{
+                        instances.length }} 个实例明细
+                    </button>
+                    <h3>字段分析</h3>
+                    <div v-if="detail.fields?.length" class="table-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>字段</th>
+                                <th>类型</th>
+                                <th>浅表大小</th>
+                                <th>保留大小</th>
+                                <th>保留占比</th>
+                                <th>值</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr v-for="(field, index) in detail.fields" :key="index">
+                                <td>{{ field.name }}</td>
+                                <td>{{ field.type }}</td>
+                                <td>{{ field.formattedSize || formatBytes(field.size) }}</td>
+                                <td>{{ field.formattedRetainedSize || formatBytes(field.retainedSize) }}</td>
+                                <td>{{ percent(field.retainedSizePercent ?? field.sizePercent) }}</td>
+                                <td class="value" :title="String(field.value ?? '')">{{ field.value }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p v-else class="muted">{{ selectedInstance ? '该实例没有可分析的字段信息' : '选择类实例查看具体字段'
+                        }}</p>
+                </template>
+                <p v-else class="muted">点击图节点或选择排行榜中的类查看详情。</p>
+                <div class="legend muted">
+                    <span><i class="dot" style="background:#60a5fa"></i>JDK类 </span>
+                    <span><i class="dot" style="background:#a78bfa"></i>第三方 </span>
+                    <span><i class="dot" style="background:#34d399"></i>业务代码</span>
+                    <p>
+                        节点大小表示浅表内存；支持拖动、缩放和平移，悬停连线查看引用标签。连线为采样关系，保留大小汇总可能重叠。</p>
+                </div>
+            </section>
+        </aside>
+    </main>
+    <div v-if="busy" class="overlay" role="status" aria-live="polite">
+        <div class="loading">
+            <div class="spinner"></div>
+            {{ loadingText }}
+        </div>
+    </div>
+</div>
+<script>
+    const { createApp, ref, shallowRef, computed, nextTick, onMounted, onBeforeUnmount, watch } = Vue;
+
+    createApp({
+        setup() {
+            const file = ref('');
+            const include = ref('');
+            const collapseCollections = ref(true);
+            const busy = ref(false);
+            const loaded = ref(false);
+            const loadingText = ref('');
+            const message = ref('');
+            const isError = ref(false);
+            const tab = ref('detail');
+            const graphElement = ref(null);
+            const headerElement = ref(null);
+            const graph = shallowRef({ nodes: [], links: [], top100Classes: [], totalObjects: 0, totalMemory: 0 });
+            const selectedClass = shallowRef(null);
+            const selectedNode = shallowRef(null);
+            const selectedInstance = shallowRef(null);
+            const instances = computed(() => selectedClass.value?.topInstances || []);
+            const detail = computed(() => selectedInstance.value || selectedNode.value || selectedClass.value);
+            const detailClassName = computed(() => selectedClass.value?.className || selectedNode.value?.className || '-');
+            const graphMemory = computed(() => formatBytes(graph.value.nodes.reduce((sum, node) => sum + (Number(node.shallowSize) || 0), 0)));
+            const detailShallow = computed(() => selectedInstance.value
+                ? selectedInstance.value.formattedSize || formatBytes(selectedInstance.value.size)
+                : selectedClass.value?.formattedTotalSize || selectedNode.value?.formattedSize || formatBytes(selectedClass.value?.totalSize ?? selectedNode.value?.shallowSize));
+            const detailRetained = computed(() => selectedInstance.value
+                ? selectedInstance.value.formattedRetainedSize || formatBytes(selectedInstance.value.retainedSize)
+                : selectedClass.value?.formattedTotalDeepSize || selectedNode.value?.formattedDeepSize || formatBytes(selectedClass.value?.totalDeepSize ?? selectedNode.value?.deepSize));
+            let simulation = null;
+            let nodeSelection = null;
+            let svgSelection = null;
+            let resizeObserver = null;
+
+            function formatBytes(value) {
+                const bytes = Math.max(0, Number(value) || 0);
+                if (bytes < 1024)
+                    return bytes + ' B';
+                if (bytes < 1024 ** 2)
+                    return (bytes / 1024).toFixed(1) + ' KB';
+                if (bytes < 1024 ** 3)
+                    return (bytes / 1024 ** 2).toFixed(2) + ' MB';
+                return (bytes / 1024 ** 3).toFixed(2) + ' GB';
+            }
+
+            function percent(value) {
+                return (Number(value) || 0).toFixed(1) + '%';
+            }
+
+            async function requestApi(path, options) {
+                const response = await fetch(path, options);
+                let body;
+                try {
+                    body = await response.json();
+                } catch {
+                    throw new Error('接口未返回有效 JSON，HTTP ' + response.status);
+                }
+                if (!response.ok || body?.status !== 1)
+                    throw new Error((body?.message || '请求失败，HTTP ' + response.status) + (body?.errorCode ? ' [' + body.errorCode + ']' : ''));
+                if (body.data == null)
+                    throw new Error('接口未返回实际数据');
+                return body.data;
+            }
+
+            async function createSnapshot() {
+                if (busy.value)
+                    return;
+                busy.value = true;
+                loadingText.value = '正在生成堆快照…';
+                message.value = '';
+                isError.value = false;
+                try {
+                    const data = await requestApi('/memviz/snapshot', { method: 'POST' });
+                    if (typeof data.file !== 'string' || !data.file.trim())
+                        throw new Error('快照接口未返回有效的文件路径');
+                    file.value = data.file;
+                    message.value = '快照已生成：' + data.file;
+                } catch (error) {
+                    isError.value = true;
+                    message.value = '生成快照失败：' + error.message;
+                } finally {
+                    busy.value = false;
+                }
+            }
+
+            async function loadGraph() {
+                if (busy.value)
+                    return;
+                isError.value = false;
+                message.value = '';
+                if (!file.value) {
+                    isError.value = true;
+                    message.value = '请填写服务端 HPROF 文件路径';
+                    return;
+                }
+                busy.value = true;
+                loadingText.value = '正在解析 HPROF 文件…';
+                try {
+                    const query = new URLSearchParams({ file: file.value, include: include.value, collapseCollections: String(collapseCollections.value) });
+                    const data = await requestApi('/memviz/graph?' + query);
+                    if (!Array.isArray(data.nodes) || !Array.isArray(data.links) || !Array.isArray(data.top100Classes))
+                        throw new Error('接口返回的图数据结构不完整');
+                    graph.value = data;
+                    selectedClass.value = null;
+                    selectedNode.value = null;
+                    selectedInstance.value = null;
+                    tab.value = 'detail';
+                    await nextTick();
+                    renderGraph();
+                    loaded.value = true;
+                } catch (error) {
+                    isError.value = true;
+                    message.value = '加载失败：' + error.message;
+                } finally {
+                    busy.value = false;
+                }
+            }
+
+            function highlightClass(className) {
+                if (nodeSelection)
+                    nodeSelection.select('circle').classed('highlight', node => node.className === className);
+            }
+
+            function selectClass(item, targetTab = 'detail') {
+                selectedClass.value = item;
+                selectedNode.value = graph.value.nodes.find(node => node.className === item.className) || null;
+                selectedInstance.value = null;
+                tab.value = targetTab;
+                highlightClass(item.className);
+            }
+
+            function selectNode(node) {
+                selectedClass.value = graph.value.top100Classes.find(item => item.className === node.className) || null;
+                selectedNode.value = node;
+                selectedInstance.value = null;
+                tab.value = 'detail';
+                highlightClass(node.className);
+            }
+
+            function selectInstance(instance) {
+                selectedInstance.value = instance;
+                tab.value = 'detail';
+                highlightClass(detailClassName.value);
+            }
+
+            function stopGraph() {
+                if (simulation)
+                    simulation.stop();
+                if (svgSelection)
+                    svgSelection.on('.zoom', null);
+                simulation = null;
+                svgSelection = null;
+                nodeSelection = null;
+            }
+
+            function renderGraph() {
+                stopGraph();
+                const root = d3.select(graphElement.value);
+                root.selectAll('*').remove();
+                if (!graph.value.nodes.length)
+                    return;
+                const { width, height } = graphElement.value.getBoundingClientRect();
+                const nodes = graph.value.nodes.map(node => ({ ...node }));
+                const ids = new Set(nodes.map(node => node.id));
+                // D3 会修改坐标与连线端点，仅向其传递展示副本。
+                const links = graph.value.links.filter(link => ids.has(link.source) && ids.has(link.target)).map(link => ({ ...link }));
+                const color = category => ({ 'JDK类': '#60a5fa', '第三方': '#a78bfa', '业务代码': '#34d399' }[category] || '#6b7280');
+                const radius = d3.scaleSqrt().domain([0, d3.max(nodes, node => Number(node.shallowSize) || 0) || 1]).range([5, 30]);
+                svgSelection = root.append('svg').attr('aria-label', '类间引用图');
+                const layer = svgSelection.append('g');
+                svgSelection.call(d3.zoom().scaleExtent([0.1, 4]).on('zoom', event => layer.attr('transform', event.transform)));
+                const linkSelection = layer.selectAll('.link').data(links).join('line').attr('class', 'link');
+                linkSelection.append('title').text(link => link.field || '引用');
+                simulation = d3.forceSimulation(nodes)
+                    .force('link', d3.forceLink(links).id(node => node.id).distance(100).strength(0.4))
+                    .force('charge', d3.forceManyBody().strength(-160))
+                    .force('collide', d3.forceCollide(node => radius(Number(node.shallowSize) || 0) + 10))
+                    .force('center', d3.forceCenter(width / 2, height / 2));
+                nodeSelection = layer.selectAll('.node').data(nodes).join('g').attr('class', 'node')
+                    .call(d3.drag()
+                        .on('start', (event, node) => {
+                            if (!event.active)
+                                simulation.alphaTarget(0.3).restart();
+                            node.fx = node.x;
+                            node.fy = node.y;
+                        })
+                        .on('drag', (event, node) => {
+                            node.fx = event.x;
+                            node.fy = event.y;
+                        })
+                        .on('end', event => {
+                            if (!event.active)
+                                simulation.alphaTarget(0);
+                        }));
+                nodeSelection.append('circle').attr('r', node => radius(Number(node.shallowSize) || 0))
+                    .attr('fill', node => color(node.category)).on('click', (event, node) => selectNode(node));
+                nodeSelection.append('title').text(node => node.className);
+                nodeSelection.append('text').attr('dy', node => -radius(Number(node.shallowSize) || 0) - 5)
+                    .attr('text-anchor', 'middle').text(node => node.label || node.className);
+                simulation.on('tick', () => {
+                    linkSelection.attr('x1', link => link.source.x).attr('y1', link => link.source.y)
+                        .attr('x2', link => link.target.x).attr('y2', link => link.target.y);
+                    nodeSelection.attr('transform', node => `translate(${node.x},${node.y})`);
+                });
+            }
+
+            onMounted(() => {
+                resizeObserver = new ResizeObserver(() => {
+                    const notice = document.querySelector('.notice');
+                    const headerHeight = headerElement.value.getBoundingClientRect().height + (notice?.getBoundingClientRect().height || 0);
+                    document.documentElement.style.setProperty('--header-height', headerHeight + 'px');
+                    if (!simulation)
+                        return;
+                    const { width, height } = graphElement.value.getBoundingClientRect();
+                    simulation.force('center', d3.forceCenter(width / 2, height / 2)).alpha(0.2).restart();
+                });
+                resizeObserver.observe(headerElement.value);
+                resizeObserver.observe(graphElement.value);
+            });
+            onBeforeUnmount(() => {
+                stopGraph();
+                if (resizeObserver)
+                    resizeObserver.disconnect();
+            });
+            watch(message, async () => {
+                await nextTick();
+                const notice = document.querySelector('.notice');
+                const height = headerElement.value.getBoundingClientRect().height + (notice?.getBoundingClientRect().height || 0);
+                document.documentElement.style.setProperty('--header-height', height + 'px');
+            });
+
+            return { file, include, collapseCollections, busy, loaded, loadingText, message, isError, tab,
+                graphElement, headerElement, graph, selectedClass, selectedInstance, instances, detail,
+                detailClassName, detailShallow, detailRetained, graphMemory, formatBytes, percent,
+                createSnapshot, loadGraph, selectClass, selectInstance };
+        }
+    }).mount('#app');
+
+</script>
+</body>
+</html>

@@ -1,19 +1,24 @@
 package com.ajaxjs.devtools.hotcpu;
 
-import com.ajaxjs.devtools.hotcpu.model.*;
+import com.ajaxjs.devtools.hotcpu.model.ClearResult;
+import com.ajaxjs.devtools.hotcpu.model.DebugInfo;
+import com.ajaxjs.devtools.hotcpu.model.SamplingOperation;
+import com.ajaxjs.devtools.hotcpu.model.SamplingStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
-//@RestController
-//@RequestMapping("/api")
-//@CrossOrigin(origins = "*")
+@RestController
+@RequestMapping("/hotcpu")
 public class FlameGraphController {
     @Autowired
     private CpuSampler sampler;
@@ -97,16 +102,6 @@ public class FlameGraphController {
         }
 
         response.setSampleData(sampleData);
-
-        return response;
-    }
-
-    @GetMapping("/health")
-    public HealthStatus health() {
-        HealthStatus response = new HealthStatus();
-        response.setStatus("UP");
-        response.setService("springboot-hot-cpu");
-        response.setSampling(sampler.isEnabled() ? "enabled" : "disabled");
 
         return response;
     }
