@@ -61,7 +61,7 @@ public class TimeBucket {
      * <p>通过实例锁串行写入，并以当前系统时间刷新最近更新时间；读取方未获取此锁。</p>
      *
      * @param duration 本次请求耗时，单位为毫秒
-     * @param success 本次请求是否成功
+     * @param success  本次请求是否成功
      */
     public synchronized void record(long duration, boolean success) {
         totalCount.incrementAndGet();

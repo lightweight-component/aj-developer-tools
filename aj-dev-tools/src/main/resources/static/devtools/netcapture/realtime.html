@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NetCapture · 网络流量分析</title>
+    <link rel="stylesheet" href="app.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/vue@3.5.22/dist/vue.global.prod.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script defer src="app.js"></script>
+</head>
+<body data-page="realtime">
+    <div id="app" v-cloak></div>
+    <noscript>请启用 JavaScript 以使用网络抓包分析页面。</noscript>
+    <script>window.addEventListener('load', function () { if (!window.Vue) { var app = document.getElementById('app'); app.removeAttribute('v-cloak'); app.textContent = 'Vue CDN 加载失败，请检查网络后刷新页面。'; } });</script>
+</body>
+</html>

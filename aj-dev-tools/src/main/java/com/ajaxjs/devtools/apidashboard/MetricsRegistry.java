@@ -23,8 +23,8 @@ public class MetricsRegistry {
      * <p>由调用者传入成功标志和毫秒耗时，不自行解析响应或校验负数耗时。</p>
      *
      * @param methodName 控制器方法标识
-     * @param duration 本次请求耗时，单位为毫秒
-     * @param success 本次请求是否成功
+     * @param duration   本次请求耗时，单位为毫秒
+     * @param success    本次请求是否成功
      */
     public void record(String methodName, long duration, boolean success) {
         metricsMap.computeIfAbsent(methodName, HierarchicalMethodMetrics::new).record(duration, success);

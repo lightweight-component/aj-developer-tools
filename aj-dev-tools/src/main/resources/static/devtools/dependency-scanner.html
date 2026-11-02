@@ -562,256 +562,256 @@
 </div>
 <script>
 
-        const { createApp, ref, computed, nextTick, onMounted, onUnmounted } = Vue;
-        createApp({
-            setup() {
-                const isLoading = ref(false), hasScanned = ref(false);
-                const allScanResults = ref([]), statistics = ref(null), errorMessage = ref('');
-                const selectedResult = ref(null), selectedLevels = ref(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']);
-                const modalElement = ref(null), toast = ref('');
-                let triggerElement = null, toastTimer;
-                const levels = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
-                const allSelected = computed({
-                    get: () => levels.every(level => selectedLevels.value.includes(level)),
-                    set: value => { selectedLevels.value = value ? [...levels] : []; }
-                });
-                const scanResults = computed(() => allScanResults.value.filter(risk =>
-                    allSelected.value || selectedLevels.value.includes((risk.riskLevel || '').toUpperCase())));
-                const safeVersion = computed(() => {
-                    const value = (selectedResult.value?.safeVersion || '').trim();
-                    return /^(?:升级到\s+|📦\s*升级到\s+)?(\d[\w.+-]*)$/.exec(value)?.[1] || '';
-                });
-                const mavenCommand = computed(() => selectedResult.value ? `<dependency>
-    <groupId>${selectedResult.value.groupId}</groupId>
-    <artifactId>${selectedResult.value.artifactId}</artifactId>
-    <version>${safeVersion.value || '请核对公告后填写修复版本'}</version>
+    const { createApp, ref, computed, nextTick, onMounted, onUnmounted } = Vue;
+    createApp({
+        setup() {
+            const isLoading = ref(false), hasScanned = ref(false);
+            const allScanResults = ref([]), statistics = ref(null), errorMessage = ref('');
+            const selectedResult = ref(null), selectedLevels = ref(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']);
+            const modalElement = ref(null), toast = ref('');
+            let triggerElement = null, toastTimer;
+            const levels = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+            const allSelected = computed({
+                get: () => levels.every(level => selectedLevels.value.includes(level)),
+                set: value => { selectedLevels.value = value ? [...levels] : []; }
+            });
+            const scanResults = computed(() => allScanResults.value.filter(risk =>
+                allSelected.value || selectedLevels.value.includes((risk.riskLevel || '').toUpperCase())));
+            const safeVersion = computed(() => {
+                const value = (selectedResult.value?.safeVersion || '').trim();
+                return /^(?:升级到\s+|📦\s*升级到\s+)?(\d[\w.+-]*)$/.exec(value)?.[1] || '';
+            });
+            const mavenCommand = computed(() => selectedResult.value ? `<dependency>
+<groupId>${selectedResult.value.groupId}</groupId>
+<artifactId>${selectedResult.value.artifactId}</artifactId>
+<version>${safeVersion.value || '请核对公告后填写修复版本'}</version>
 </dependency>` : '');
-                const gradleCommand = computed(() => selectedResult.value ?
-                    `implementation '${selectedResult.value.groupId}:${selectedResult.value.artifactId}:${safeVersion.value || '请核对公告后填写修复版本'}'` : '');
-                const safeReference = computed(() => {
-                    try {
-                        const url = new URL(selectedResult.value?.reference || '');
-                        return ['https:', 'http:'].includes(url.protocol) ? url.href : '';
-                    } catch { return ''; }
-                });
-                const relatedLinks = computed(() => {
-                    const risk = selectedResult.value || {}, enc = encodeURIComponent;
-                    const query = enc(risk.cve && risk.cve !== 'OUTDATED-VERSION' ? risk.cve : risk.artifactId || '');
-                    return {
-                        cve: `https://www.cve.org/CVERecord?id=${query}`,
-                        maven: `https://search.maven.org/artifact/${enc(risk.groupId || '')}/${enc(risk.artifactId || '')}`,
-                        osv: `https://osv.dev/list?q=${enc((risk.groupId || '') + ':' + (risk.artifactId || ''))}`,
-                        github: `https://github.com/advisories?query=${query}`
-                    };
-                });
-                const solutionTips = computed(() => {
-                    const risk = selectedResult.value || {}, tips = [];
-                    if (risk.riskLevel === 'CRITICAL')
-                        tips.push('严重漏洞，请优先核对影响范围并安排修复。');
-                    else if (risk.riskLevel === 'HIGH')
-                        tips.push('高危漏洞，请尽快评估并安排升级。');
-                    else
-                        tips.push('将此依赖加入升级计划，结合实际使用情况评估风险。');
-                    if ((risk.groupId || '').includes('springframework'))
-                        tips.push('参考 Spring 官方迁移指南，核对配置和依赖版本管理。');
-                    if ((risk.groupId || '').includes('jackson'))
-                        tips.push('升级后测试 JSON 序列化与反序列化行为。');
-                    if ((risk.groupId || '').includes('log4j'))
-                        tips.push('核对日志配置及自定义 Appender 的兼容性。');
-                    tips.push('查看漏洞公告及 CHANGELOG，确认目标版本包含所需修复。', '先在测试环境验证核心功能，再执行升级。');
-                    return tips;
-                });
-                async function startScan() {
-                    if (isLoading.value)
-                        return;
-                    isLoading.value = true; hasScanned.value = false; errorMessage.value = '';
-                    allScanResults.value = []; statistics.value = null; closeModal();
-                    try {
-                        const response = await fetch('../dependency_scanner/dependencies/scan', { headers: { Accept: 'application/json' } });
-                        if (!response.ok)
-                            throw new Error(`扫描请求失败（HTTP ${response.status}）`);
-                        let data = await response.json();
-                        data = data.data;
-
-                        if (!data.success)
-                            throw new Error(data.message || '扫描失败，请重试');
-                        if (!Array.isArray(data.data) || !data.statistics)
-                            throw new Error('扫描结果格式异常');
-                        allScanResults.value = data.data; statistics.value = data.statistics;
-                        selectedLevels.value = [...levels]; hasScanned.value = true;
-                    } catch (error) {
-                        errorMessage.value = error instanceof Error ? error.message : '扫描失败，请稍后重试';
-                    } finally { isLoading.value = false; }
-                }
-                async function showDetails(risk, event) {
-                    triggerElement = event?.currentTarget;
-                    selectedResult.value = risk;
-                    await nextTick(); modalElement.value?.focus();
-                }
-                function closeModal() {
-                    selectedResult.value = null;
-                    triggerElement?.focus(); triggerElement = null;
-                }
-                function onKeydown(event) {
-                    if (!selectedResult.value)
-                        return;
-                    if (event.key === 'Escape')
-                        closeModal();
-                    if (event.key === 'Tab' && modalElement.value) {
-                        const elements = modalElement.value.querySelectorAll('button:not(:disabled), a[href], [tabindex="0"]');
-                        const first = elements[0], last = elements[elements.length - 1];
-                        if (event.shiftKey && (document.activeElement === first || document.activeElement === modalElement.value)) {
-                            event.preventDefault(); last?.focus();
-                        } else if (!event.shiftKey && document.activeElement === last) {
-                            event.preventDefault(); first?.focus();
-                        }
-                    }
-                }
-                function notify(message) {
-                    toast.value = message; clearTimeout(toastTimer);
-                    toastTimer = setTimeout(() => { toast.value = ''; }, 3000);
-                }
-                async function copyText(text) {
-                    if (!text)
-                        return;
-                    try { await navigator.clipboard.writeText(text); notify('已复制'); }
-                    catch { notify('复制失败，请选中文本手动复制'); }
-                }
-                function exportResults() {
-                    if (!hasScanned.value || isLoading.value)
-                        return;
-                    try {
-                        const blob = new Blob([JSON.stringify({ scanTime: new Date().toISOString(), statistics: statistics.value, results: scanResults.value }, null, 2)], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob), link = document.createElement('a');
-                        link.href = url; link.download = `dependency-scan-${new Date().toISOString().slice(0, 10)}.json`;
-                        document.body.appendChild(link); link.click(); link.remove();
-                        setTimeout(() => URL.revokeObjectURL(url), 1000); notify('已导出当前筛选结果');
-                    } catch { notify('导出失败，请重试'); }
-                }
-                onMounted(() => document.addEventListener('keydown', onKeydown));
-                onUnmounted(() => { document.removeEventListener('keydown', onKeydown); clearTimeout(toastTimer); });
-                function formatSafeVersion(safeVersion) {
-                    if (!safeVersion || safeVersion.trim() === '')
-                        return '未提供修复版本';
-
-                    if (safeVersion === '请查看最新版本' || safeVersion === '请查看官方文档')
-                        return '📖 请查看官方文档';
-
-                    // 检查是否为有效版本号格式
-                    if (/^[0-9]+(\.[0-9]+)*(\.[0-9]+)*(-[a-zA-Z0-9]+)?$/.test(safeVersion))
-                        return `📦 升级到 ${safeVersion}`;
-
-                    return safeVersion;
-                }
-                function formatCveId(cve) {
-                    if (!cve || cve.trim() === '')
-                        return 'N/A';
-
-                    if (cve === 'OUTDATED-VERSION')
-                        return '🔄 版本过期';
-
-                    return cve;
-                }
-                function getPackageDescription(groupId, artifactId) {
-                    const descriptions = {
-                        'org.springframework.boot:spring-boot-starter-actuator': '生产就绪功能，用于监控和管理应用',
-                        'org.springframework.boot:spring-boot-starter-web': 'Web应用开发，包含Spring MVC',
-                        'org.springframework.boot:spring-boot-starter-data-jpa': 'JPA数据访问，包含Hibernate',
-                        'org.springframework.boot:spring-boot-starter-security': 'Spring Security安全框架',
-                        'org.springframework.boot:spring-boot-starter-test': '测试支持，包含JUnit、Mockito',
-                        'com.fasterxml.jackson.core:jackson-databind': 'Jackson JSON数据绑定库',
-                        'com.fasterxml.jackson.core:jackson-core': 'Jackson核心库',
-                        'com.fasterxml.jackson.core:jackson-annotations': 'Jackson注解库',
-                        'org.apache.logging.log4j:log4j-core': 'Log4j核心日志框架',
-                        'org.apache.logging.log4j:log4j-api': 'Log4j API接口',
-                        'com.alibaba:fastjson': 'Alibaba高性能JSON解析库',
-                        'org.apache.struts:struts2-core': 'Apache Struts2 MVC框架',
-                        'org.slf4j:slf4j-api': 'Simple Logging Facade for Java',
-                        'org.hibernate:hibernate-core': 'Hibernate ORM核心库',
-                        'org.hibernate.validator:hibernate-validator': 'Hibernate Bean验证器',
-                        'mysql:mysql-connector-java': 'MySQL JDBC驱动',
-                        'redis.clients:jedis': 'Java Redis客户端',
-                        'org.apache.commons:commons-lang3': 'Apache Commons Lang工具库',
-                        'org.springframework:spring-core': 'Spring框架核心库',
-                        'org.springframework:spring-beans': 'Spring依赖注入容器',
-                        'org.springframework:spring-context': 'Spring应用上下文',
-                        'org.springframework:spring-web': 'Spring Web支持',
-                        'org.springframework:spring-webmvc': 'Spring Web MVC框架',
-                        'org.apache.tomcat.embed:tomcat-embed-core': 'Tomcat嵌入式核心',
-                        'ch.qos.logback:logback-classic': 'Logback经典日志实现',
-                        'ch.qos.logback:logback-core': 'Logback核心库',
-                        'org.yaml:snakeyaml': 'YAML解析库',
-                        'com.h2database:h2': 'H2内存数据库',
-                        'org.junit.jupiter:junit-jupiter': 'JUnit 5测试框架',
-                        'org.mockito:mockito-core': 'Mockito模拟测试框架'
-                    };
-
-                    const key = `${groupId}:${artifactId}`;
-                    let desc = descriptions[key];
-
-                    // 如果没有精确匹配，尝试通过artifactId模糊匹配
-                    if (!desc) {
-                        if (artifactId.includes('spring-boot-starter'))
-                            desc = 'Spring Boot启动器';
-                        else if (artifactId.includes('jackson'))
-                            desc = 'Jackson JSON处理库';
-                        else if (artifactId.includes('log4j'))
-                            desc = 'Log4j日志框架';
-                        else if (artifactId.includes('slf4j'))
-                            desc = 'SLF4J日志门面';
-                        else if (artifactId.includes('logback'))
-                            desc = 'Logback日志实现';
-                        else if (artifactId.includes('spring'))
-                            desc = 'Spring框架组件';
-                        else if (artifactId.includes('tomcat'))
-                            desc = 'Tomcat服务器组件';
-                        else if (artifactId.includes('hibernate'))
-                            desc = 'Hibernate ORM组件';
-                        else if (artifactId.includes('junit'))
-                            desc = 'JUnit测试框架';
-                        else if (artifactId.includes('mockito'))
-                            desc = 'Mockito测试框架';
-                        else
-                            desc = '第三方依赖包';
-                    }
-
-                    return desc;
-                }
-                function truncateDescription(text, maxLength) {
-                    if (!text || text.trim() === '')
-                        return '暂无描述';
-
-                    if (text.length <= maxLength)
-                        return text;
-
-                    return text.substring(0, maxLength) + '...';
-                }
-                function getRiskLevelClass(riskLevel) {
-                    const classes = {
-                        'CRITICAL': 'risk-critical',
-                        'HIGH': 'risk-high',
-                        'MEDIUM': 'risk-medium',
-                        'LOW': 'risk-low'
-                    };
-                    return classes[riskLevel] || 'bg-gray-100 border-gray-500 text-gray-800';
-                }
-                function getRiskLevelText(riskLevel) {
-                    const texts = {
-                        'CRITICAL': '严重',
-                        'HIGH': '高危',
-                        'MEDIUM': '中危',
-                        'LOW': '低危'
-                    };
-                    return texts[riskLevel] || riskLevel;
-                }
+            const gradleCommand = computed(() => selectedResult.value ?
+                `implementation '${selectedResult.value.groupId}:${selectedResult.value.artifactId}:${safeVersion.value || '请核对公告后填写修复版本'}'` : '');
+            const safeReference = computed(() => {
+                try {
+                    const url = new URL(selectedResult.value?.reference || '');
+                    return ['https:', 'http:'].includes(url.protocol) ? url.href : '';
+                } catch { return ''; }
+            });
+            const relatedLinks = computed(() => {
+                const risk = selectedResult.value || {}, enc = encodeURIComponent;
+                const query = enc(risk.cve && risk.cve !== 'OUTDATED-VERSION' ? risk.cve : risk.artifactId || '');
                 return {
-                    isLoading, hasScanned, allScanResults, statistics, errorMessage, selectedResult, selectedLevels,
-                    allSelected, scanResults, safeVersion, mavenCommand, gradleCommand, safeReference, relatedLinks,
-                    solutionTips, modalElement, toast, startScan, showDetails, closeModal, copyText, exportResults,
-                    formatSafeVersion, formatCveId, getPackageDescription, truncateDescription, getRiskLevelClass, getRiskLevelText
+                    cve: `https://www.cve.org/CVERecord?id=${query}`,
+                    maven: `https://search.maven.org/artifact/${enc(risk.groupId || '')}/${enc(risk.artifactId || '')}`,
+                    osv: `https://osv.dev/list?q=${enc((risk.groupId || '') + ':' + (risk.artifactId || ''))}`,
+                    github: `https://github.com/advisories?query=${query}`
                 };
+            });
+            const solutionTips = computed(() => {
+                const risk = selectedResult.value || {}, tips = [];
+                if (risk.riskLevel === 'CRITICAL')
+                    tips.push('严重漏洞，请优先核对影响范围并安排修复。');
+                else if (risk.riskLevel === 'HIGH')
+                    tips.push('高危漏洞，请尽快评估并安排升级。');
+                else
+                    tips.push('将此依赖加入升级计划，结合实际使用情况评估风险。');
+                if ((risk.groupId || '').includes('springframework'))
+                    tips.push('参考 Spring 官方迁移指南，核对配置和依赖版本管理。');
+                if ((risk.groupId || '').includes('jackson'))
+                    tips.push('升级后测试 JSON 序列化与反序列化行为。');
+                if ((risk.groupId || '').includes('log4j'))
+                    tips.push('核对日志配置及自定义 Appender 的兼容性。');
+                tips.push('查看漏洞公告及 CHANGELOG，确认目标版本包含所需修复。', '先在测试环境验证核心功能，再执行升级。');
+                return tips;
+            });
+            async function startScan() {
+                if (isLoading.value)
+                    return;
+                isLoading.value = true; hasScanned.value = false; errorMessage.value = '';
+                allScanResults.value = []; statistics.value = null; closeModal();
+                try {
+                    const response = await fetch('../dependency_scanner/dependencies/scan', { headers: { Accept: 'application/json' } });
+                    if (!response.ok)
+                        throw new Error(`扫描请求失败（HTTP ${response.status}）`);
+                    let data = await response.json();
+                    data = data.data;
+
+                    if (!data.success)
+                        throw new Error(data.message || '扫描失败，请重试');
+                    if (!Array.isArray(data.data) || !data.statistics)
+                        throw new Error('扫描结果格式异常');
+                    allScanResults.value = data.data; statistics.value = data.statistics;
+                    selectedLevels.value = [...levels]; hasScanned.value = true;
+                } catch (error) {
+                    errorMessage.value = error instanceof Error ? error.message : '扫描失败，请稍后重试';
+                } finally { isLoading.value = false; }
             }
-        }).mount('#app');
+            async function showDetails(risk, event) {
+                triggerElement = event?.currentTarget;
+                selectedResult.value = risk;
+                await nextTick(); modalElement.value?.focus();
+            }
+            function closeModal() {
+                selectedResult.value = null;
+                triggerElement?.focus(); triggerElement = null;
+            }
+            function onKeydown(event) {
+                if (!selectedResult.value)
+                    return;
+                if (event.key === 'Escape')
+                    closeModal();
+                if (event.key === 'Tab' && modalElement.value) {
+                    const elements = modalElement.value.querySelectorAll('button:not(:disabled), a[href], [tabindex="0"]');
+                    const first = elements[0], last = elements[elements.length - 1];
+                    if (event.shiftKey && (document.activeElement === first || document.activeElement === modalElement.value)) {
+                        event.preventDefault(); last?.focus();
+                    } else if (!event.shiftKey && document.activeElement === last) {
+                        event.preventDefault(); first?.focus();
+                    }
+                }
+            }
+            function notify(message) {
+                toast.value = message; clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => { toast.value = ''; }, 3000);
+            }
+            async function copyText(text) {
+                if (!text)
+                    return;
+                try { await navigator.clipboard.writeText(text); notify('已复制'); }
+                catch { notify('复制失败，请选中文本手动复制'); }
+            }
+            function exportResults() {
+                if (!hasScanned.value || isLoading.value)
+                    return;
+                try {
+                    const blob = new Blob([JSON.stringify({ scanTime: new Date().toISOString(), statistics: statistics.value, results: scanResults.value }, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob), link = document.createElement('a');
+                    link.href = url; link.download = `dependency-scan-${new Date().toISOString().slice(0, 10)}.json`;
+                    document.body.appendChild(link); link.click(); link.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000); notify('已导出当前筛选结果');
+                } catch { notify('导出失败，请重试'); }
+            }
+            onMounted(() => document.addEventListener('keydown', onKeydown));
+            onUnmounted(() => { document.removeEventListener('keydown', onKeydown); clearTimeout(toastTimer); });
+            function formatSafeVersion(safeVersion) {
+                if (!safeVersion || safeVersion.trim() === '')
+                    return '未提供修复版本';
+
+                if (safeVersion === '请查看最新版本' || safeVersion === '请查看官方文档')
+                    return '📖 请查看官方文档';
+
+                // 检查是否为有效版本号格式
+                if (/^[0-9]+(\.[0-9]+)*(\.[0-9]+)*(-[a-zA-Z0-9]+)?$/.test(safeVersion))
+                    return `📦 升级到 ${safeVersion}`;
+
+                return safeVersion;
+            }
+            function formatCveId(cve) {
+                if (!cve || cve.trim() === '')
+                    return 'N/A';
+
+                if (cve === 'OUTDATED-VERSION')
+                    return '🔄 版本过期';
+
+                return cve;
+            }
+            function getPackageDescription(groupId, artifactId) {
+                const descriptions = {
+                    'org.springframework.boot:spring-boot-starter-actuator': '生产就绪功能，用于监控和管理应用',
+                    'org.springframework.boot:spring-boot-starter-web': 'Web应用开发，包含Spring MVC',
+                    'org.springframework.boot:spring-boot-starter-data-jpa': 'JPA数据访问，包含Hibernate',
+                    'org.springframework.boot:spring-boot-starter-security': 'Spring Security安全框架',
+                    'org.springframework.boot:spring-boot-starter-test': '测试支持，包含JUnit、Mockito',
+                    'com.fasterxml.jackson.core:jackson-databind': 'Jackson JSON数据绑定库',
+                    'com.fasterxml.jackson.core:jackson-core': 'Jackson核心库',
+                    'com.fasterxml.jackson.core:jackson-annotations': 'Jackson注解库',
+                    'org.apache.logging.log4j:log4j-core': 'Log4j核心日志框架',
+                    'org.apache.logging.log4j:log4j-api': 'Log4j API接口',
+                    'com.alibaba:fastjson': 'Alibaba高性能JSON解析库',
+                    'org.apache.struts:struts2-core': 'Apache Struts2 MVC框架',
+                    'org.slf4j:slf4j-api': 'Simple Logging Facade for Java',
+                    'org.hibernate:hibernate-core': 'Hibernate ORM核心库',
+                    'org.hibernate.validator:hibernate-validator': 'Hibernate Bean验证器',
+                    'mysql:mysql-connector-java': 'MySQL JDBC驱动',
+                    'redis.clients:jedis': 'Java Redis客户端',
+                    'org.apache.commons:commons-lang3': 'Apache Commons Lang工具库',
+                    'org.springframework:spring-core': 'Spring框架核心库',
+                    'org.springframework:spring-beans': 'Spring依赖注入容器',
+                    'org.springframework:spring-context': 'Spring应用上下文',
+                    'org.springframework:spring-web': 'Spring Web支持',
+                    'org.springframework:spring-webmvc': 'Spring Web MVC框架',
+                    'org.apache.tomcat.embed:tomcat-embed-core': 'Tomcat嵌入式核心',
+                    'ch.qos.logback:logback-classic': 'Logback经典日志实现',
+                    'ch.qos.logback:logback-core': 'Logback核心库',
+                    'org.yaml:snakeyaml': 'YAML解析库',
+                    'com.h2database:h2': 'H2内存数据库',
+                    'org.junit.jupiter:junit-jupiter': 'JUnit 5测试框架',
+                    'org.mockito:mockito-core': 'Mockito模拟测试框架'
+                };
+
+                const key = `${groupId}:${artifactId}`;
+                let desc = descriptions[key];
+
+                // 如果没有精确匹配，尝试通过artifactId模糊匹配
+                if (!desc) {
+                    if (artifactId.includes('spring-boot-starter'))
+                        desc = 'Spring Boot启动器';
+                    else if (artifactId.includes('jackson'))
+                        desc = 'Jackson JSON处理库';
+                    else if (artifactId.includes('log4j'))
+                        desc = 'Log4j日志框架';
+                    else if (artifactId.includes('slf4j'))
+                        desc = 'SLF4J日志门面';
+                    else if (artifactId.includes('logback'))
+                        desc = 'Logback日志实现';
+                    else if (artifactId.includes('spring'))
+                        desc = 'Spring框架组件';
+                    else if (artifactId.includes('tomcat'))
+                        desc = 'Tomcat服务器组件';
+                    else if (artifactId.includes('hibernate'))
+                        desc = 'Hibernate ORM组件';
+                    else if (artifactId.includes('junit'))
+                        desc = 'JUnit测试框架';
+                    else if (artifactId.includes('mockito'))
+                        desc = 'Mockito测试框架';
+                    else
+                        desc = '第三方依赖包';
+                }
+
+                return desc;
+            }
+            function truncateDescription(text, maxLength) {
+                if (!text || text.trim() === '')
+                    return '暂无描述';
+
+                if (text.length <= maxLength)
+                    return text;
+
+                return text.substring(0, maxLength) + '...';
+            }
+            function getRiskLevelClass(riskLevel) {
+                const classes = {
+                    'CRITICAL': 'risk-critical',
+                    'HIGH': 'risk-high',
+                    'MEDIUM': 'risk-medium',
+                    'LOW': 'risk-low'
+                };
+                return classes[riskLevel] || 'bg-gray-100 border-gray-500 text-gray-800';
+            }
+            function getRiskLevelText(riskLevel) {
+                const texts = {
+                    'CRITICAL': '严重',
+                    'HIGH': '高危',
+                    'MEDIUM': '中危',
+                    'LOW': '低危'
+                };
+                return texts[riskLevel] || riskLevel;
+            }
+            return {
+                isLoading, hasScanned, allScanResults, statistics, errorMessage, selectedResult, selectedLevels,
+                allSelected, scanResults, safeVersion, mavenCommand, gradleCommand, safeReference, relatedLinks,
+                solutionTips, modalElement, toast, startScan, showDetails, closeModal, copyText, exportResults,
+                formatSafeVersion, formatCveId, getPackageDescription, truncateDescription, getRiskLevelClass, getRiskLevelText
+            };
+        }
+    }).mount('#app');
 
 
 </script>

@@ -123,7 +123,7 @@ public class HierarchicalMethodMetrics {
      * 更新累计值后同步写入四级时间桶并淘汰旧桶，按请求完成时刻归桶。</p>
      *
      * @param duration 本次请求耗时，单位为毫秒
-     * @param success 本次请求是否成功
+     * @param success  本次请求是否成功
      */
     public synchronized void record(long duration, boolean success) {
         long currentTime = System.currentTimeMillis();
@@ -148,8 +148,8 @@ public class HierarchicalMethodMetrics {
      * 四级数据是同一批请求的不同粒度表示，不能跨级直接相加。</p>
      *
      * @param currentTime 用于桶定位和淘汰判断的当前纪元毫秒
-     * @param duration 本次请求耗时，单位为毫秒
-     * @param success 本次请求是否成功
+     * @param duration    本次请求耗时，单位为毫秒
+     * @param success     本次请求是否成功
      */
     private void recordToTimeBuckets(long currentTime, long duration, boolean success) {
         long secondKey = currentTime / SECOND_MILLIS; // 秒级桶
@@ -197,7 +197,7 @@ public class HierarchicalMethodMetrics {
      * 也不校验时间顺序；没有命中桶时返回零值结果。</p>
      *
      * @param startTime 查询起点，Unix 纪元毫秒；控制器中可为 null
-     * @param endTime 查询终点，Unix 纪元毫秒；控制器中可为 null
+     * @param endTime   查询终点，Unix 纪元毫秒；控制器中可为 null
      * @return 保留原始起止参数的时间范围聚合结果
      */
     public TimeRangeMetrics queryTimeRange(long startTime, long endTime) {
@@ -212,7 +212,7 @@ public class HierarchicalMethodMetrics {
      * <p>只使用选定粒度，不因桶过期回退；查询跨度较大时逐键遍历可能耗时较长。</p>
      *
      * @param startTime 查询起点，Unix 纪元毫秒；控制器中可为 null
-     * @param endTime 查询终点，Unix 纪元毫秒；控制器中可为 null
+     * @param endTime   查询终点，Unix 纪元毫秒；控制器中可为 null
      * @return 命中范围内非空桶的数值快照列表
      */
     private List<TimeBucketSnapshot> selectBucketsForTimeRange(long startTime, long endTime) {
@@ -275,7 +275,7 @@ public class HierarchicalMethodMetrics {
      *
      * @param snapshots 同一时间粒度的桶快照列表
      * @param startTime 查询起点，Unix 纪元毫秒；控制器中可为 null
-     * @param endTime 查询终点，Unix 纪元毫秒；控制器中可为 null
+     * @param endTime   查询终点，Unix 纪元毫秒；控制器中可为 null
      * @return 范围统计；空快照列表返回全部统计值为零的结果
      */
     private TimeRangeMetrics aggregateSnapshots(List<TimeBucketSnapshot> snapshots, long startTime, long endTime) {
@@ -310,6 +310,7 @@ public class HierarchicalMethodMetrics {
     }
 
     // 兼容旧版本的方法
+
     /**
      * 计算当前累计请求的平均耗时。
      * <p>计数和总耗时分别读取，并发写入时可能出现短暂的统计差异。</p>

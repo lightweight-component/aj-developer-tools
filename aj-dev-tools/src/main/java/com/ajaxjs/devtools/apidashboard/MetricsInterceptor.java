@@ -39,9 +39,9 @@ public class MetricsInterceptor implements AsyncHandlerInterceptor {
      * 为受监控请求首次设置单调时钟起点和方法标识。
      * <p>请求属性跨异步派发保留，已有起点不覆盖；不受监控的处理器直接放行。</p>
      *
-     * @param request 当前 Servlet 请求
+     * @param request  当前 Servlet 请求
      * @param response 当前 Servlet 响应，用于读取最终 HTTP 状态
-     * @param handler 本次派发选择的 MVC 处理器
+     * @param handler  本次派发选择的 MVC 处理器
      * @return 始终为 true，不改变请求执行流程
      */
     @Override
@@ -63,10 +63,10 @@ public class MetricsInterceptor implements AsyncHandlerInterceptor {
      * <p>纳秒差转换为毫秒时截去不足 1 毫秒的部分。异步启动时此回调不会立即执行，
      * 正常重派发完成后才记录；缺少起点或方法标识时跳过，重复完成调用不会重复计数。</p>
      *
-     * @param request 当前 Servlet 请求
+     * @param request  当前 Servlet 请求
      * @param response 当前 Servlet 响应，用于读取最终 HTTP 状态
-     * @param handler 本次派发选择的 MVC 处理器
-     * @param ex 未被异常解析器处理的异常，可为 null
+     * @param handler  本次派发选择的 MVC 处理器
+     * @param ex       未被异常解析器处理的异常，可为 null
      */
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {

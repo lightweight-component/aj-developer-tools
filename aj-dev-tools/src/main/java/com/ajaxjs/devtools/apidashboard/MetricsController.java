@@ -32,8 +32,8 @@ public class MetricsController {
      * <p>methodFilter 采用当前默认区域规则转小写后做包含匹配；两个时间参数
      * 只提供一个时仍返回全量数据。没有范围记录的方法也会以零值保留在结果中。</p>
      *
-     * @param startTime 查询起点，Unix 纪元毫秒；控制器中可为 null
-     * @param endTime 查询终点，Unix 纪元毫秒；控制器中可为 null
+     * @param startTime    查询起点，Unix 纪元毫秒；控制器中可为 null
+     * @param endTime      查询终点，Unix 纪元毫秒；控制器中可为 null
      * @param methodFilter 可选的方法标识包含匹配条件，不区分大小写
      * @return 方法标识到指标字段映射；平均耗时和成功率保留两位小数
      */
@@ -111,8 +111,8 @@ public class MetricsController {
      * <p>平均响应时间为各方法平均耗时的算术平均，不按请求次数加权。
      * 范围查询仅将区间内有调用的方法计入方法数；全量查询使用当前匹配的注册条目数。</p>
      *
-     * @param startTime 查询起点，Unix 纪元毫秒；控制器中可为 null
-     * @param endTime 查询终点，Unix 纪元毫秒；控制器中可为 null
+     * @param startTime    查询起点，Unix 纪元毫秒；控制器中可为 null
+     * @param endTime      查询终点，Unix 纪元毫秒；控制器中可为 null
      * @param methodFilter 可选的方法标识包含匹配条件，不区分大小写
      * @return 包含 totalMethods、totalCalls、totalErrors 和 avgResponseTime 的映射；范围模式额外包含 timeRange
      */
@@ -142,7 +142,7 @@ public class MetricsController {
                     .average()
                     .orElse(0.0));
         } else {
-                    // 时间段数据汇总
+            // 时间段数据汇总
             long totalCalls = 0;
             long totalErrors = 0;
             double totalAvgTime = 0;
@@ -173,7 +173,7 @@ public class MetricsController {
      * 以当前系统时间为终点，查询最近指定分钟数的指标。
      * <p>复用 getMetrics 的时间桶查询语义；当前实现不额外校验 minutes 是否为正数。</p>
      *
-     * @param minutes 向前回溯的分钟数
+     * @param minutes      向前回溯的分钟数
      * @param methodFilter 可选的方法标识包含匹配条件，不区分大小写
      * @return 按方法标识索引的范围指标映射
      */
