@@ -139,5 +139,34 @@ devtools:
       cleanup-interval: 300000  # 5 minutes in milliseconds
       max-age: 3600000         # 1 hour in milliseconds
       debug-enabled: false
+  network_capture: # 网络抓包配置
+    enable: true
+    # 默认网络接口（为空时自动选择）
+    interface: ""
+    # 抓包过滤器（BPF格式）
+    filter: ""
+    # 抓包缓冲区大小（字节）
+    buffer-size: 65536
+    # 抓包超时时间（毫秒）
+    timeout: 1000
+    # 是否启用混杂模式
+    promiscuous: false
+    # 最大抓包数量（0表示无限制）
+    max-packets: 0
+    # 是否自动启动抓包
+    auto-start: false
+    # 数据保留时间（小时）
+    data-retention-hours: 24
+# The host framework creates the DataSource from db.*, not spring.datasource.*.
 db:
   disableAutoConnect: true
+  url: "jdbc:h2:mem:netcapture;DB_CLOSE_DELAY=-1"
+  user: sa
+  psw: ""
+
+spring:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:sql/netcapture-schema.sql
+      encoding: UTF-8

@@ -40,18 +40,6 @@ public class PacketController {
 
     @GetMapping("/{id}")
     public PacketInfo getPacketDetail(@PathVariable Long id) {
-        try {
-            PacketInfo packet = packetQueryService.getPacketDetail(id);
-
-            if (packet != null)
-                return packet;
-            else
-                throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Packet not found");
-        } catch (org.springframework.web.server.ResponseStatusException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Error getting packet detail", e);
-            throw new IllegalStateException("Network capture request failed", e);
-        }
+        return packetQueryService.getPacketDetail(id);
     }
 }

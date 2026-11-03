@@ -46,8 +46,7 @@ public class PacketWebSocketHandler extends TextWebSocketHandler {
             sessionFilters.put(session.getId(), filter);
             log.info("Filter set for session {}: {}", session.getId(), filter);
         } else if (payload.startsWith("filter:") && payload.length() == 7) {
-            // 处理只有 "filter:" 没有内容的情况
-            sessionFilters.put(session.getId(), "");
+            sessionFilters.put(session.getId(), ""); // 处理只有 "filter:" 没有内容的情况
             log.info("Filter cleared for session {}", session.getId());
         }
     }

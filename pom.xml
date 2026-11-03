@@ -14,5 +14,6 @@
         <module>aj-mysql-monitor</module>
         <module>aj-dev-tools</module>
         <module>aj-dev-tools-app</module>
+
     </modules>
 </project>

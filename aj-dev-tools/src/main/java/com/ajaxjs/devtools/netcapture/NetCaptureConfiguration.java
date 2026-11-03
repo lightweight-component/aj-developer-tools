@@ -7,6 +7,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ComponentScan(basePackages = "com.ajaxjs.devtools.netcapture")
-@ConditionalOnProperty(name = "devtools.netcapture.enable", havingValue = "true")
+@ConditionalOnProperty(name = "devtools.network_capture.enable", havingValue = "true")
 public class NetCaptureConfiguration {
 }

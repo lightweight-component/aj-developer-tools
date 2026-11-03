@@ -31,7 +31,7 @@ public class PacketAnalysisService {
     public void analyzePacket(PacketInfo packetInfo) {
         analysisTaskExecutor.execute(() -> {
             enhancePacketInfo(packetInfo);
-            savePacket(packetInfo);
+            repository.insertPacket(packetInfo);
             statisticsService.updateStatistics(packetInfo);
         });
     }
@@ -41,14 +41,5 @@ public class PacketAnalysisService {
             protocolAnalyzer.analyzeTcpPacket(packetInfo);
          else if ("UDP".equals(packetInfo.getProtocol())) 
             protocolAnalyzer.analyzeUdpPacket(packetInfo);
-        
-    }
-
-    private void savePacket(PacketInfo packetInfo) {
-        try {
-            repository.insertPacket(packetInfo);
-        } catch (Exception e) {
-            log.error("Error saving packet to database", e);
-        }
     }
 }

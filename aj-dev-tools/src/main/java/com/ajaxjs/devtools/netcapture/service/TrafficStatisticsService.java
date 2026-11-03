@@ -64,10 +64,11 @@ public class TrafficStatisticsService {
 
     @Scheduled(fixedRate = 60000) // 每分钟执行一次
     public void generateStatistics() {
+        TrafficStatistics statistics = new TrafficStatistics();
+        statistics.setStatisticsTime(LocalDateTime.now());
+        statistics.setTimeWindow("1min");
+
         try {
-            TrafficStatistics statistics = new TrafficStatistics();
-            statistics.setStatisticsTime(LocalDateTime.now());
-            statistics.setTimeWindow("1min");
             statistics.setTotalPackets(totalPackets.get());
             statistics.setTotalBytes(totalBytes.get());
             statistics.setHttpPackets(httpPackets.get());
@@ -88,9 +89,7 @@ public class TrafficStatisticsService {
 
             double avgPacketSize = totalPackets.get() > 0 ? (double) totalBytes.get() / totalPackets.get() : 0.0;
             statistics.setAveragePacketSize(avgPacketSize);
-
             repository.insertStatistics(statistics);
-
             resetCounters();
 
             log.info("Traffic statistics generated: {} packets, {} bytes", totalPackets.get(), totalBytes.get());
@@ -101,11 +100,10 @@ public class TrafficStatisticsService {
 
     @Scheduled(cron = "0 0 * * * ?") // 每小时执行一次
     public void cleanupOldData() {
+        LocalDateTime cutoffTime = LocalDateTime.now().minusHours(24);
+
         try {
-            LocalDateTime cutoffTime = LocalDateTime.now().minusHours(24);
-
             repository.cleanupBefore(cutoffTime);
-
             log.info("Cleaned up data older than {}", cutoffTime);
         } catch (Exception e) {
             log.error("Error cleaning up old data", e);
@@ -121,8 +119,7 @@ public class TrafficStatisticsService {
         stats.put("udpPackets", udpPackets.get());
         stats.put("icmpPackets", icmpPackets.get());
 
-        // 处理可能为null的值
-        String topSourceIp = getTopEntry(sourceIpCounts);
+        String topSourceIp = getTopEntry(sourceIpCounts);// 处理可能为null的值
         stats.put("topSourceIp", topSourceIp != null ? topSourceIp : "");
 
         String topDestIp = getTopEntry(destIpCounts);

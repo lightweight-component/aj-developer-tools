@@ -15,9 +15,9 @@ async function request(path, options = {}) {
         const text = await response.text();
         let data;
         try { data = text ? JSON.parse(text) : null; } catch { throw new Error(`响应不是 JSON（HTTP ${response.status}），请检查登录状态及接口地址`); }
-        if (!response.ok || data?.success === false)
-            throw new Error(data?.message || data?.error || `HTTP ${response.status}`);
-        return data;
+        if (!response.ok || data?.status !== 1)
+            throw new Error(data?.message || (response.ok ? '请求失败：响应状态异常' : `HTTP ${response.status}`));
+        return data.data;
     } catch (error) {
         if (error.name === 'AbortError')
             throw new Error('请求超时，请稍后重试');

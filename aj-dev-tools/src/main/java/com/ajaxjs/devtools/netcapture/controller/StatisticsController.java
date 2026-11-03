@@ -21,68 +21,31 @@ public class StatisticsController {
 
     @GetMapping("/current")
     public Map<String, Object> getCurrentStatistics() {
-        try {
-            Map<String, Object> statistics = statisticsService.getCurrentStatistics();
-            return statistics;
-        } catch (Exception e) {
-            log.error("Error getting current statistics", e);
-            throw new IllegalStateException("Network capture request failed", e);
-        }
+        return statisticsService.getCurrentStatistics();
     }
 
     @GetMapping("/recent")
-    public List<TrafficStatistics> getRecentStatistics(
-            @RequestParam(defaultValue = "24") int hours,
-            @RequestParam(defaultValue = "100") int limit) {
-        List<TrafficStatistics> statistics = statisticsService.getRecentStatistics(hours, limit);
-        return statistics;
+    public List<TrafficStatistics> getRecentStatistics(@RequestParam(defaultValue = "24") int hours, @RequestParam(defaultValue = "100") int limit) {
+        return statisticsService.getRecentStatistics(hours, limit);
     }
 
     @GetMapping("/trend")
-    public List<Map<String, Object>> getTrafficTrend(
-            @RequestParam(defaultValue = "24") int hours) {
-        try {
-            List<Map<String, Object>> trend = statisticsService.getTrafficTrend(hours);
-            return trend;
-        } catch (Exception e) {
-            log.error("Error getting traffic trend", e);
-            throw new IllegalStateException("Network capture request failed", e);
-        }
+    public List<Map<String, Object>> getTrafficTrend(@RequestParam(defaultValue = "24") int hours) {
+        return statisticsService.getTrafficTrend(hours);
     }
 
     @GetMapping("/protocols")
-    public List<Map<String, Object>> getProtocolStatistics(
-            @RequestParam(defaultValue = "24") int hours) {
-        try {
-            List<Map<String, Object>> protocolStats = statisticsService.getProtocolStatistics(hours);
-            return protocolStats;
-        } catch (Exception e) {
-            log.error("Error getting protocol statistics", e);
-            throw new IllegalStateException("Network capture request failed", e);
-        }
+    public List<Map<String, Object>> getProtocolStatistics(@RequestParam(defaultValue = "24") int hours) {
+        return statisticsService.getProtocolStatistics(hours);
     }
 
     @GetMapping("/top-sources")
-    public List<Map<String, Object>> getTopSourceIps(
-            @RequestParam(defaultValue = "24") int hours) {
-        try {
-            List<Map<String, Object>> topSources = statisticsService.getTopSourceIps(hours);
-            return topSources;
-        } catch (Exception e) {
-            log.error("Error getting top source IPs", e);
-            throw new IllegalStateException("Network capture request failed", e);
-        }
+    public List<Map<String, Object>> getTopSourceIps(@RequestParam(defaultValue = "24") int hours) {
+        return statisticsService.getTopSourceIps(hours);
     }
 
     @GetMapping("/top-destinations")
-    public List<Map<String, Object>> getTopDestinationIps(
-            @RequestParam(defaultValue = "24") int hours) {
-        try {
-            List<Map<String, Object>> topDestinations = statisticsService.getTopDestinationIps(hours);
-            return topDestinations;
-        } catch (Exception e) {
-            log.error("Error getting top destination IPs", e);
-            throw new IllegalStateException("Network capture request failed", e);
-        }
+    public List<Map<String, Object>> getTopDestinationIps(@RequestParam(defaultValue = "24") int hours) {
+        return statisticsService.getTopDestinationIps(hours);
     }
 }
