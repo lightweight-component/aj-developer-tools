@@ -5,6 +5,21 @@ devtools:
     enable: true
   hotcpu:
     enable: true
+  log_viewer: # 日志查看系统配置
+    enable: true
+    # 日志文件根目录
+    log-path: ./logs
+    # 允许访问的文件扩展名
+    allowed-extensions:
+      - .log
+      - .txt
+      - .out
+    # 单次查询最大行数
+    max-lines: 1000
+    # 文件最大大小（MB）
+    max-file-size: 100
+    # 是否启用安全检查
+    enable-security: true
   jarconflict:
     enable: true
     scanner:
@@ -126,13 +141,12 @@ devtools:
           severity: LOW
   dependencyscanner: # 漏洞扫描配置 (使用OSV.dev作为唯一数据源)
     enable: true
-    scan:
-      mode: online  # 扫描模式: online(在线), local(本地数据库), hybrid(混合)
-      timeout: 30   # 单个依赖扫描超时时间(秒)
-      parallel: true  # 是否启用并行扫描
-      retry:
-        max-attempts: 3  # 最大重试次数
-        delay: 1000     # 重试延迟(毫秒)
+    mode: online  # 扫描模式: online(在线), local(本地数据库), hybrid(混合)
+    timeout: 30   # 单个依赖扫描超时时间(秒)
+    parallel: true  # 是否启用并行扫描
+    retry:
+      max-attempts: 3  # 最大重试次数
+      delay: 1000     # 重试延迟(毫秒)
   apidashboard: #  API 请求监控面板
     enable: true
     metrics:

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>许可证控制系统演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>[v-cloak] { display: none; }</style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#64748B'
+                    }
+                }
+            }
+        }
+
+
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<noscript>请启用 JavaScript 后使用许可证功能。</noscript>
+<div id="app" v-cloak>
+<div class="container mx-auto px-4 py-8">
+    <!-- 标题 -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">许可证控制系统</h1>
+        <p class="text-gray-600">基于RSA2048的许可证生成与验证演示</p>
+    </div>
+
+    <!-- 硬件信息卡片 -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">🖥️ 当前硬件信息</h2>
+        <div id="hardwareInfo" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-gray-50 p-4 rounded">
+                <label class="block text-sm font-medium text-gray-700 mb-1">主板序列号</label>
+                <span class="text-gray-900 font-mono break-all">{{ busy.hardware ? '加载中...' : hardware.motherboardSerial || '未获取' }}</span>
+            </div>
+            <div class="bg-gray-50 p-4 rounded">
+                <label class="block text-sm font-medium text-gray-700 mb-1">系统信息</label>
+                <span class="text-gray-900 text-sm">{{ busy.hardware ? '加载中...' : hardware.systemInfo || '未获取' }}</span>
+            </div>
+        </div>
+        <button @click="loadHardwareInfo" :disabled="busy.hardware"
+                class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            🔄 刷新硬件信息
+        </button>
+    </div>
+
+    <!-- 密钥管理区域 -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">🔐 密钥管理</h2>
+
+        <div class="mb-4">
+            <button @click="generateKeys" :disabled="busy.keys"
+                    class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed mr-2">
+                🔑 生成新密钥对
+            </button>
+            <span class="text-sm" role="status" :class="keysLoaded ? 'text-green-600' : 'text-gray-600'">{{ busy.keys ? '处理中...' : keyStatus }}</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">私钥 (Private Key)</label>
+                <textarea id="privateKey" v-model="privateKey" :disabled="busy.keys" placeholder="粘贴私钥内容..."
+                          class="w-full h-32 p-3 border border-gray-300 rounded-md font-mono text-xs"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">公钥 (Public Key)</label>
+                <textarea id="publicKey" v-model="publicKey" :disabled="busy.keys" placeholder="粘贴公钥内容..."
+                          class="w-full h-32 p-3 border border-gray-300 rounded-md font-mono text-xs"></textarea>
+            </div>
+        </div>
+
+        <button @click="loadKeys" :disabled="busy.keys"
+                class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            📥 加载密钥
+        </button>
+    </div>
+
+    <!-- 许可证生成区域 -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">📝 许可证生成</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">软件名称</label>
+                <input type="text" id="subject" v-model="subject"
+                       class="w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">授权给</label>
+                <input type="text" id="issuedTo" v-model="issuedTo"
+                       class="w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">到期时间</label>
+                <input type="date" id="expireAt" v-model="expireAt"
+                       class="w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">功能权限 (逗号分隔)</label>
+                <input type="text" id="features" v-model="features"
+                       class="w-full p-2 border border-gray-300 rounded-md">
+            </div>
+        </div>
+
+        <button @click="generateLicense" :disabled="busy.generate || busy.keys"
+                class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ busy.generate ? '生成中...' : '✨ 生成许可证' }}
+        </button>
+
+        <div class="mt-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">生成的许可证</label>
+            <textarea id="generatedLicense" v-model="generatedLicense" readonly
+                      class="w-full h-40 p-3 border border-gray-300 rounded-md font-mono text-xs bg-gray-50"
+                      placeholder="生成的许可证将显示在这里..."></textarea>
+            <button @click="copyLicense" :disabled="!generatedLicense"
+                    class="mt-2 bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                📋 复制
+            </button>
+        </div>
+    </div>
+
+    <!-- 许可证验证区域 -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">✅ 许可证验证</h2>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">许可证内容</label>
+            <textarea id="licenseToVerify" v-model="licenseToVerify" @input="verifyResult = null"
+                      class="w-full h-32 p-3 border border-gray-300 rounded-md font-mono text-xs"
+                      placeholder="粘贴要验证的许可证内容..."></textarea>
+        </div>
+
+        <button @click="verifyLicense" :disabled="busy.verify || busy.keys"
+                class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ busy.verify ? '验证中...' : '🔍 验证许可证' }}
+        </button>
+
+        <div v-if="verifyResult" class="mt-4 rounded-lg border p-4" role="status"
+             :class="verifyResult.success ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'">
+            <h3 class="font-medium mb-2">{{ verifyResult.success ? '✅ 许可证验证成功' : '❌ 许可证验证失败' }}</h3>
+            <p>{{ verifyResult.message }}</p>
+            <div v-if="verifyResult.success && verifyResult.license" class="mt-3 bg-white rounded p-3 text-sm grid grid-cols-1 md:grid-cols-2 gap-2 break-all">
+                <div><strong>软件名称：</strong>{{ verifyResult.license.subject }}</div>
+                <div><strong>授权给：</strong>{{ verifyResult.license.issuedTo }}</div>
+                <div><strong>硬件 ID：</strong>{{ verifyResult.license.hardwareId }}</div>
+                <div><strong>到期时间：</strong>{{ verifyResult.license.expireAt }}</div>
+                <div class="md:col-span-2"><strong>功能权限：</strong>{{ (verifyResult.license.features || []).join(', ') }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 消息提示 -->
+<div v-if="toast" role="status" aria-live="polite"
+     class="fixed top-4 right-4 max-w-sm bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50">
+    <div class="flex items-start gap-3">
+        <span>{{ toastIcons[toast.type] || toastIcons.info }}</span>
+        <div><div class="font-medium text-gray-900">{{ toast.title }}</div><div class="text-sm text-gray-600 break-words">{{ toast.message }}</div></div>
+        <button type="button" @click="toast = null" aria-label="关闭提示" class="text-gray-500">×</button>
+    </div>
+</div>
+</div>
+<script>
+    const { createApp, ref, reactive, onMounted, onUnmounted } = Vue;
+
+    createApp({
+        setup() {
+            const hardware = reactive({ motherboardSerial: '', systemInfo: '' });
+            const busy = reactive({ hardware: false, keys: false, generate: false, verify: false });
+            const privateKey = ref('');
+            const publicKey = ref('');
+            const keysLoaded = ref(false);
+            const keyStatus = ref('正在检查密钥状态...');
+            const subject = ref('MyCompany-ERP');
+            const issuedTo = ref('测试公司');
+            const defaultDate = new Date();
+            defaultDate.setFullYear(defaultDate.getFullYear() + 1);
+            const expireAt = ref([defaultDate.getFullYear(), String(defaultDate.getMonth() + 1).padStart(2, '0'), String(defaultDate.getDate()).padStart(2, '0')].join('-'));
+            const features = ref('REPORT,EXPORT,AI_PLUGIN');
+            const generatedLicense = ref('');
+            const licenseToVerify = ref('');
+            const verifyResult = ref(null);
+            const toast = ref(null);
+            const toastIcons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+            let toastTimer;
+
+            function showToast(title, message, type = 'info') {
+                clearTimeout(toastTimer);
+                toast.value = { title, message, type };
+                toastTimer = setTimeout(() => { toast.value = null; }, 5000);
+            }
+
+            // 使用相对路径，支持同源访问及非根 context path 部署。
+            async function request(path, body) {
+                const options = { headers: { Accept: 'application/json' } };
+                if (body !== undefined) {
+                    options.method = 'POST';
+                    options.headers['Content-Type'] = 'application/json';
+                    options.body = JSON.stringify(body);
+                }
+                const response = await fetch('api/' + path, options);
+                let data;
+                try {
+                    data = await response.json();
+                } catch {
+                    throw new Error(`服务器响应格式异常（HTTP ${response.status}）`);
+                }
+                if (!response.ok)
+                    throw new Error(data.message || `请求失败（HTTP ${response.status}）`);
+                if (!data || typeof data.success !== 'boolean')
+                    throw new Error('服务器响应缺少有效状态');
+                return data;
+            }
+
+            async function loadHardwareInfo() {
+                if (busy.hardware)
+                    return;
+                busy.hardware = true;
+                try {
+                    const data = await request('hardware/info');
+                    if (!data.success || !data.data)
+                        throw new Error(data.message || '获取硬件信息失败');
+                    Object.assign(hardware, data.data);
+                } catch (error) {
+                    showToast('获取硬件信息失败', error.message, 'error');
+                } finally {
+                    busy.hardware = false;
+                }
+            }
+
+            async function checkKeyStatus() {
+                try {
+                    const data = await request('keys/status');
+                    if (!data.success)
+                        throw new Error(data.message || '检查密钥状态失败');
+                    keysLoaded.value = data.keysLoaded === true;
+                    keyStatus.value = keysLoaded.value ? '✅ 密钥已加载' : '密钥未全部加载';
+                } catch (error) {
+                    keysLoaded.value = false;
+                    keyStatus.value = '密钥状态获取失败';
+                    showToast('检查密钥状态失败', error.message, 'error');
+                }
+            }
+
+            async function generateKeys() {
+                if (busy.keys)
+                    return;
+                busy.keys = true;
+                try {
+                    const data = await request('keys/generate', {});
+                    if (!data.success || !data.data?.privateKey || !data.data?.publicKey)
+                        throw new Error(data.message || '生成密钥失败');
+                    privateKey.value = data.data.privateKey;
+                    publicKey.value = data.data.publicKey;
+                    verifyResult.value = null;
+                    await checkKeyStatus();
+                    showToast('成功', '密钥对生成成功', 'success');
+                } catch (error) {
+                    showToast('生成密钥失败', error.message, 'error');
+                } finally {
+                    busy.keys = false;
+                }
+            }
+
+            async function loadKeys() {
+                if (busy.keys)
+                    return;
+                if (!privateKey.value.trim() && !publicKey.value.trim()) {
+                    showToast('请补充输入', '请输入至少一个密钥', 'warning');
+                    return;
+                }
+                busy.keys = true;
+                try {
+                    const data = await request('keys/load', { privateKey: privateKey.value.trim(), publicKey: publicKey.value.trim() });
+                    if (!data.success)
+                        throw new Error(data.message || '加载密钥失败');
+                    verifyResult.value = null;
+                    await checkKeyStatus();
+                    showToast('成功', data.message || '密钥加载成功', 'success');
+                } catch (error) {
+                    showToast('加载密钥失败', error.message, 'error');
+                } finally {
+                    busy.keys = false;
+                }
+            }
+
+            async function generateLicense() {
+                if (busy.generate || busy.keys)
+                    return;
+                if (!subject.value.trim() || !issuedTo.value.trim() || !expireAt.value) {
+                    showToast('请补充输入', '请填写软件名称、授权对象和到期时间', 'warning');
+                    return;
+                }
+                busy.generate = true;
+                try {
+                    const data = await request('license/generate', {
+                        subject: subject.value.trim(), issuedTo: issuedTo.value.trim(), expireAt: expireAt.value,
+                        features: features.value.split(',').map(value => value.trim()).filter(Boolean)
+                    });
+                    if (!data.success || typeof data.data !== 'string')
+                        throw new Error(data.message || '生成许可证失败');
+                    generatedLicense.value = data.data;
+                    showToast('成功', '许可证生成成功', 'success');
+                } catch (error) {
+                    showToast('生成许可证失败', error.message, 'error');
+                } finally {
+                    busy.generate = false;
+                }
+            }
+
+            async function verifyLicense() {
+                if (busy.verify || busy.keys)
+                    return;
+                if (!licenseToVerify.value.trim()) {
+                    showToast('请补充输入', '请输入许可证内容', 'warning');
+                    return;
+                }
+                busy.verify = true;
+                verifyResult.value = null;
+                try {
+                    verifyResult.value = await request('license/verify', { licenseJson: licenseToVerify.value.trim() });
+                } catch (error) {
+                    verifyResult.value = { success: false, message: error.message };
+                } finally {
+                    busy.verify = false;
+                }
+            }
+
+            async function copyLicense() {
+                if (!generatedLicense.value)
+                    return;
+                try {
+                    await navigator.clipboard.writeText(generatedLicense.value);
+                    showToast('复制成功', '许可证已复制到剪贴板', 'success');
+                } catch {
+                    showToast('复制失败', '请选中许可证文本手动复制', 'warning');
+                }
+            }
+
+            onMounted(() => { loadHardwareInfo(); checkKeyStatus(); });
+            onUnmounted(() => clearTimeout(toastTimer));
+            return { hardware, busy, privateKey, publicKey, keysLoaded, keyStatus, subject, issuedTo, expireAt, features,
+                generatedLicense, licenseToVerify, verifyResult, toast, toastIcons, loadHardwareInfo, checkKeyStatus,
+                generateKeys, loadKeys, generateLicense, verifyLicense, copyLicense };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>

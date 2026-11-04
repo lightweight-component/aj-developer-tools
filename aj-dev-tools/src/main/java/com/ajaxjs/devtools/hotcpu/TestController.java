@@ -19,7 +19,6 @@ public class TestController {
     public Map<String, Object> cpuIntensiveTask(@RequestParam(name = "iterations", defaultValue = "1000") int iterations) {
         log.info("开始执行CPU密集型任务，迭代次数: {}", iterations);
         long startTime = System.currentTimeMillis();
-
         double result = performComplexCalculation(iterations); // 模拟CPU密集型任务
         long endTime = System.currentTimeMillis();
 
@@ -60,8 +59,7 @@ public class TestController {
                 .reduce(BigInteger.ONE, BigInteger::multiply));
         log.info("结束执行大数阶乘");
 
-        // 混合工作负载：CPU + I/O
-        double cpuResult = performComplexCalculation(10000000);
+        double cpuResult = performComplexCalculation(10000000); // 混合工作负载：CPU + I/O
         Thread.sleep(100); // 模拟I/O等待
         double ioResult = performDatabaseLikeOperation();
         Thread.sleep(50);
@@ -86,8 +84,7 @@ public class TestController {
             result += Math.sin(i) * Math.cos(i) * Math.sqrt(i + 1);
             result += fibonacci(i % 20); // 递归调用
 
-            // 模拟一些字符串操作
-            String temp = "test" + i;
+            String temp = "test" + i;// 模拟一些字符串操作
             temp = temp.toUpperCase().toLowerCase();
             result += temp.hashCode() % 100;
         }
@@ -114,8 +111,8 @@ public class TestController {
     }
 
     private double performDatabaseLikeOperation() {
-        // 模拟数据库查询类的操作
-        double result = 0.0;
+        double result = 0.0;  // 模拟数据库查询类的操作
+
         for (int i = 0; i < 100; i++)
             result += queryLikeOperation(i);
 
@@ -123,8 +120,7 @@ public class TestController {
     }
 
     private double queryLikeOperation(int id) {
-        // 模拟查询操作
-        return Math.random() * id + processRecord(id);
+        return Math.random() * id + processRecord(id);  // 模拟查询操作
     }
 
     private double processRecord(int id) {
@@ -146,13 +142,11 @@ public class TestController {
         double result = 0.0;
         int iterations = 0;
 
-        // 持续运行指定时间，确保采样器能够捕获到
-        while (System.currentTimeMillis() < endTime) {
+        while (System.currentTimeMillis() < endTime) { // 持续运行指定时间，确保采样器能够捕获到
             result += performLongCalculation(100);
             iterations++;
 
-            // 每100次迭代检查一次时间，避免过于频繁的时间检查
-            if (iterations % 100 == 0)
+            if (iterations % 100 == 0) // 每100次迭代检查一次时间，避免过于频繁的时间检查
                 log.debug("Long running task - iterations: {}, current result: {}", iterations, result);
         }
 

@@ -43,6 +43,7 @@ public class LogParser {
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), charset))) {
             String line;
+
             while ((line = reader.readLine()) != null)
                 lines.add(line);
         } catch (IOException e) {
