@@ -171,6 +171,19 @@ devtools:
     auto-start: false
     # 数据保留时间（小时）
     data-retention-hours: 24
+  webssh: # Web SSH Client
+    enable: true
+    ssh:
+      connection-timeout: 30000
+      session-timeout: 1800000
+      max-connections-per-user: 10
+    file:
+      upload-max-size: 100MB
+      temp-dir: /tmp/webssh-uploads
+    collaboration:
+      enabled: true
+      max-participants: 10
+      session-timeout: 3600000
 # The host framework creates the DataSource from db.*, not spring.datasource.*.
 db:
   disableAutoConnect: true

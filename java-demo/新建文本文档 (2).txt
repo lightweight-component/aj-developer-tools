@@ -51,12 +51,14 @@ dependency-scanner/src/main/resources/static/index.html 改为 vue3 实现，引
 ```
 
 ----------------
+控制器的方法不要返回 ResponseEntity，而是直接返回数据对象
 
-统一接口返回结构：
+----------------
+修改前端页面 C:\code\ajaxjs\aj\aj-developer-tools\aj-dev-tools\src\main\resources\static\devtools\webssh，调整接口请求后处理返回的数据，适应统一接口返回结构：
 
 {
-    "status": 0/1 // 1=成功。 0 = 失败
-    "data": any // 实际返回数据
-   "message": "msg" // 讯息
-    "errorCode":string
+  "status": 0/1 // 1=成功。 0 = 失败
+  "data": any // 实际返回数据
+  "message": "msg" // 讯息
+  "errorCode":string
 }

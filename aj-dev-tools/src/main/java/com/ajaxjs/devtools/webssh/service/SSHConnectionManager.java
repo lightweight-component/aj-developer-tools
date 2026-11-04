@@ -23,8 +23,9 @@ public class SSHConnectionManager {
      * 建立SSH连接
      */
     public String createConnection(String host, int port, String username, String password) {
+        JSch jsch = new JSch();
+
         try {
-            JSch jsch = new JSch();
             Session session = jsch.getSession(username, host, port);
 
             // 配置连接参数
@@ -37,13 +38,10 @@ public class SSHConnectionManager {
             // 建立连接
             session.connect(30000); // 30秒超时
 
-            // 创建Shell通道
-            ChannelShell channel = (ChannelShell) session.openChannel("shell");
+            ChannelShell channel = (ChannelShell) session.openChannel("shell");  // 创建Shell通道
             channel.setPty(true);
             channel.setPtyType("xterm", 80, 24, 640, 480);
-
-            // 生成连接ID
-            String connectionId = UUID.randomUUID().toString();
+            String connectionId = UUID.randomUUID().toString();  // 生成连接ID
 
             // 保存连接和通道
             connections.put(connectionId, session);
@@ -51,9 +49,9 @@ public class SSHConnectionManager {
 
             log.info("SSH连接建立成功: {}@{}:{}", username, host, port);
             return connectionId;
-
         } catch (JSchException e) {
             log.error("SSH连接失败: {}", e.getMessage());
+
             throw new RuntimeException("SSH连接失败: " + e.getMessage());
         }
     }
@@ -77,10 +75,12 @@ public class SSHConnectionManager {
      */
     public void closeConnection(String connectionId) {
         ChannelShell channel = channels.remove(connectionId);
+
         if (channel != null && channel.isConnected())
             channel.disconnect();
 
         Session session = connections.remove(connectionId);
+
         if (session != null && session.isConnected())
             session.disconnect();
 

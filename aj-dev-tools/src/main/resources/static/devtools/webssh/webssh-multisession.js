@@ -4,6 +4,44 @@
  */
 
 class MultiSessionWebSSHClient {
+    /** 读取统一响应，并支持布尔操作结果及实际数据中保留的 success 业务标志。 */
+    async readApiResponse(response) {
+        let payload;
+        try {
+            payload = await response.json();
+        } catch {
+            throw new Error(`接口未返回有效 JSON（HTTP ${response.status}）`);
+        }
+        const data = payload?.data;
+        if (!response.ok || payload?.status !== 1 || data === false || data?.success === false) {
+            const message = data?.success === false ? data.message || payload.message : payload?.message;
+            const error = new Error((message || `请求失败（HTTP ${response.status}）`) +
+                (payload?.errorCode ? ` [${payload.errorCode}]` : ''));
+            error.errorCode = payload?.errorCode;
+            throw error;
+        }
+        return data;
+    }
+
+    /** 下载支持二进制响应和统一 JSON 中的 Base64 / 字节数组。 */
+    async readDownloadResponse(response) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.toLowerCase().includes('json')) {
+            const data = await this.readApiResponse(response);
+            if (typeof data === 'string') {
+                const bytes = Uint8Array.from(atob(data), character => character.charCodeAt(0));
+                return new Blob([bytes], { type: 'application/octet-stream' });
+            }
+            if (Array.isArray(data) && data.every(value => Number.isInteger(value) && value >= -128 && value <= 255))
+                return new Blob([new Uint8Array(data)], { type: 'application/octet-stream' });
+            throw new Error('下载接口返回的数据不是文件内容');
+        }
+        if (!response.ok)
+            throw new Error(`文件下载失败（HTTP ${response.status}）`);
+        return response.blob();
+    }
+
+
     constructor() {
         this.sessions = new Map(); // 存储所有会话
         this.activeSessionId = null; // 当前激活的会话ID
@@ -140,9 +178,8 @@ class MultiSessionWebSSHClient {
         
         // 调整终端大小
         const session = this.sessions.get(sessionId);
-        if (session && session.fitAddon) {
+        if (session && session.fitAddon)
             setTimeout(() => session.fitAddon.fit(), 100);
-        }
         
         // 显示终端容器
         document.getElementById('terminalContainer').classList.remove('hidden');
@@ -161,23 +198,24 @@ class MultiSessionWebSSHClient {
     
     closeSession(sessionId) {
         const session = this.sessions.get(sessionId);
-        if (!session) return;
+        if (!session)
+            return;
         
-        if (this.sessions.size === 1) {
+        if (this.sessions.size === 1)
             // 如果是最后一个会话，隐藏终端容器
             document.getElementById('terminalContainer').classList.add('hidden');
-        }
         
         // 断开连接
-        if (session.websocket) {
+        if (session.websocket)
             session.websocket.close();
-        }
         
         // 清理DOM元素
         const tab = document.getElementById(`tab_${sessionId}`);
         const sessionDiv = document.getElementById(`session_${sessionId}`);
-        if (tab) tab.remove();
-        if (sessionDiv) sessionDiv.remove();
+        if (tab)
+            tab.remove();
+        if (sessionDiv)
+            sessionDiv.remove();
         
         // 从sessions中删除
         this.sessions.delete(sessionId);
@@ -185,11 +223,10 @@ class MultiSessionWebSSHClient {
         // 如果关闭的是当前激活会话，切换到其他会话
         if (sessionId === this.activeSessionId) {
             const remainingSessions = Array.from(this.sessions.keys());
-            if (remainingSessions.length > 0) {
+            if (remainingSessions.length > 0)
                 this.switchToSession(remainingSessions[0]);
-            } else {
+            else
                 this.activeSessionId = null;
-            }
         }
         
         this.showAlert('会话已关闭', 'info');
@@ -197,7 +234,8 @@ class MultiSessionWebSSHClient {
     
     duplicateSession(sessionId) {
         const originalSession = this.sessions.get(sessionId);
-        if (!originalSession) return;
+        if (!originalSession)
+            return;
         
         // 创建新会话，使用相同的连接参数
         const newSession = this.createSession(
@@ -216,7 +254,8 @@ class MultiSessionWebSSHClient {
     // ========== SSH连接管理 ==========
     async connectSession(sessionId) {
         const session = this.sessions.get(sessionId);
-        if (!session) return;
+        if (!session)
+            return;
         
         if (session.connected) {
             this.showAlert('会话已连接', 'warning');
@@ -261,23 +300,21 @@ class MultiSessionWebSSHClient {
             
             // 处理终端输入
             session.terminal.onData((data) => {
-                if (session.connected && session.websocket.readyState === WebSocket.OPEN) {
+                if (session.connected && session.websocket.readyState === WebSocket.OPEN)
                     session.websocket.send(JSON.stringify({
                         type: 'command',
                         command: data
                     }));
-                }
             });
             
             // 处理终端大小变化
             session.terminal.onResize((size) => {
-                if (session.connected && session.websocket.readyState === WebSocket.OPEN) {
+                if (session.connected && session.websocket.readyState === WebSocket.OPEN)
                     session.websocket.send(JSON.stringify({
                         type: 'resize',
                         cols: size.cols,
                         rows: size.rows
                     }));
-                }
             });
             
         } catch (error) {
@@ -288,7 +325,8 @@ class MultiSessionWebSSHClient {
     
     handleSessionMessage(sessionId, message) {
         const session = this.sessions.get(sessionId);
-        if (!session) return;
+        if (!session)
+            return;
         
         switch (message.type) {
             case 'connected':
@@ -324,23 +362,24 @@ class MultiSessionWebSSHClient {
     
     handleSessionDisconnection(sessionId) {
         const session = this.sessions.get(sessionId);
-        if (!session) return;
+        if (!session)
+            return;
         
         session.connected = false;
         session.serverId = null;
         this.updateTabStatus(sessionId, false);
         this.updateSessionStatus(sessionId, '已断开连接');
         
-        if (session.terminal) {
+        if (session.terminal)
             session.terminal.writeln('\\r\\n🔌 连接已关闭');
-        }
         
         this.showAlert(`会话 "${session.name}" 已断开连接`, 'warning');
     }
     
     disconnectSession(sessionId) {
         const session = this.sessions.get(sessionId);
-        if (!session) return;
+        if (!session)
+            return;
         
         if (session.websocket) {
             session.websocket.send(JSON.stringify({
@@ -354,7 +393,8 @@ class MultiSessionWebSSHClient {
     
     updateTabStatus(sessionId, connected) {
         const tab = document.getElementById(`tab_${sessionId}`);
-        if (!tab) return;
+        if (!tab)
+            return;
         
         const statusDot = tab.querySelector('.tab-status');
         if (connected) {
@@ -368,23 +408,21 @@ class MultiSessionWebSSHClient {
     
     updateSessionStatus(sessionId, message) {
         const statusElement = document.getElementById(`status_${sessionId}`);
-        if (statusElement) {
+        if (statusElement)
             statusElement.innerHTML = message.includes('已连接') ? 
                 `🟢 ${message}` : 
                 `🔴 ${message}`;
-        }
         
         // 更新状态栏
-        if (sessionId === this.activeSessionId) {
+        if (sessionId === this.activeSessionId)
             document.getElementById('statusBar').textContent = message;
-        }
     }
     
     // ========== 服务器配置管理 ==========
     async loadSavedServers() {
         try {
             const response = await fetch('/api/servers');
-            const servers = await response.json();
+            const servers = await this.readApiResponse(response);
             this.savedServers = servers;
             
             const select = document.getElementById('savedServers');
@@ -417,11 +455,12 @@ class MultiSessionWebSSHClient {
     
     async loadServerConfig() {
         const serverId = document.getElementById('savedServers').value;
-        if (!serverId) return;
+        if (!serverId)
+            return;
         
         try {
             const response = await fetch(`/api/servers/${serverId}`);
-            const server = await response.json();
+            const server = await this.readApiResponse(response);
             
             document.getElementById('host').value = server.host;
             document.getElementById('port').value = server.port;
@@ -430,7 +469,7 @@ class MultiSessionWebSSHClient {
             
         } catch (error) {
             console.error('加载服务器配置失败:', error);
-            this.showAlert('加载服务器配置失败', 'danger');
+            this.showAlert('加载服务器配置失败: ' + error.message, 'danger');
         }
     }
     
@@ -453,16 +492,15 @@ class MultiSessionWebSSHClient {
                 body: JSON.stringify(serverData)
             });
             
-            const result = await response.json();
-            if (result.success) {
+            const result = await this.readApiResponse(response);
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
                 this.showAlert('服务器配置已保存', 'success');
                 this.loadSavedServers();
-            } else {
+            } else
                 this.showAlert('保存失败: ' + result.message, 'danger');
-            }
         } catch (error) {
             console.error('保存服务器配置失败:', error);
-            this.showAlert('保存服务器配置失败', 'danger');
+            this.showAlert('保存服务器配置失败: ' + error.message, 'danger');
         }
     }
     
@@ -488,15 +526,14 @@ class MultiSessionWebSSHClient {
                 body: JSON.stringify(serverData)
             });
             
-            const result = await response.json();
-            if (result.success) {
+            const result = await this.readApiResponse(response);
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false))
                 this.showAlert('连接测试成功', 'success');
-            } else {
+            else
                 this.showAlert('连接测试失败: ' + result.message, 'danger');
-            }
         } catch (error) {
             console.error('连接测试失败:', error);
-            this.showAlert('连接测试失败', 'danger');
+            this.showAlert('连接测试失败: ' + error.message, 'danger');
         } finally {
             testBtn.innerHTML = originalText;
             testBtn.disabled = false;
@@ -522,13 +559,12 @@ class MultiSessionWebSSHClient {
             this.currentPath = '/';
             document.getElementById('currentPath').value = this.currentPath;
             await this.refreshFiles();
-        } else {
+        } else
             document.getElementById('fileGrid').innerHTML = `
                 <div class="alert alert-info">
                     请先选择一个服务器来浏览文件
                 </div>
             `;
-        }
     }
     
     async refreshFiles() {
@@ -544,15 +580,11 @@ class MultiSessionWebSSHClient {
         try {
             const response = await fetch(`/api/files/list/${this.currentFileServerId}?remotePath=${encodeURIComponent(this.currentPath)}`);
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+            const result = await this.readApiResponse(response);
             
-            const result = await response.json();
-            
-            if (result.success) {
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false))
                 this.displayFiles(result.files);
-            } else {
+            else {
                 this.showAlert('获取文件列表失败: ' + result.message, 'danger');
                 document.getElementById('fileGrid').innerHTML = `
                     <div class="alert alert-danger">
@@ -616,14 +648,14 @@ class MultiSessionWebSSHClient {
     }
     
     async navigateUp() {
-        if (this.currentPath === '/') return;
+        if (this.currentPath === '/')
+            return;
         
         const pathParts = this.currentPath.split('/').filter(p => p);
         pathParts.pop();
         this.currentPath = '/' + pathParts.join('/');
-        if (this.currentPath !== '/' && !this.currentPath.endsWith('/')) {
+        if (this.currentPath !== '/' && !this.currentPath.endsWith('/'))
             this.currentPath += '/';
-        }
         
         document.getElementById('currentPath').value = this.currentPath;
         await this.refreshFiles();
@@ -648,9 +680,8 @@ class MultiSessionWebSSHClient {
         }
         
         const formData = new FormData();
-        for (let file of files) {
+        for (let file of files)
             formData.append('files', file);
-        }
         formData.append('remotePath', uploadPath);
         
         try {
@@ -659,17 +690,16 @@ class MultiSessionWebSSHClient {
                 body: formData
             });
             
-            const result = await response.json();
-            if (result.success) {
-                this.showAlert(`成功上传 ${result.count} 个文件`, 'success');
+            const result = await this.readApiResponse(response);
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
+                this.showAlert(`成功上传 ${result === true ? files.length : result.count} 个文件`, 'success');
                 closeModal('uploadModal');
                 await this.refreshFiles();
-            } else {
+            } else
                 this.showAlert('上传失败: ' + result.message, 'danger');
-            }
         } catch (error) {
             console.error('上传文件失败:', error);
-            this.showAlert('上传文件失败', 'danger');
+            this.showAlert('上传文件失败: ' + error.message, 'danger');
         }
     }
     
@@ -681,8 +711,8 @@ class MultiSessionWebSSHClient {
         try {
             const response = await fetch(`/api/files/download/${this.currentFileServerId}?remoteFilePath=${encodeURIComponent(filePath)}`);
             
-            if (response.ok) {
-                const blob = await response.blob();
+            {
+                const blob = await this.readDownloadResponse(response);
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -693,17 +723,16 @@ class MultiSessionWebSSHClient {
                 document.body.removeChild(a);
                 
                 this.showAlert('文件下载成功', 'success');
-            } else {
-                this.showAlert('文件下载失败', 'danger');
             }
         } catch (error) {
             console.error('下载文件失败:', error);
-            this.showAlert('下载文件失败', 'danger');
+            this.showAlert('下载文件失败: ' + error.message, 'danger');
         }
     }
     
     async deleteFile(filename, isDirectory) {
-        if (!confirm(`确定要删除${isDirectory ? '目录' : '文件'} "${filename}" 吗？`)) return;
+        if (!confirm(`确定要删除${isDirectory ? '目录' : '文件'} "${filename}" 吗？`))
+            return;
         
         const filePath = this.currentPath.endsWith('/') ? 
             this.currentPath + filename : 
@@ -714,22 +743,22 @@ class MultiSessionWebSSHClient {
                 method: 'DELETE'
             });
             
-            const result = await response.json();
-            if (result.success) {
+            const result = await this.readApiResponse(response);
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
                 this.showAlert('删除成功', 'success');
                 await this.refreshFiles();
-            } else {
+            } else
                 this.showAlert('删除失败: ' + result.message, 'danger');
-            }
         } catch (error) {
             console.error('删除失败:', error);
-            this.showAlert('删除失败', 'danger');
+            this.showAlert('删除失败: ' + error.message, 'danger');
         }
     }
     
     async createFolder() {
         const folderName = prompt('请输入文件夹名称:');
-        if (!folderName) return;
+        if (!folderName)
+            return;
         
         const folderPath = this.currentPath.endsWith('/') ? 
             this.currentPath + folderName : 
@@ -744,16 +773,15 @@ class MultiSessionWebSSHClient {
                 body: JSON.stringify({ remotePath: folderPath })
             });
             
-            const result = await response.json();
-            if (result.success) {
+            const result = await this.readApiResponse(response);
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
                 this.showAlert('文件夹创建成功', 'success');
                 await this.refreshFiles();
-            } else {
+            } else
                 this.showAlert('创建失败: ' + result.message, 'danger');
-            }
         } catch (error) {
             console.error('创建文件夹失败:', error);
-            this.showAlert('创建文件夹失败', 'danger');
+            this.showAlert('创建文件夹失败: ' + error.message, 'danger');
         }
     }
     
@@ -768,14 +796,14 @@ class MultiSessionWebSSHClient {
         container.appendChild(alert);
         
         setTimeout(() => {
-            if (alert.parentNode) {
+            if (alert.parentNode)
                 alert.parentNode.removeChild(alert);
-            }
         }, 5000);
     }
     
     formatFileSize(bytes) {
-        if (bytes === 0) return '0 B';
+        if (bytes === 0)
+            return '0 B';
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -800,9 +828,8 @@ function switchPage(pageName) {
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
         const onclick = item.getAttribute('onclick');
-        if (onclick && onclick.includes(`switchPage('${pageName}')`)) {
+        if (onclick && onclick.includes(`switchPage('${pageName}')`))
             item.classList.add('active');
-        }
     });
     
     document.querySelectorAll('.page-content').forEach(page => {
@@ -810,7 +837,7 @@ function switchPage(pageName) {
     });
     document.getElementById(`page-${pageName}`).classList.add('active');
     
-    if (pageName === 'files') {
+    if (pageName === 'files')
         sshClient.loadSavedServers().then(() => {
             // 如果当前有激活的会话，自动选择对应的服务器
             const currentServerId = sshClient.getCurrentServerId();
@@ -825,7 +852,6 @@ function switchPage(pageName) {
                 sshClient.refreshFiles(); // 自动加载文件列表
             }
         });
-    }
 }
 
 // 侧边栏折叠
@@ -862,15 +888,13 @@ function connectSSH() {
     sshClient.connectSession(session.id);
     
     // 保存服务器配置（如果需要）
-    if (document.getElementById('saveServer').checked) {
+    if (document.getElementById('saveServer').checked)
         sshClient.saveServerConfig();
-    }
 }
 
 function disconnectSSH() {
-    if (sshClient.activeSessionId) {
+    if (sshClient.activeSessionId)
         sshClient.disconnectSession(sshClient.activeSessionId);
-    }
 }
 
 function testConnection() {
@@ -935,46 +959,39 @@ function closeModal(modalId) {
 
 // 点击弹窗背景关闭弹窗
 document.addEventListener('click', function(event) {
-    if (event.target.classList.contains('modal')) {
+    if (event.target.classList.contains('modal'))
         event.target.classList.remove('active');
-    }
 });
 
 // 键盘快捷键
 document.addEventListener('keydown', function(event) {
     // Escape 关闭弹窗
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape')
         document.querySelectorAll('.modal.active').forEach(modal => {
             modal.classList.remove('active');
         });
-    }
     
     // Ctrl+Enter 快速连接
-    if (event.ctrlKey && event.key === 'Enter' && sshClient.sessions.size === 0) {
+    if (event.ctrlKey && event.key === 'Enter' && sshClient.sessions.size === 0)
         connectSSH();
-    }
     
     // Ctrl+T 新建会话 (when connected)
     if (event.ctrlKey && event.key === 't' && sshClient.activeSessionId) {
         const currentSession = sshClient.sessions.get(sshClient.activeSessionId);
-        if (currentSession) {
+        if (currentSession)
             sshClient.duplicateSession(sshClient.activeSessionId);
-        }
     }
     
     // Ctrl+W 关闭当前会话
-    if (event.ctrlKey && event.key === 'w' && sshClient.activeSessionId) {
+    if (event.ctrlKey && event.key === 'w' && sshClient.activeSessionId)
         sshClient.closeSession(sshClient.activeSessionId);
-    }
 });
 
 // 页面卸载时断开所有连接
 window.addEventListener('beforeunload', function(event) {
-    if (sshClient && sshClient.sessions.size > 0) {
+    if (sshClient && sshClient.sessions.size > 0)
         sshClient.sessions.forEach((session, sessionId) => {
-            if (session.websocket) {
+            if (session.websocket)
                 session.websocket.close();
-            }
         });
-    }
 });

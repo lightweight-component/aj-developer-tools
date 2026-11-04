@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -20,7 +22,7 @@ public class FileTransferService {
     /**
      * 上传文件到远程服务器
      */
-    public void uploadFile(ServerConfig server, MultipartFile file, String remotePath) throws Exception {
+    public void uploadFile(ServerConfig server, MultipartFile file, String remotePath) {
         Session session = null;
         ChannelSftp sftpChannel = null;
 
@@ -36,6 +38,12 @@ public class FileTransferService {
             }
 
             log.info("文件上传成功: {} -> {}", file.getOriginalFilename(), remoteFilePath);
+        } catch (SftpException e) {
+            throw new RuntimeException("uploadFile.SftpException", e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (JSchException e) {
+            throw new RuntimeException("uploadFile.JSchException", e);
         } finally {
             closeConnections(sftpChannel, session);
         }
@@ -155,7 +163,7 @@ public class FileTransferService {
     /**
      * 重命名远程文件
      */
-    public void renameRemoteFile(ServerConfig server, String oldPath, String newPath) throws Exception {
+    public void renameRemoteFile(ServerConfig server, String oldPath, String newPath) {
         Session session = null;
         ChannelSftp sftpChannel = null;
 
@@ -166,6 +174,8 @@ public class FileTransferService {
 
             sftpChannel.rename(oldPath, newPath);
             log.info("文件重命名成功: {} -> {}", oldPath, newPath);
+        } catch (Exception e) {
+            log.error("renameRemoteFile.Exception", e);
         } finally {
             closeConnections(sftpChannel, session);
         }
@@ -174,7 +184,7 @@ public class FileTransferService {
     /**
      * 批量上传文件
      */
-    public void uploadFiles(ServerConfig server, MultipartFile[] files, String remotePath) throws Exception {
+    public void uploadFiles(ServerConfig server, MultipartFile[] files, String remotePath) {
         Session session = null;
         ChannelSftp sftpChannel = null;
 
@@ -184,7 +194,7 @@ public class FileTransferService {
             sftpChannel.connect();
             createRemoteDirectory(sftpChannel, remotePath); // 确保远程目录存在
 
-            for (MultipartFile file : files) {
+            for (MultipartFile file : files)
                 if (!file.isEmpty()) {
                     String remoteFilePath = remotePath + "/" + file.getOriginalFilename();
 
@@ -193,9 +203,14 @@ public class FileTransferService {
                         log.info("文件上传成功: {}", file.getOriginalFilename());
                     }
                 }
-            }
 
             log.info("批量上传完成，共上传 {} 个文件", files.length);
+        } catch (SftpException e) {
+            throw new RuntimeException("uploadFile.SftpException", e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (JSchException e) {
+            throw new RuntimeException("uploadFile.JSchException", e);
         } finally {
             closeConnections(sftpChannel, session);
         }
@@ -222,7 +237,7 @@ public class FileTransferService {
             String[] pathParts = remotePath.split("/");
             String currentPath = "";
 
-            for (String part : pathParts) {
+            for (String part : pathParts)
                 if (!part.isEmpty()) {
                     currentPath += "/" + part;
 
@@ -232,7 +247,6 @@ public class FileTransferService {
                         log.error(e.getMessage(), e);
                     }
                 }
-            }
         } catch (Exception e) {
             log.warn("创建远程目录失败: {}", e.getMessage());
         }
@@ -248,18 +262,14 @@ public class FileTransferService {
 
     private String getPermissionString(int permissions) {
         // Owner permissions
-        return String.valueOf((permissions & 0400) != 0 ? 'r' : '-') +
-                ((permissions & 0200) != 0 ? 'w' : '-') +
-                ((permissions & 0100) != 0 ? 'x' : '-') +
-
-                // Group permissions
-                ((permissions & 0040) != 0 ? 'r' : '-') +
-                ((permissions & 0020) != 0 ? 'w' : '-') +
-                ((permissions & 0010) != 0 ? 'x' : '-') +
-
-                // Others permissions
-                ((permissions & 0004) != 0 ? 'r' : '-') +
-                ((permissions & 0002) != 0 ? 'w' : '-') +
-                ((permissions & 0001) != 0 ? 'x' : '-');
+        return String.valueOf((permissions & 256) != 0 ? 'r' : '-') +
+                ((permissions & 128) != 0 ? 'w' : '-') +
+                ((permissions & 64) != 0 ? 'x' : '-') +
+                ((permissions & 32) != 0 ? 'r' : '-') +// Group permissions
+                ((permissions & 16) != 0 ? 'w' : '-') +
+                ((permissions & 8) != 0 ? 'x' : '-') +
+                ((permissions & 4) != 0 ? 'r' : '-') + // Others permissions
+                ((permissions & 2) != 0 ? 'w' : '-') +
+                ((permissions & 1) != 0 ? 'x' : '-');
     }
 }

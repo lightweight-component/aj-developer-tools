@@ -16,12 +16,4 @@ public class ServerConfig {
     private String password;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    public ServerConfig(String name, String host, Integer port, String username, String password) {
-        this.name = name;
-        this.host = host;
-        this.port = port;
-        this.username = username;
-        this.password = password;
-    }
 }

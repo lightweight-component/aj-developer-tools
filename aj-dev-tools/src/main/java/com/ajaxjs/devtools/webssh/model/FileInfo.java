@@ -1,20 +1,14 @@
 package com.ajaxjs.devtools.webssh.model;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-@Data
+@Getter
+@RequiredArgsConstructor
 public class FileInfo {
-    private String name;
-    private boolean isDirectory;
-    private long size;
-    private long lastModified;
-    private String permissions;
-
-    public FileInfo(String name, boolean isDirectory, long size, long lastModified, String permissions) {
-        this.name = name;
-        this.isDirectory = isDirectory;
-        this.size = size;
-        this.lastModified = lastModified;
-        this.permissions = permissions;
-    }
+    private final String name;
+    private final boolean isDirectory;
+    private final long size;
+    private final long lastModified;
+    private final String permissions;
 }

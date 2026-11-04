@@ -3,6 +3,44 @@
  * 支持SSH连接和文件管理功能
  */
 class SimpleWebSSHClient {
+    /** 读取统一响应，并支持布尔操作结果及实际数据中保留的 success 业务标志。 */
+    async readApiResponse(response) {
+        let payload;
+        try {
+            payload = await response.json();
+        } catch {
+            throw new Error(`接口未返回有效 JSON（HTTP ${response.status}）`);
+        }
+        const data = payload?.data;
+        if (!response.ok || payload?.status !== 1 || data === false || data?.success === false) {
+            const message = data?.success === false ? data.message || payload.message : payload?.message;
+            const error = new Error((message || `请求失败（HTTP ${response.status}）`) +
+                (payload?.errorCode ? ` [${payload.errorCode}]` : ''));
+            error.errorCode = payload?.errorCode;
+            throw error;
+        }
+        return data;
+    }
+
+    /** 下载支持二进制响应和统一 JSON 中的 Base64 / 字节数组。 */
+    async readDownloadResponse(response) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.toLowerCase().includes('json')) {
+            const data = await this.readApiResponse(response);
+            if (typeof data === 'string') {
+                const bytes = Uint8Array.from(atob(data), character => character.charCodeAt(0));
+                return new Blob([bytes], { type: 'application/octet-stream' });
+            }
+            if (Array.isArray(data) && data.every(value => Number.isInteger(value) && value >= -128 && value <= 255))
+                return new Blob([new Uint8Array(data)], { type: 'application/octet-stream' });
+            throw new Error('下载接口返回的数据不是文件内容');
+        }
+        if (!response.ok)
+            throw new Error(`文件下载失败（HTTP ${response.status}）`);
+        return response.blob();
+    }
+
+
     constructor() {
         this.terminal = null;
         this.websocket = null;
@@ -42,9 +80,8 @@ class SimpleWebSSHClient {
         
         // 监听窗口大小变化
         window.addEventListener('resize', () => {
-            if (this.fitAddon) {
+            if (this.fitAddon)
                 setTimeout(() => this.fitAddon.fit(), 100);
-            }
         });
         
         // 更新终端统计信息
@@ -104,23 +141,21 @@ class SimpleWebSSHClient {
             
             // 处理终端输入
             this.terminal.onData((data) => {
-                if (this.connected && this.websocket.readyState === WebSocket.OPEN) {
+                if (this.connected && this.websocket.readyState === WebSocket.OPEN)
                     this.websocket.send(JSON.stringify({
                         type: 'command',
                         command: data
                     }));
-                }
             });
             
             // 处理终端大小变化
             this.terminal.onResize((size) => {
-                if (this.connected && this.websocket.readyState === WebSocket.OPEN) {
+                if (this.connected && this.websocket.readyState === WebSocket.OPEN)
                     this.websocket.send(JSON.stringify({
                         type: 'resize',
                         cols: size.cols,
                         rows: size.rows
                     }));
-                }
             });
             
         } catch (error) {
@@ -154,9 +189,8 @@ class SimpleWebSSHClient {
                 this.fitAddon.fit();
                 
                 // 保存服务器配置（如果需要）
-                if (document.getElementById('saveServer').checked) {
+                if (document.getElementById('saveServer').checked)
                     this.saveServerConfig();
-                }
                 break;
                 
             case 'output':
@@ -189,9 +223,8 @@ class SimpleWebSSHClient {
         this.updateConnectionStatus(false);
         this.updateStatus('已断开连接');
         
-        if (this.terminal) {
+        if (this.terminal)
             this.terminal.writeln('\r\n🔌 连接已关闭');
-        }
         
         document.getElementById('terminalContainer').classList.add('hidden');
         this.showAlert('SSH连接已断开', 'danger');
@@ -201,7 +234,7 @@ class SimpleWebSSHClient {
     async loadSavedServers() {
         try {
             const response = await fetch('/api/servers');
-            const servers = await response.json();
+            const servers = await this.readApiResponse(response);
             
             // 缓存服务器列表
             this.savedServers = servers;
@@ -238,11 +271,12 @@ class SimpleWebSSHClient {
     
     async loadServerConfig() {
         const serverId = document.getElementById('savedServers').value;
-        if (!serverId) return;
+        if (!serverId)
+            return;
         
         try {
             const response = await fetch(`/api/servers/${serverId}`);
-            const server = await response.json();
+            const server = await this.readApiResponse(response);
             
             document.getElementById('host').value = server.host;
             document.getElementById('port').value = server.port;
@@ -252,7 +286,7 @@ class SimpleWebSSHClient {
             
         } catch (error) {
             console.error('加载服务器配置失败:', error);
-            this.showAlert('加载服务器配置失败', 'danger');
+            this.showAlert('加载服务器配置失败: ' + error.message, 'danger');
         }
     }
     
@@ -275,16 +309,15 @@ class SimpleWebSSHClient {
                 body: JSON.stringify(serverData)
             });
             
-            const result = await response.json();
-            if (result.success) {
+            const result = await this.readApiResponse(response);
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
                 this.showAlert('服务器配置已保存', 'success');
                 this.loadSavedServers(); // 重新加载列表
-            } else {
+            } else
                 this.showAlert('保存失败: ' + result.message, 'danger');
-            }
         } catch (error) {
             console.error('保存服务器配置失败:', error);
-            this.showAlert('保存服务器配置失败', 'danger');
+            this.showAlert('保存服务器配置失败: ' + error.message, 'danger');
         }
     }
     
@@ -310,15 +343,14 @@ class SimpleWebSSHClient {
                 body: JSON.stringify(serverData)
             });
             
-            const result = await response.json();
-            if (result.success) {
+            const result = await this.readApiResponse(response);
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false))
                 this.showAlert('连接测试成功', 'success');
-            } else {
+            else
                 this.showAlert('连接测试失败: ' + result.message, 'danger');
-            }
         } catch (error) {
             console.error('连接测试失败:', error);
-            this.showAlert('连接测试失败', 'danger');
+            this.showAlert('连接测试失败: ' + error.message, 'danger');
         } finally {
             testBtn.innerHTML = originalText;
             testBtn.disabled = false;
@@ -347,13 +379,12 @@ class SimpleWebSSHClient {
             this.currentPath = '/';
             document.getElementById('currentPath').value = this.currentPath;
             await this.refreshFiles();
-        } else {
+        } else
             document.getElementById('fileGrid').innerHTML = `
                 <div class="alert alert-info">
                     请先选择一个服务器来浏览文件
                 </div>
             `;
-        }
     }
     
     async refreshFiles() {
@@ -369,15 +400,11 @@ class SimpleWebSSHClient {
         try {
             const response = await fetch(`/api/files/list/${this.currentFileServerId}?remotePath=${encodeURIComponent(this.currentPath)}`);
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+            const result = await this.readApiResponse(response);
             
-            const result = await response.json();
-            
-            if (result.success) {
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false))
                 this.displayFiles(result.files);
-            } else {
+            else {
                 this.showAlert('获取文件列表失败: ' + result.message, 'danger');
                 document.getElementById('fileGrid').innerHTML = `
                     <div class="alert alert-danger">
@@ -441,14 +468,14 @@ class SimpleWebSSHClient {
     }
     
     async navigateUp() {
-        if (this.currentPath === '/') return;
+        if (this.currentPath === '/')
+            return;
         
         const pathParts = this.currentPath.split('/').filter(p => p);
         pathParts.pop();
         this.currentPath = '/' + pathParts.join('/');
-        if (this.currentPath !== '/' && !this.currentPath.endsWith('/')) {
+        if (this.currentPath !== '/' && !this.currentPath.endsWith('/'))
             this.currentPath += '/';
-        }
         
         document.getElementById('currentPath').value = this.currentPath;
         await this.refreshFiles();
@@ -474,9 +501,8 @@ class SimpleWebSSHClient {
         }
         
         const formData = new FormData();
-        for (let file of files) {
+        for (let file of files)
             formData.append('files', file);
-        }
         formData.append('remotePath', uploadPath);
         
         try {
@@ -485,17 +511,16 @@ class SimpleWebSSHClient {
                 body: formData
             });
             
-            const result = await response.json();
-            if (result.success) {
-                this.showAlert(`成功上传 ${result.count} 个文件`, 'success');
+            const result = await this.readApiResponse(response);
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
+                this.showAlert(`成功上传 ${result === true ? files.length : result.count} 个文件`, 'success');
                 this.closeModal('uploadModal');
                 await this.refreshFiles();
-            } else {
+            } else
                 this.showAlert('上传失败: ' + result.message, 'danger');
-            }
         } catch (error) {
             console.error('上传文件失败:', error);
-            this.showAlert('上传文件失败', 'danger');
+            this.showAlert('上传文件失败: ' + error.message, 'danger');
         }
     }
     
@@ -507,8 +532,8 @@ class SimpleWebSSHClient {
         try {
             const response = await fetch(`/api/files/download/${this.currentFileServerId}?remoteFilePath=${encodeURIComponent(filePath)}`);
             
-            if (response.ok) {
-                const blob = await response.blob();
+            {
+                const blob = await this.readDownloadResponse(response);
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -519,17 +544,16 @@ class SimpleWebSSHClient {
                 document.body.removeChild(a);
                 
                 this.showAlert('文件下载成功', 'success');
-            } else {
-                this.showAlert('文件下载失败', 'danger');
             }
         } catch (error) {
             console.error('下载文件失败:', error);
-            this.showAlert('下载文件失败', 'danger');
+            this.showAlert('下载文件失败: ' + error.message, 'danger');
         }
     }
     
     async deleteFile(filename, isDirectory) {
-        if (!confirm(`确定要删除${isDirectory ? '目录' : '文件'} "${filename}" 吗？`)) return;
+        if (!confirm(`确定要删除${isDirectory ? '目录' : '文件'} "${filename}" 吗？`))
+            return;
         
         const filePath = this.currentPath.endsWith('/') ? 
             this.currentPath + filename : 
@@ -540,22 +564,22 @@ class SimpleWebSSHClient {
                 method: 'DELETE'
             });
             
-            const result = await response.json();
-            if (result.success) {
+            const result = await this.readApiResponse(response);
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
                 this.showAlert('删除成功', 'success');
                 await this.refreshFiles();
-            } else {
+            } else
                 this.showAlert('删除失败: ' + result.message, 'danger');
-            }
         } catch (error) {
             console.error('删除失败:', error);
-            this.showAlert('删除失败', 'danger');
+            this.showAlert('删除失败: ' + error.message, 'danger');
         }
     }
     
     async createFolder() {
         const folderName = prompt('请输入文件夹名称:');
-        if (!folderName) return;
+        if (!folderName)
+            return;
         
         const folderPath = this.currentPath.endsWith('/') ? 
             this.currentPath + folderName : 
@@ -570,16 +594,15 @@ class SimpleWebSSHClient {
                 body: JSON.stringify({ remotePath: folderPath })
             });
             
-            const result = await response.json();
-            if (result.success) {
+            const result = await this.readApiResponse(response);
+            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
                 this.showAlert('文件夹创建成功', 'success');
                 await this.refreshFiles();
-            } else {
+            } else
                 this.showAlert('创建失败: ' + result.message, 'danger');
-            }
         } catch (error) {
             console.error('创建文件夹失败:', error);
-            this.showAlert('创建文件夹失败', 'danger');
+            this.showAlert('创建文件夹失败: ' + error.message, 'danger');
         }
     }
     
@@ -615,14 +638,14 @@ class SimpleWebSSHClient {
         
         // 5秒后自动消失
         setTimeout(() => {
-            if (alert.parentNode) {
+            if (alert.parentNode)
                 alert.parentNode.removeChild(alert);
-            }
         }, 5000);
     }
     
     formatFileSize(bytes) {
-        if (bytes === 0) return '0 B';
+        if (bytes === 0)
+            return '0 B';
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -653,9 +676,8 @@ function switchPage(pageName) {
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
         const onclick = item.getAttribute('onclick');
-        if (onclick && onclick.includes(`switchPage('${pageName}')`)) {
+        if (onclick && onclick.includes(`switchPage('${pageName}')`))
             item.classList.add('active');
-        }
     });
     
     // 切换页面内容
@@ -665,12 +687,11 @@ function switchPage(pageName) {
     document.getElementById(`page-${pageName}`).classList.add('active');
     
     // 根据页面执行特定操作
-    if (pageName === 'files') {
+    if (pageName === 'files')
         sshClient.loadSavedServers().then(() => {
             // 如果当前有连接的服务器，自动选择它
             sshClient.switchToFileManagerWithCurrentServer();
         });
-    }
 }
 
 // 侧边栏折叠
@@ -771,29 +792,25 @@ function closeModal(modalId) {
 
 // 点击弹窗背景关闭弹窗
 document.addEventListener('click', function(event) {
-    if (event.target.classList.contains('modal')) {
+    if (event.target.classList.contains('modal'))
         event.target.classList.remove('active');
-    }
 });
 
 // 键盘快捷键
 document.addEventListener('keydown', function(event) {
     // Escape 关闭弹窗
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape')
         document.querySelectorAll('.modal.active').forEach(modal => {
             modal.classList.remove('active');
         });
-    }
     
     // Ctrl+Enter 快速连接
-    if (event.ctrlKey && event.key === 'Enter' && !sshClient.connected) {
+    if (event.ctrlKey && event.key === 'Enter' && !sshClient.connected)
         connectSSH();
-    }
 });
 
 // 页面卸载时断开连接
 window.addEventListener('beforeunload', function(event) {
-    if (sshClient && sshClient.connected) {
+    if (sshClient && sshClient.connected)
         sshClient.disconnect();
-    }
 });
