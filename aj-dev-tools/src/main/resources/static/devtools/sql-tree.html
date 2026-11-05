@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SQL 调用树</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        [v-cloak]{display:none} *{box-sizing:border-box}
+        body{margin:0;background:#f1f5f9;color:#18253a;font:15px/1.5 system-ui,sans-serif}
+        header{background:#14243d;color:white;padding:18px 24px} h1,h2,h3{margin:0 0 12px}
+        main{max-width:1500px;margin:auto;padding:18px}
+        button,input,select{font:inherit;padding:7px 9px;background:white;color:#18253a;border:1px solid #cbd5e1;border-radius:6px}
+        button{cursor:pointer}button:disabled{opacity:.5;cursor:default}
+        .primary{background:#245ac8;color:white;border-color:#245ac8}
+        .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+        .panel,.card{background:white;border:1px solid #dbe4ef;border-radius:10px;padding:14px;margin-bottom:12px}
+        .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
+        .card strong{display:block;font-size:23px}
+        .workspace{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:12px}
+        .graph{overflow:auto;max-height:66vh;min-height:280px;border:1px solid #e2e8f0;border-radius:6px}
+        .graph svg{display:block}.node{cursor:pointer}.node text{font-size:12px;fill:#18253a}
+        .notice{background:#e1f3e8;padding:10px;border-radius:6px;margin-bottom:12px}
+        .error{background:#fee8eb;color:#922133}.muted{color:#52637a}
+        pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f5f9;padding:10px;border-radius:6px}
+        dt{font-weight:600}dd{margin:0 0 8px;overflow-wrap:anywhere}
+        details .toolbar{margin-top:12px}
+        @media(max-width:880px){.workspace{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+<div id="app" v-cloak>
+    <header><h1>SQL 调用树</h1><div class="toolbar">
+        <button class="primary" :disabled="busy" @click="refresh">刷新</button>
+        <button :disabled="busy" @click="clearAll">清空调用树</button>
+        <button :disabled="busy" @click="exportData">导出 JSON</button>
+    </div></header>
+    <main>
+        <div v-if="notice" class="notice" :class="{error: failed}" role="status">{{ notice }}</div>
+        <p v-if="busy" role="status">正在处理…</p>
+        <div class="cards">
+            <div class="card">SQL 总数<strong>{{ stats.totalSqlCount ?? 0 }}</strong></div>
+            <div class="card">慢 SQL<strong>{{ stats.slowSqlCount ?? 0 }}</strong></div>
+            <div class="card">总耗时<strong>{{ stats.totalExecutionTime ?? 0 }} ms</strong></div>
+            <div class="card">最大深度<strong>{{ stats.maxDepth ?? 0 }}</strong></div>
+        </div>
+        <section class="panel toolbar" aria-label="调用树筛选">
+            <label>会话 <select v-model="session" :disabled="busy" @change="reloadTree">
+                <option value="all">全部会话</option><option value="current">当前线程</option>
+                <option v-for="id in threadIds" :key="id" :value="'thread:' + id">{{ id }}</option>
+            </select></label>
+            <label>根节点数量 <select v-model.number="limit" :disabled="busy" @change="reloadTree">
+                <option :value="0">不限</option><option :value="20">20</option><option :value="50">50</option><option :value="100">100</option>
+            </select></label>
+            <label>排序 <select v-model="sort" :disabled="busy" @change="reloadTree">
+                <option value="latest">最新</option><option value="slowest">最慢</option>
+            </select></label>
+            <label>SQL 类型 <select v-model="kind">
+                <option value="all">全部</option><option value="slow">慢 SQL</option>
+                <option value="error">错误 SQL</option><option value="important">慢或错误 SQL</option>
+            </select></label>
+            <label>最大深度 <input type="number" v-model.number="maxDepth" min="0" placeholder="不限" style="width:90px"></label>
+        </section>
+        <details class="panel">
+            <summary>时间筛选、追踪配置与测试</summary>
+            <form class="toolbar" @submit.prevent="applyTime">
+                <label>开始 <input type="datetime-local" v-model="start"></label>
+                <label>结束 <input type="datetime-local" v-model="end"></label>
+                <button>应用时间</button><button type="button" @click="clearTime">清除时间</button>
+            </form>
+            <form class="toolbar" @submit.prevent="saveConfig">
+                <label><input type="checkbox" v-model="config.enabled" :disabled="busy"> 启用追踪</label>
+                <label>慢 SQL 阈值（毫秒） <input type="number" min="1" v-model.number="config.slowSqlThreshold" required :disabled="busy"></label>
+                <button :disabled="busy || !configLoaded">保存配置</button>
+            </form>
+            <div class="toolbar">
+                <label>测试场景 <select v-model="testPath" :disabled="busy">
+                    <option value="/api/test/service-call-chain">Service 调用链</option>
+                    <option value="/api/test/real-recursive">递归调用</option>
+                    <option value="/api/users">用户查询</option>
+                    <option value="/api/test/multi-level-demo">多层调用</option>
+                    <option value="/api/orders">订单查询</option>
+                </select></label>
+                <button :disabled="busy" @click="runDemo">执行测试 SQL</button>
+            </div>
+        </details>
+        <div class="workspace">
+            <section class="panel">
+                <div class="toolbar"><h2>调用树</h2>
+                    <span class="muted">{{ visible.count }} 条 SQL</span>
+                    <label>缩放 <input type="range" min=".4" max="2" step=".1" v-model.number="zoom"></label>
+                    <button @click="zoom = 1">重置缩放</button>
+                </div>
+                <p v-if="!visible.count" class="muted">{{ busy ? '正在读取调用树…' : '当前筛选条件下没有 SQL 记录' }}</p>
+                <p v-else-if="!graphAvailable" class="notice error">D3 加载失败，请检查 CDN 连接。</p>
+                <div v-else class="graph">
+                    <svg :width="layout.width * zoom" :height="layout.height * zoom" :viewBox="'0 0 ' + layout.width + ' ' + layout.height" aria-label="SQL 调用关系">
+                        <path v-for="link in layout.links" :key="link.target.data.key" :d="link.path" fill="none"
+                              :stroke="activePath.has(link.target.data.key) ? '#245ac8' : '#cbd5e1'" stroke-width="2"></path>
+                        <g v-for="node in layout.nodes" :key="node.data.key" class="node"
+                           :transform="'translate(' + node.y + ',' + node.x + ')'" role="button" tabindex="0"
+                           :aria-label="label(node.data)" @click="selectNode(node)" @keydown.enter.prevent="selectNode(node)" @keydown.space.prevent="selectNode(node)">
+                            <circle r="7" :fill="color(node.data)" :stroke="activePath.has(node.data.key) ? '#245ac8' : 'white'" stroke-width="3"></circle>
+                            <text x="12" dy=".35em">{{ label(node.data).slice(0, 26) }}</text>
+                            <title>{{ label(node.data) }}</title>
+                        </g>
+                    </svg>
+                </div>
+            </section>
+            <aside class="panel">
+                <h2>节点详情</h2>
+                <template v-if="selected">
+                    <h3>{{ label(selected) }}</h3>
+                    <dl v-if="!selected.group">
+                        <dt>服务调用</dt><dd>{{ selected.serviceCallPath || [selected.serviceName, selected.methodName].filter(Boolean).join('.') || '—' }}</dd>
+                        <dt>线程</dt><dd>{{ selected.threadName || '—' }}</dd>
+                        <dt>开始 / 结束</dt><dd>{{ selected.startTime || '—' }} / {{ selected.endTime || '—' }}</dd>
+                        <dt>耗时 / 深度 / 影响行数</dt><dd>{{ selected.executionTime ?? 0 }} ms / {{ selected.depth ?? 0 }} / {{ selected.affectedRows ?? '—' }}</dd>
+                    </dl>
+                    <p v-if="selected.errorMessage" class="notice error">{{ selected.errorMessage }}</p>
+                    <pre v-if="selected.sql">{{ selected.formattedSql || selected.sql }}</pre>
+                    <template v-if="selected.parameters?.length"><h3>SQL 参数</h3><pre>{{ JSON.stringify(selected.parameters, null, 2) }}</pre></template>
+                </template>
+                <p v-else class="muted">选择树上的节点查看 SQL 和执行信息。</p>
+            </aside>
+        </div>
+    </main>
+</div>
+<script>
+    const { createApp, ref, shallowRef, computed } = Vue;
+
+    async function request(path, method = 'GET', data) {
+        const options = { method };
+        if (data !== undefined) {
+            options.headers = { 'Content-Type': 'application/json' };
+            options.body = JSON.stringify(data);
+        }
+        const response = await fetch('/api/sql-tree' + path, options);
+        let payload;
+        try {
+            payload = await response.json();
+        } catch {
+            throw new Error('接口未返回有效 JSON（HTTP ' + response.status + '）');
+        }
+        if (!response.ok || payload?.status !== 1 || payload.data === false) {
+            const message = payload?.message || '请求失败（HTTP ' + response.status + '）';
+            throw new Error(message + (payload?.errorCode ? ' [' + payload.errorCode + ']' : ''));
+        }
+        return payload.data;
+    }
+
+    function label(node) {
+        return node.group || (node.sqlType || 'SQL') + ' · ' + (node.executionTime ?? 0) + ' ms';
+    }
+
+    function color(node) {
+        if (node.group)
+            return '#64748b';
+        if (node.errorMessage)
+            return '#b91c32';
+        return node.slowSql ? '#b76a05' : '#15803d';
+    }
+
+    createApp({
+        setup() {
+            const busy = ref(false), notice = ref(''), failed = ref(false);
+            const stats = ref({}), threadIds = ref([]), rawTree = shallowRef(null);
+            const session = ref('all'), limit = ref(50), sort = ref('latest'), kind = ref('all');
+            const maxDepth = ref(''), start = ref(''), end = ref(''), range = ref(null), zoom = ref(1);
+            const config = ref({ enabled: true, slowSqlThreshold: 1000 }), configLoaded = ref(false);
+            const selected = shallowRef(null), activePath = shallowRef(new Set());
+            const testPath = ref('/api/test/service-call-chain');
+            const graphAvailable = typeof d3 !== 'undefined';
+
+            const visible = computed(() => {
+                let count = 0;
+                function filter(nodes, prefix) {
+                    return nodes.flatMap((node, index) => {
+                        if (maxDepth.value !== '' && maxDepth.value != null && node.depth > maxDepth.value)
+                            return [];
+                        const key = prefix + '/' + index;
+                        const children = filter(node.children || [], key);
+                        const time = Date.parse(node.startTime?.replace(' ', 'T'));
+                        const matchesTime = !range.value || (time >= range.value.start && time <= range.value.end);
+                        const error = Boolean(node.errorMessage);
+                        const matchesKind = kind.value === 'all' || (kind.value === 'slow' && node.slowSql) ||
+                            (kind.value === 'error' && error) || (kind.value === 'important' && (error || node.slowSql));
+                        if (matchesTime && matchesKind)
+                            count++;
+                        else if (!children.length)
+                            return [];
+                        return [{ ...node, key, children }];
+                    });
+                }
+                const value = rawTree.value;
+                let children = [];
+                if (Array.isArray(value))
+                    children = filter(value, 'root');
+                else if (value) {
+                    children = Object.entries(value).flatMap(([id, nodes], index) => {
+                        const key = 'session/' + index;
+                        const filtered = filter(nodes, key);
+                        return filtered.length ? [{ key, group: '线程 ' + id, children: filtered }] : [];
+                    });
+                }
+                return { count, root: { key: 'root', group: '调用树', children } };
+            });
+
+            const layout = computed(() => {
+                if (!graphAvailable || !visible.value.count)
+                    return { nodes: [], links: [], width: 0, height: 0 };
+                const root = d3.hierarchy(visible.value.root);
+                d3.tree().nodeSize([34, 220])(root);
+                const nodes = root.descendants();
+                const min = d3.min(nodes, node => node.x);
+                const max = d3.max(nodes, node => node.x);
+                for (const node of nodes) {
+                    node.x += 24 - min;
+                    node.y += 24;
+                }
+                const path = d3.linkHorizontal().x(node => node.y).y(node => node.x);
+                return {
+                    nodes,
+                    links: root.links().map(link => ({ ...link, path: path(link) })),
+                    width: d3.max(nodes, node => node.y) + 240,
+                    height: max - min + 48
+                };
+            });
+
+            async function run(task) {
+                if (busy.value)
+                    return;
+                busy.value = true;
+                notice.value = '';
+                failed.value = false;
+                try {
+                    await task();
+                } catch (error) {
+                    failed.value = true;
+                    notice.value = error.message;
+                } finally {
+                    busy.value = false;
+                }
+            }
+
+            function resetSelection() {
+                selected.value = null;
+                activePath.value = new Set();
+            }
+
+            async function loadTree() {
+                const value = session.value;
+                const path = value === 'all' ? '/sessions' : value === 'current' ? '/current' :
+                    '/threads/' + encodeURIComponent(value.slice(7));
+                const params = new URLSearchParams({ sort: sort.value });
+                if (limit.value > 0)
+                    params.set('limit', limit.value);
+                rawTree.value = await request(path + '?' + params);
+                resetSelection();
+            }
+
+            async function loadOverview() {
+                const [ids, statistics] = await Promise.all([request('/thread-ids'), request('/statistics')]);
+                threadIds.value = ids;
+                stats.value = statistics;
+                if (session.value.startsWith('thread:') && !ids.includes(session.value.slice(7)))
+                    session.value = 'all';
+                await loadTree();
+            }
+
+            function refresh() {
+                return run(async () => {
+                    const settings = await request('/config');
+                    config.value = { ...settings };
+                    configLoaded.value = true;
+                    await loadOverview();
+                });
+            }
+
+            function reloadTree() {
+                return run(loadTree);
+            }
+
+            async function mutate(path, data) {
+                if (await request(path, 'POST', data) !== true)
+                    throw new Error('接口未确认操作成功');
+            }
+
+            function clearAll() {
+                if (!confirm('确定清空所有 SQL 调用树吗？'))
+                    return;
+                return run(async () => {
+                    await mutate('/clear-all');
+                    rawTree.value = null;
+                    resetSelection();
+                    await loadOverview();
+                    notice.value = '调用树已清空';
+                });
+            }
+
+            function saveConfig() {
+                return run(async () => {
+                    await mutate('/config', config.value);
+                    config.value = await request('/config');
+                    await loadOverview();
+                    notice.value = '配置已更新';
+                });
+            }
+
+            function exportData() {
+                return run(async () => {
+                    const data = await request('/export');
+                    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'sql-tree-export-' + Date.now() + '.json';
+                    link.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    notice.value = '数据已导出';
+                });
+            }
+
+            function runDemo() {
+                return run(async () => {
+                    const response = await fetch(testPath.value);
+                    if (!response.ok)
+                        throw new Error('测试请求失败（HTTP ' + response.status + '）');
+                    await response.text();
+                    await loadOverview();
+                    notice.value = '测试请求已完成';
+                });
+            }
+
+            function applyTime() {
+                const from = start.value ? Date.parse(start.value) : -Infinity;
+                const to = end.value ? Date.parse(end.value) + 59999 : Infinity;
+                if (from > to) {
+                    failed.value = true;
+                    notice.value = '开始时间必须早于或等于结束时间';
+                    return;
+                }
+                range.value = start.value || end.value ? { start: from, end: to } : null;
+                notice.value = '';
+                resetSelection();
+            }
+
+            function clearTime() {
+                start.value = '';
+                end.value = '';
+                applyTime();
+            }
+
+            function selectNode(node) {
+                selected.value = node.data;
+                activePath.value = new Set(node.ancestors().map(item => item.data.key));
+            }
+
+            Vue.watch([kind, maxDepth], resetSelection);
+            Vue.onMounted(refresh);
+
+            return { busy, notice, failed, stats, threadIds, session, limit, sort, kind, maxDepth, start, end,
+                zoom, config, configLoaded, selected, activePath, testPath, graphAvailable, visible, layout, label,
+                color, refresh, reloadTree, clearAll, saveConfig, exportData, runDemo, applyTime, clearTime, selectNode };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
