@@ -50,6 +50,7 @@ public class DynamicConfigurationService {
     private EnvironmentUtil environmentUtil;
     
     private static final String DYNAMIC_PROPERTY_SOURCE_NAME = "dynamicConfigPropertySource";
+
     private static final String FRAMEWORK_PROPERTY_SOURCE_NAME = "frameworkConfigPropertySource";
     
     /**

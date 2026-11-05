@@ -16,6 +16,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Vector;
 
+/**
+ * 集成SFTP文件传输
+ */
 @Service
 @Slf4j
 public class FileTransferService {
@@ -52,7 +55,7 @@ public class FileTransferService {
     /**
      * 从远程服务器下载文件
      */
-    public byte[] downloadFile(ServerConfig server, String remoteFilePath) throws Exception {
+    public byte[] downloadFile(ServerConfig server, String remoteFilePath) {
         Session session = null;
         ChannelSftp sftpChannel = null;
 
@@ -73,6 +76,12 @@ public class FileTransferService {
 
                 return outputStream.toByteArray();
             }
+        } catch (SftpException e) {
+            throw new RuntimeException("uploadFile.SftpException", e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (JSchException e) {
+            throw new RuntimeException("uploadFile.JSchException", e);
         } finally {
             closeConnections(sftpChannel, session);
         }
@@ -82,7 +91,7 @@ public class FileTransferService {
      * 列出远程目录内容
      */
     @SuppressWarnings("unchecked")
-    public List<FileInfo> listDirectory(ServerConfig server, String remotePath) throws Exception {
+    public List<FileInfo> listDirectory(ServerConfig server, String remotePath) {
         Session session = null;
         ChannelSftp sftpChannel = null;
         List<FileInfo> files = new ArrayList<>();
@@ -99,11 +108,8 @@ public class FileTransferService {
                 if (!filename.equals(".") && !filename.equals("..")) {
                     SftpATTRS attrs = entry.getAttrs();
 
-                    files.add(new FileInfo(
-                            filename,
-                            attrs.isDir(),
-                            attrs.getSize(),
-                            attrs.getMTime() * 1000L, // Convert to milliseconds
+                    files.add(new FileInfo(filename, attrs.isDir(),
+                            attrs.getSize(),                            attrs.getMTime() * 1000L, // Convert to milliseconds
                             getPermissionString(attrs.getPermissions())
                     ));
                 }
@@ -112,7 +118,10 @@ public class FileTransferService {
             log.info("目录列表获取成功: {}, 文件数: {}", remotePath, files.size());
 
             return files;
-
+        } catch (SftpException e) {
+            throw new RuntimeException("uploadFile.SftpException", e);
+        } catch (JSchException e) {
+            throw new RuntimeException("uploadFile.JSchException", e);
         } finally {
             closeConnections(sftpChannel, session);
         }
@@ -121,7 +130,7 @@ public class FileTransferService {
     /**
      * 创建远程目录
      */
-    public void createRemoteDirectory(ServerConfig server, String remotePath) throws Exception {
+    public void createRemoteDirectory(ServerConfig server, String remotePath)  {
         Session session = null;
         ChannelSftp sftpChannel = null;
 
@@ -132,6 +141,8 @@ public class FileTransferService {
 
             createRemoteDirectory(sftpChannel, remotePath);
             log.info("远程目录创建成功: {}", remotePath);
+        } catch (JSchException e) {
+            throw new RuntimeException("uploadFile.JSchException", e);
         } finally {
             closeConnections(sftpChannel, session);
         }
@@ -140,7 +151,7 @@ public class FileTransferService {
     /**
      * 删除远程文件或目录
      */
-    public void deleteRemoteFile(ServerConfig server, String remotePath, boolean isDirectory) throws Exception {
+    public void deleteRemoteFile(ServerConfig server, String remotePath, boolean isDirectory)  {
         Session session = null;
         ChannelSftp sftpChannel = null;
 
@@ -155,6 +166,10 @@ public class FileTransferService {
                 sftpChannel.rm(remotePath);
 
             log.info("远程文件删除成功: {}", remotePath);
+        } catch (SftpException e) {
+            throw new RuntimeException("uploadFile.SftpException", e);
+        } catch (JSchException e) {
+            throw new RuntimeException("uploadFile.JSchException", e);
         } finally {
             closeConnections(sftpChannel, session);
         }

@@ -12,6 +12,9 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * SSH连接管理器，负责建立和维护SSH连接
+ */
 @Component
 @Slf4j
 public class SSHConnectionManager {
@@ -27,9 +30,7 @@ public class SSHConnectionManager {
 
         try {
             Session session = jsch.getSession(username, host, port);
-
-            // 配置连接参数
-            Properties config = new Properties();
+            Properties config = new Properties();// 配置连接参数
             config.put("StrictHostKeyChecking", "no");
             config.put("PreferredAuthentications", "password");
             session.setConfig(config);
@@ -42,9 +43,7 @@ public class SSHConnectionManager {
             channel.setPty(true);
             channel.setPtyType("xterm", 80, 24, 640, 480);
             String connectionId = UUID.randomUUID().toString();  // 生成连接ID
-
-            // 保存连接和通道
-            connections.put(connectionId, session);
+            connections.put(connectionId, session);// 保存连接和通道
             channels.put(connectionId, channel);
 
             log.info("SSH连接建立成功: {}@{}:{}", username, host, port);

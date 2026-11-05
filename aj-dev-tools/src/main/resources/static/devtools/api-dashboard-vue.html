@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Boot API 监控面板</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+        .metric-card {
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: #3b82f6;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sort-icon {
+            display: inline-block;
+            margin-left: 0.5rem;
+            opacity: 0.5;
+        }
+
+        .sort-asc::after {
+            content: '↑';
+            color: #3b82f6;
+            opacity: 1;
+        }
+
+        .sort-desc::after {
+            content: '↓';
+            color: #3b82f6;
+            opacity: 1;
+        }
+        [v-cloak] { display: none; }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <div id="app" class="container mx-auto px-4 py-8" v-cloak>
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">🚀 Spring Boot API 监控面板</h1>
+            <p class="text-gray-600">实时监控API接口性能指标</p>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">API</span>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">监控接口数</p>
+                        <p class="text-2xl font-semibold text-gray-900" v-text="summary.totalMethods"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">📈</span>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">总调用次数</p>
+                        <p class="text-2xl font-semibold text-gray-900" v-text="summary.totalCalls.toLocaleString()">
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">❌</span>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">总错误次数</p>
+                        <p class="text-2xl font-semibold text-gray-900" v-text="summary.totalErrors"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">⏱️</span>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">平均响应时间</p>
+                        <p class="text-2xl font-semibold text-gray-900"
+                            v-text="Math.round(summary.avgResponseTime * 100) / 100 + 'ms'"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <!-- Time Range Filter -->
+            <div class="mb-6">
+                <h4 class="text-sm font-medium text-gray-700 mb-3">时间范围筛选</h4>
+                <div class="flex flex-wrap gap-2 mb-3">
+                    <button @click="setTimeRange('all')"
+                        :class="timeRange === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+                        class="px-3 py-1 rounded text-sm transition-colors">
+                        全部时间
+                    </button>
+                    <button @click="setTimeRange(5)"
+                        :class="timeRange === 5 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+                        class="px-3 py-1 rounded text-sm transition-colors">
+                        最近5分钟
+                    </button>
+                    <button @click="setTimeRange(30)"
+                        :class="timeRange === 30 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+                        class="px-3 py-1 rounded text-sm transition-colors">
+                        最近30分钟
+                    </button>
+                    <button @click="setTimeRange(60)"
+                        :class="timeRange === 60 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+                        class="px-3 py-1 rounded text-sm transition-colors">
+                        最近1小时
+                    </button>
+                    <button @click="setTimeRange(360)"
+                        :class="timeRange === 360 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+                        class="px-3 py-1 rounded text-sm transition-colors">
+                        最近6小时
+                    </button>
+                    <button @click="setTimeRange(1440)"
+                        :class="timeRange === 1440 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+                        class="px-3 py-1 rounded text-sm transition-colors">
+                        最近24小时
+                    </button>
+                </div>
+
+                <!-- Custom Time Range -->
+                <div class="flex flex-wrap items-end gap-4" v-show="timeRange === 'custom'">
+                    <div class="flex-1 min-w-40">
+                        <label class="block text-xs text-gray-600 mb-1">开始时间</label>
+                        <input type="datetime-local" v-model="customStartTime"
+                            class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                    </div>
+                    <div class="flex-1 min-w-40">
+                        <label class="block text-xs text-gray-600 mb-1">结束时间</label>
+                        <input type="datetime-local" v-model="customEndTime"
+                            class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                    </div>
+                    <button @click="applyCustomTimeRange()"
+                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm transition-colors">
+                        应用
+                    </button>
+                </div>
+
+                <button @click="setTimeRange('custom')"
+                    :class="timeRange === 'custom' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+                    class="px-3 py-1 rounded text-sm transition-colors mt-2">
+                    自定义时间
+                </button>
+            </div>
+
+            <!-- Search and Controls -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <!-- Search Box -->
+                    <div class="relative">
+                        <input type="text" v-model="methodFilter" @input="debounceSearch()" placeholder="搜索接口名..."
+                            class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                        <button v-show="methodFilter" @click="clearSearch()"
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <svg class="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <button @click="fetchMetrics()"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                        :disabled="loading">
+                        <span class="loading" v-show="loading"></span>
+                        <span v-show="!loading">🔄</span>
+                        刷新数据
+                    </button>
+
+                    <button @click="clearMetrics()"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        🗑️ 清空数据
+                    </button>
+
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-600">自动刷新:</label>
+                        <input type="checkbox" v-model="autoRefresh"
+                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm text-gray-600">3秒</span>
+                    </div>
+                </div>
+
+                <div class="text-sm text-gray-500">
+                    <div>最后更新: <span v-text="lastUpdate"></span></div>
+                    <div v-show="timeRangeText" class="text-xs text-blue-600 mt-1" v-text="timeRangeText"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">接口调用详细统计</h3>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="sortable px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                @click="sortBy('method')">
+                                接口方法
+                                <span class="sort-icon" :class="getSortClass('method')"></span>
+                            </th>
+                            <th class="sortable px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                @click="sortBy('total')">
+                                总调用
+                                <span class="sort-icon" :class="getSortClass('total')"></span>
+                            </th>
+                            <th class="sortable px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                @click="sortBy('success')">
+                                成功次数
+                                <span class="sort-icon" :class="getSortClass('success')"></span>
+                            </th>
+                            <th class="sortable px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                @click="sortBy('fail')">
+                                失败次数
+                                <span class="sort-icon" :class="getSortClass('fail')"></span>
+                            </th>
+                            <th class="sortable px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                @click="sortBy('successRate')">
+                                成功率
+                                <span class="sort-icon" :class="getSortClass('successRate')"></span>
+                            </th>
+                            <th class="sortable px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                @click="sortBy('avgTime')">
+                                平均耗时(ms)
+                                <span class="sort-icon" :class="getSortClass('avgTime')"></span>
+                            </th>
+                            <th class="sortable px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                @click="sortBy('maxTime')">
+                                最大耗时(ms)
+                                <span class="sort-icon" :class="getSortClass('maxTime')"></span>
+                            </th>
+                            <th class="sortable px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                @click="sortBy('minTime')">
+                                最小耗时(ms)
+                                <span class="sort-icon" :class="getSortClass('minTime')"></span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template v-for="item in sortedMetrics" :key="item.method">
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900" v-text="item.method"></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900" v-text="item.total.toLocaleString()"></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-green-600 font-medium"
+                                        v-text="item.success.toLocaleString()"></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-red-600 font-medium" v-text="item.fail"></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <span class="text-sm font-medium text-gray-900"
+                                            v-text="item.successRate + '%'"></span>
+                                        <div class="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                                            <div class="bg-green-500 h-2 rounded-full"
+                                                :style="`width: ${item.successRate}%`"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900" v-text="item.avgTime"></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900" v-text="item.maxTime"></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900" v-text="item.minTime"></div>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr v-show="sortedMetrics.length === 0 && !loading">
+                            <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                                <div class="text-lg mb-2">📊</div>
+                                <div>暂无数据，请先调用一些API接口</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center text-gray-500 text-sm">
+            <p>🚀 Spring Boot 轻量级 APM - 方法级性能监控</p>
+        </div>
+    </div>
+
+    <script>
+        const metricsApp = Vue.createApp({
+            data() {
+                return {
+                    metrics: {},
+                    summary: {
+                        totalMethods: 0,
+                        totalCalls: 0,
+                        totalErrors: 0,
+                        avgResponseTime: 0
+                    },
+                    loading: false,
+                    autoRefresh: false,
+                    refreshInterval: null,
+                    lastUpdate: '',
+                    sortField: 'total',
+                    sortDirection: 'desc',
+
+                    // 时间筛选相关
+                    timeRange: 'all',
+                    customStartTime: '',
+                    customEndTime: '',
+                    timeRangeText: '',
+
+                    // 搜索相关
+                    methodFilter: '',
+                    searchTimeout: null
+
+                };
+            },
+            async mounted() {
+                this.initCustomTime();
+                await this.fetchMetrics();
+                await this.fetchSummary();
+            },
+            beforeUnmount() {
+                clearInterval(this.refreshInterval);
+                clearTimeout(this.searchTimeout);
+            },
+            watch: {
+                autoRefresh() {
+                    this.toggleAutoRefresh();
+                }
+            },
+            methods: {
+
+                initCustomTime() {
+                    const now = new Date();
+                    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+                    this.customStartTime = this.formatDateTimeLocal(oneHourAgo);
+                    this.customEndTime = this.formatDateTimeLocal(now);
+                },
+
+                formatDateTimeLocal(date) {
+                    const offset = date.getTimezoneOffset();
+                    const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
+                    return adjustedDate.toISOString().slice(0, 16);
+                },
+
+                setTimeRange(range) {
+                    this.timeRange = range;
+                    this.updateTimeRangeText();
+                    if (range !== 'custom') {
+                        this.fetchMetrics();
+                        this.fetchSummary();
+                    }
+                },
+
+                updateTimeRangeText() {
+                    if (this.timeRange === 'all') {
+                        this.timeRangeText = '';
+                    } else if (this.timeRange === 'custom') {
+                        if (this.customStartTime && this.customEndTime) {
+                            const start = new Date(this.customStartTime).toLocaleString();
+                            const end = new Date(this.customEndTime).toLocaleString();
+                            this.timeRangeText = `时间范围: ${start} - ${end}`;
+                        } else {
+                            this.timeRangeText = '自定义时间范围';
+                        }
+                    } else {
+                        this.timeRangeText = `最近 ${this.timeRange} 分钟的数据`;
+                    }
+                },
+
+                applyCustomTimeRange() {
+                    if (this.customStartTime && this.customEndTime) {
+                        this.updateTimeRangeText();
+                        this.fetchMetrics();
+                        this.fetchSummary();
+                    }
+                },
+
+                debounceSearch() {
+                    if (this.searchTimeout) {
+                        clearTimeout(this.searchTimeout);
+                    }
+                    this.searchTimeout = setTimeout(() => {
+                        this.fetchMetrics();
+                        this.fetchSummary();
+                    }, 500);
+                },
+
+                clearSearch() {
+                    this.methodFilter = '';
+                    this.fetchMetrics();
+                    this.fetchSummary();
+                },
+
+                buildApiUrl(endpoint) {
+                    let url = `/api/metrics${endpoint}`;
+                    const params = new URLSearchParams();
+
+                    // 添加时间参数
+                    if (this.timeRange !== 'all') {
+                        if (this.timeRange === 'custom') {
+                            if (this.customStartTime && this.customEndTime) {
+                                params.append('startTime', new Date(this.customStartTime).getTime());
+                                params.append('endTime', new Date(this.customEndTime).getTime());
+                            }
+                        } else {
+                            const endTime = Date.now();
+                            const startTime = endTime - (this.timeRange * 60 * 1000);
+                            params.append('startTime', startTime);
+                            params.append('endTime', endTime);
+                        }
+                    }
+
+                    // 添加搜索参数
+                    if (this.methodFilter.trim()) {
+                        params.append('methodFilter', this.methodFilter.trim());
+                    }
+
+                    if (params.toString()) {
+                        url += '?' + params.toString();
+                    }
+
+                    return url;
+                },
+
+                async fetchMetrics() {
+                    this.loading = true;
+                    try {
+                        const response = await fetch(this.buildApiUrl(''));
+                        this.metrics = await response.json();
+                        this.lastUpdate = new Date().toLocaleTimeString();
+                    } catch (error) {
+                        console.error('Failed to fetch metrics:', error);
+                        this.metrics = {};
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async fetchSummary() {
+                    try {
+                        const response = await fetch(this.buildApiUrl('/summary'));
+                        this.summary = await response.json();
+                    } catch (error) {
+                        console.error('Failed to fetch summary:', error);
+                    }
+                },
+
+                async clearMetrics() {
+                    if (confirm('确定要清空所有监控数据吗？')) {
+                        try {
+                            await fetch('/api/metrics', { method: 'DELETE' });
+                            await this.fetchMetrics();
+                            await this.fetchSummary();
+                        } catch (error) {
+                            console.error('Failed to clear metrics:', error);
+                        }
+                    }
+                },
+
+                toggleAutoRefresh() {
+                    if (this.autoRefresh) {
+                        this.refreshInterval = setInterval(async () => {
+                            await this.fetchMetrics();
+                            await this.fetchSummary();
+                        }, 3000);
+                    } else {
+                        if (this.refreshInterval) {
+                            clearInterval(this.refreshInterval);
+                            this.refreshInterval = null;
+                        }
+                    }
+                },
+
+                sortBy(field) {
+                    if (this.sortField === field) {
+                        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        this.sortField = field;
+                        this.sortDirection = 'desc';
+                    }
+                },
+
+                getSortClass(field) {
+                    if (this.sortField === field) {
+                        return this.sortDirection === 'asc' ? 'sort-asc' : 'sort-desc';
+                    }
+                    return '';
+                },
+
+            },
+            computed: {
+                sortedMetrics() {
+                    const metricsArray = Object.entries(this.metrics).map(([method, data]) => ({
+                        method,
+                        ...data
+                    }));
+
+                    return metricsArray.sort((a, b) => {
+                        const aVal = a[this.sortField];
+                        const bVal = b[this.sortField];
+
+                        if (this.sortDirection === 'asc') {
+                            return aVal > bVal ? 1 : -1;
+                        } else {
+                            return aVal < bVal ? 1 : -1;
+                        }
+                    });
+                }
+            }
+        });
+        metricsApp.mount('#app');
+    </script>
+</body>
+
+</html>

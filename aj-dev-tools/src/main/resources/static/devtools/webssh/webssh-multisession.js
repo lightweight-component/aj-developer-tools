@@ -4,7 +4,7 @@
  */
 
 class MultiSessionWebSSHClient {
-    /** 读取统一响应，并支持布尔操作结果及实际数据中保留的 success 业务标志。 */
+    /** 根据统一响应的 status 判断请求结果，并返回 data。 */
     async readApiResponse(response) {
         let payload;
         try {
@@ -12,15 +12,13 @@ class MultiSessionWebSSHClient {
         } catch {
             throw new Error(`接口未返回有效 JSON（HTTP ${response.status}）`);
         }
-        const data = payload?.data;
-        if (!response.ok || payload?.status !== 1 || data === false || data?.success === false) {
-            const message = data?.success === false ? data.message || payload.message : payload?.message;
-            const error = new Error((message || `请求失败（HTTP ${response.status}）`) +
+        if (!response.ok || payload?.status !== 1) {
+            const error = new Error((payload?.message || `请求失败（HTTP ${response.status}）`) +
                 (payload?.errorCode ? ` [${payload.errorCode}]` : ''));
             error.errorCode = payload?.errorCode;
             throw error;
         }
-        return data;
+        return payload.data;
     }
 
     /** 下载支持二进制响应和统一 JSON 中的 Base64 / 字节数组。 */
@@ -492,12 +490,9 @@ class MultiSessionWebSSHClient {
                 body: JSON.stringify(serverData)
             });
             
-            const result = await this.readApiResponse(response);
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
-                this.showAlert('服务器配置已保存', 'success');
-                this.loadSavedServers();
-            } else
-                this.showAlert('保存失败: ' + result.message, 'danger');
+            await this.readApiResponse(response);
+            this.showAlert('服务器配置已保存', 'success');
+            this.loadSavedServers();
         } catch (error) {
             console.error('保存服务器配置失败:', error);
             this.showAlert('保存服务器配置失败: ' + error.message, 'danger');
@@ -526,11 +521,8 @@ class MultiSessionWebSSHClient {
                 body: JSON.stringify(serverData)
             });
             
-            const result = await this.readApiResponse(response);
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false))
-                this.showAlert('连接测试成功', 'success');
-            else
-                this.showAlert('连接测试失败: ' + result.message, 'danger');
+            await this.readApiResponse(response);
+            this.showAlert('连接测试成功', 'success');
         } catch (error) {
             console.error('连接测试失败:', error);
             this.showAlert('连接测试失败: ' + error.message, 'danger');
@@ -580,18 +572,8 @@ class MultiSessionWebSSHClient {
         try {
             const response = await fetch(`/api/files/list/${this.currentFileServerId}?remotePath=${encodeURIComponent(this.currentPath)}`);
             
-            const result = await this.readApiResponse(response);
-            
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false))
-                this.displayFiles(result.files);
-            else {
-                this.showAlert('获取文件列表失败: ' + result.message, 'danger');
-                document.getElementById('fileGrid').innerHTML = `
-                    <div class="alert alert-danger">
-                        获取文件列表失败: ${result.message}
-                    </div>
-                `;
-            }
+            const files = await this.readApiResponse(response);
+            this.displayFiles(files);
         } catch (error) {
             console.error('获取文件列表失败:', error);
             this.showAlert('获取文件列表失败: ' + error.message, 'danger');
@@ -691,12 +673,9 @@ class MultiSessionWebSSHClient {
             });
             
             const result = await this.readApiResponse(response);
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
-                this.showAlert(`成功上传 ${result === true ? files.length : result.count} 个文件`, 'success');
-                closeModal('uploadModal');
-                await this.refreshFiles();
-            } else
-                this.showAlert('上传失败: ' + result.message, 'danger');
+            this.showAlert(`成功上传 ${result === true ? files.length : result.count} 个文件`, 'success');
+            closeModal('uploadModal');
+            await this.refreshFiles();
         } catch (error) {
             console.error('上传文件失败:', error);
             this.showAlert('上传文件失败: ' + error.message, 'danger');
@@ -743,12 +722,9 @@ class MultiSessionWebSSHClient {
                 method: 'DELETE'
             });
             
-            const result = await this.readApiResponse(response);
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
-                this.showAlert('删除成功', 'success');
-                await this.refreshFiles();
-            } else
-                this.showAlert('删除失败: ' + result.message, 'danger');
+            await this.readApiResponse(response);
+            this.showAlert('删除成功', 'success');
+            await this.refreshFiles();
         } catch (error) {
             console.error('删除失败:', error);
             this.showAlert('删除失败: ' + error.message, 'danger');
@@ -765,20 +741,13 @@ class MultiSessionWebSSHClient {
             this.currentPath + '/' + folderName;
         
         try {
-            const response = await fetch(`/api/files/mkdir/${this.currentFileServerId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ remotePath: folderPath })
+            const response = await fetch(`/api/files/mkdir/${this.currentFileServerId}?remotePath=${encodeURIComponent(folderPath)}`, {
+                method: 'POST'
             });
             
-            const result = await this.readApiResponse(response);
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
-                this.showAlert('文件夹创建成功', 'success');
-                await this.refreshFiles();
-            } else
-                this.showAlert('创建失败: ' + result.message, 'danger');
+            await this.readApiResponse(response);
+            this.showAlert('文件夹创建成功', 'success');
+            await this.refreshFiles();
         } catch (error) {
             console.error('创建文件夹失败:', error);
             this.showAlert('创建文件夹失败: ' + error.message, 'danger');
@@ -838,20 +807,24 @@ function switchPage(pageName) {
     document.getElementById(`page-${pageName}`).classList.add('active');
     
     if (pageName === 'files')
-        sshClient.loadSavedServers().then(() => {
-            // 如果当前有激活的会话，自动选择对应的服务器
-            const currentServerId = sshClient.getCurrentServerId();
-            if (currentServerId) {
-                const fileServerSelect = document.getElementById('fileServerSelect');
-                fileServerSelect.value = currentServerId;
-                
-                // 设置文件管理的当前服务器ID并加载文件
-                sshClient.currentFileServerId = currentServerId;
-                sshClient.currentPath = '/';
-                document.getElementById('currentPath').value = sshClient.currentPath;
-                sshClient.refreshFiles(); // 自动加载文件列表
-            }
-        });
+        loadCurrentServerFiles();
+}
+
+function loadCurrentServerFiles() {
+    sshClient.loadSavedServers().then(() => {
+        // 如果当前有激活的会话，自动选择对应的服务器
+        const currentServerId = sshClient.getCurrentServerId();
+        if (currentServerId) {
+            const fileServerSelect = document.getElementById('fileServerSelect');
+            fileServerSelect.value = currentServerId;
+
+            // 设置文件管理的当前服务器ID并加载文件
+            sshClient.currentFileServerId = currentServerId;
+            sshClient.currentPath = '/';
+            document.getElementById('currentPath').value = sshClient.currentPath;
+            sshClient.refreshFiles(); // 自动加载文件列表
+        }
+    });
 }
 
 // 侧边栏折叠

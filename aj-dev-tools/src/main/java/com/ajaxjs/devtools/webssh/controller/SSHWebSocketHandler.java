@@ -1,6 +1,7 @@
 package com.ajaxjs.devtools.webssh.controller;
 
 import com.ajaxjs.devtools.webssh.service.SSHConnectionManager;
+import com.ajaxjs.util.JsonUtil;
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSchException;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +12,6 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 处理SSH命令的发送和接收
+ */
 @Component
 @Slf4j
 public class SSHWebSocketHandler extends TextWebSocketHandler {
@@ -28,6 +31,7 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
     private SSHConnectionManager connectionManager;
 
     private final Map<WebSocketSession, String> sessionConnections = new ConcurrentHashMap<>();
+
     private final Map<WebSocketSession, String> sessionUsers = new ConcurrentHashMap<>();
 
     // 为每个WebSocket会话添加同步锁
@@ -41,11 +45,10 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+    protected void handleTextMessage(WebSocketSession session, TextMessage message)  {
+        String payload = message.getPayload();
         try {
-            String payload = message.getPayload();
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode jsonNode = mapper.readTree(payload);
+            JsonNode jsonNode = (JsonNode) JsonUtil.json2Node(payload);
 
             String type = jsonNode.get("type").asString();
 
@@ -92,7 +95,6 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
             response.put("type", "connected");
             response.put("message", "SSH连接建立成功");
             sendMessage(session, response);
-
         } catch (Exception e) {
             log.error("建立SSH连接失败", e);
             sendError(session, "连接失败: " + e.getMessage());
@@ -104,6 +106,7 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
      */
     private void handleCommand(WebSocketSession session, JsonNode jsonNode) {
         String connectionId = sessionConnections.get(session);
+
         if (connectionId == null) {
             sendError(session, "SSH连接未建立");
             return;
@@ -207,11 +210,10 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
         synchronized (lock) {
             try {
                 if (session.isOpen()) {
-                    ObjectMapper mapper = new ObjectMapper();
-                    String json = mapper.writeValueAsString(message);
+                    String json = JsonUtil.toJson(message);
                     session.sendMessage(new TextMessage(json));
                 }
-            } catch (Exception e) {
+            } catch (IOException e) {
                 log.error("发送WebSocket消息失败", e);
             }
         }

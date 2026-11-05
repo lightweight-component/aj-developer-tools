@@ -3,7 +3,7 @@
  * 支持SSH连接和文件管理功能
  */
 class SimpleWebSSHClient {
-    /** 读取统一响应，并支持布尔操作结果及实际数据中保留的 success 业务标志。 */
+    /** 根据统一响应的 status 判断请求结果，并返回 data。 */
     async readApiResponse(response) {
         let payload;
         try {
@@ -11,15 +11,13 @@ class SimpleWebSSHClient {
         } catch {
             throw new Error(`接口未返回有效 JSON（HTTP ${response.status}）`);
         }
-        const data = payload?.data;
-        if (!response.ok || payload?.status !== 1 || data === false || data?.success === false) {
-            const message = data?.success === false ? data.message || payload.message : payload?.message;
-            const error = new Error((message || `请求失败（HTTP ${response.status}）`) +
+        if (!response.ok || payload?.status !== 1) {
+            const error = new Error((payload?.message || `请求失败（HTTP ${response.status}）`) +
                 (payload?.errorCode ? ` [${payload.errorCode}]` : ''));
             error.errorCode = payload?.errorCode;
             throw error;
         }
-        return data;
+        return payload.data;
     }
 
     /** 下载支持二进制响应和统一 JSON 中的 Base64 / 字节数组。 */
@@ -309,12 +307,9 @@ class SimpleWebSSHClient {
                 body: JSON.stringify(serverData)
             });
             
-            const result = await this.readApiResponse(response);
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
-                this.showAlert('服务器配置已保存', 'success');
-                this.loadSavedServers(); // 重新加载列表
-            } else
-                this.showAlert('保存失败: ' + result.message, 'danger');
+            await this.readApiResponse(response);
+            this.showAlert('服务器配置已保存', 'success');
+            this.loadSavedServers(); // 重新加载列表
         } catch (error) {
             console.error('保存服务器配置失败:', error);
             this.showAlert('保存服务器配置失败: ' + error.message, 'danger');
@@ -343,11 +338,8 @@ class SimpleWebSSHClient {
                 body: JSON.stringify(serverData)
             });
             
-            const result = await this.readApiResponse(response);
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false))
-                this.showAlert('连接测试成功', 'success');
-            else
-                this.showAlert('连接测试失败: ' + result.message, 'danger');
+            await this.readApiResponse(response);
+            this.showAlert('连接测试成功', 'success');
         } catch (error) {
             console.error('连接测试失败:', error);
             this.showAlert('连接测试失败: ' + error.message, 'danger');
@@ -400,18 +392,8 @@ class SimpleWebSSHClient {
         try {
             const response = await fetch(`/api/files/list/${this.currentFileServerId}?remotePath=${encodeURIComponent(this.currentPath)}`);
             
-            const result = await this.readApiResponse(response);
-            
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false))
-                this.displayFiles(result.files);
-            else {
-                this.showAlert('获取文件列表失败: ' + result.message, 'danger');
-                document.getElementById('fileGrid').innerHTML = `
-                    <div class="alert alert-danger">
-                        获取文件列表失败: ${result.message}
-                    </div>
-                `;
-            }
+            const files = await this.readApiResponse(response);
+            this.displayFiles(files);
         } catch (error) {
             console.error('获取文件列表失败:', error);
             this.showAlert('获取文件列表失败: ' + error.message, 'danger');
@@ -512,12 +494,9 @@ class SimpleWebSSHClient {
             });
             
             const result = await this.readApiResponse(response);
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
-                this.showAlert(`成功上传 ${result === true ? files.length : result.count} 个文件`, 'success');
-                this.closeModal('uploadModal');
-                await this.refreshFiles();
-            } else
-                this.showAlert('上传失败: ' + result.message, 'danger');
+            this.showAlert(`成功上传 ${result === true ? files.length : result.count} 个文件`, 'success');
+            this.closeModal('uploadModal');
+            await this.refreshFiles();
         } catch (error) {
             console.error('上传文件失败:', error);
             this.showAlert('上传文件失败: ' + error.message, 'danger');
@@ -564,12 +543,9 @@ class SimpleWebSSHClient {
                 method: 'DELETE'
             });
             
-            const result = await this.readApiResponse(response);
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
-                this.showAlert('删除成功', 'success');
-                await this.refreshFiles();
-            } else
-                this.showAlert('删除失败: ' + result.message, 'danger');
+            await this.readApiResponse(response);
+            this.showAlert('删除成功', 'success');
+            await this.refreshFiles();
         } catch (error) {
             console.error('删除失败:', error);
             this.showAlert('删除失败: ' + error.message, 'danger');
@@ -586,20 +562,13 @@ class SimpleWebSSHClient {
             this.currentPath + '/' + folderName;
         
         try {
-            const response = await fetch(`/api/files/mkdir/${this.currentFileServerId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ remotePath: folderPath })
+            const response = await fetch(`/api/files/mkdir/${this.currentFileServerId}?remotePath=${encodeURIComponent(folderPath)}`, {
+                method: 'POST'
             });
             
-            const result = await this.readApiResponse(response);
-            if (result === true || (result != null && typeof result === 'object' && result.success !== false)) {
-                this.showAlert('文件夹创建成功', 'success');
-                await this.refreshFiles();
-            } else
-                this.showAlert('创建失败: ' + result.message, 'danger');
+            await this.readApiResponse(response);
+            this.showAlert('文件夹创建成功', 'success');
+            await this.refreshFiles();
         } catch (error) {
             console.error('创建文件夹失败:', error);
             this.showAlert('创建文件夹失败: ' + error.message, 'danger');

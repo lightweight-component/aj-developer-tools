@@ -8,10 +8,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 public class ServerRepository {
-    private final String INSERT_SERVER = """
-            INSERT INTO servers (name, host, port, username, password, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """;
+    private final String INSERT_SERVER = "INSERT INTO servers (name, host, port, username, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
     private final String UPDATE_SERVER = "UPDATE servers SET name=?, host=?, port=?, username=?, password=?, updated_at= ? WHERE id= ?";
 
