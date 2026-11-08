@@ -1,3 +1,0 @@
-p, r.sub.dept == r.obj.dept && r.sub.id == r.obj.ownerId, true, edit
-p, r.sub.dept == r.obj.dept, true, read
-p, true, r.obj.type == "public", read
