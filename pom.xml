@@ -8,7 +8,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>aj-sysmonitor</module>
         <module>aj-spring-monitor</module>
         <module>aj-mysql-monitor</module>
         <module>aj-dev-tools</module>

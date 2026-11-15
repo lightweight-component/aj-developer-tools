@@ -27,6 +27,10 @@ public class MonitorDashboardService {
     private final JmxService jmxService;
 
     public Overview overview() {
+        return jmxService.withConnection(this::collectOverview);
+    }
+
+    private Overview collectOverview() {
         Overview overview = new Overview();
         overview.setSystemInfo(buildSystemInfo());
         overview.setJvmInfo(buildJvmInfo());
@@ -60,7 +64,6 @@ public class MonitorDashboardService {
     /**
      * jvm 参数
      */
-    @SuppressWarnings("unchecked")
     private JvmInfo buildJvmInfo() {
         JvmInfo info = new JvmInfo();
 
@@ -73,7 +76,7 @@ public class MonitorDashboardService {
             if (!name.equals("systemProperties"))
                 Utils.setBeanValue(info, name, getData(beanInfo));
             else
-                info.setSystemProperties((List<TreeMap<String, Object>>) getData(beanInfo)); // systemProperties 格式特殊 需要单独处理
+                info.setSystemProperties(systemProperties(getData(beanInfo)));
         }
 
         return info;
@@ -94,8 +97,12 @@ public class MonitorDashboardService {
     private MemoryUsage buildMemoryUsage(BeanAttributeInfo beanInfo) {
         MemoryUsage info = new MemoryUsage();
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> map = (Map<String, Object>) getData(beanInfo);
+        Object data = getData(beanInfo);
+
+        if (!(data instanceof Map))
+            return null;
+
+        Map<?, ?> map = (Map<?, ?>) data;
 
         Utils.setBeanValue(info, "init", map.get("init"));
         Utils.setBeanValue(info, "used", map.get("used"));
@@ -206,12 +213,40 @@ public class MonitorDashboardService {
     }
 
     private static Object getData(BeanAttributeInfo info) {
+        if (info == null || info.getValue() == null || info.getValue().getError() != null)
+            return null;
+
         return info.getValue().getData();
     }
 
     @SuppressWarnings("unchecked")
     private static <T> T getData(BeanAttributeInfo info, Class<T> clz) {
-        return (T) getData(info);
+        Object value = getData(info);
+
+        if ((clz == int.class || clz == long.class) && value instanceof Number)
+            return (T) (clz == int.class ? (Object) Integer.valueOf(((Number) value).intValue()) : Long.valueOf(((Number) value).longValue()));
+
+        return clz.isInstance(value) ? clz.cast(value) : null;
+    }
+
+    private static List<TreeMap<String, Object>> systemProperties(Object data) {
+        if (!(data instanceof List))
+            return null;
+
+        List<TreeMap<String, Object>> properties = new ArrayList<>();
+
+        for (Object row : (List<?>) data) {
+            if (!(row instanceof Map))
+                continue;
+
+            Map<?, ?> values = (Map<?, ?>) row;
+            TreeMap<String, Object> property = new TreeMap<>();
+            property.put("name", values.get("name"));
+            property.put("value", values.get("value"));
+            properties.add(property);
+        }
+
+        return properties;
     }
 
     private static String parseName(BeanAttributeInfo info) {

@@ -1,4 +1,4 @@
-package com.ajaxjs.devtools.sysmonitor.model;
+package com.ajaxjs.devtools.simplesysinfo.model;
 
 import lombok.Data;
 
@@ -7,7 +7,6 @@ import lombok.Data;
  */
 @Data
 public class SysInfo {
-
     /**
      * 系统名称
      */
@@ -32,5 +31,4 @@ public class SysInfo {
      * 项目路径
      */
     private String userDir;
-
 }

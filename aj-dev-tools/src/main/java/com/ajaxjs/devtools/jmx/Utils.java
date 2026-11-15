@@ -17,8 +17,27 @@ public class Utils {
         try {
             Field field = bean.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
+            if (value == null)
+                return;
+
+            Class<?> type = field.getType();
+
+            if (value instanceof Number) {
+                Number number = (Number) value;
+
+                if (type == Long.class || type == long.class)
+                    value = number.longValue();
+                else if (type == Integer.class || type == int.class)
+                    value = number.intValue();
+                else if (type == Double.class || type == double.class)
+                    value = number.doubleValue();
+            }
+
+            if (!type.isPrimitive() && !type.isInstance(value))
+                return;
+
             field.set(bean, value);
-        } catch (IllegalAccessException e) {
+        } catch (IllegalAccessException | IllegalArgumentException e) {
             // the exception here doesn't need to handle
             log.warn("访问字段时候 {} 失败", fieldName);
         } catch (NoSuchFieldException e) {

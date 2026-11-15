@@ -12,53 +12,53 @@ public class SystemInfo {
     /**
      * 操作系统打开的文件描述符数量
      */
-    private long openFileDescriptorCount;
+    private Long openFileDescriptorCount;
 
     /**
      * 操作系统最大文件描述符数量
      */
-    private long maxFileDescriptorCount;
+    private Long maxFileDescriptorCount;
 
     /**
      * Returns the amount of virtual memory that is guaranteed to be available to the running process in bytes
      * , or -1 if this operation is not supported
      */
-    private long committedVirtualMemorySize;
+    private Long committedVirtualMemorySize;
 
     /**
      * Returns the total amount of swap space in bytes
      */
-    private long totalSwapSpaceSize;
+    private Long totalSwapSpaceSize;
 
     /**
      * Returns the amount of free swap space in bytes
      */
-    private long freeSwapSpaceSize;
+    private Long freeSwapSpaceSize;
 
     /**
      * Returns the amount of free physical memory in bytes
      */
-    private long freePhysicalMemorySize;
+    private Long freePhysicalMemorySize;
 
     /**
      * Returns the total amount of physical memory in bytes
      */
-    private long totalPhysicalMemorySize;
+    private Long totalPhysicalMemorySize;
 
     /**
      * Returns the CPU time used by the process on which the Java virtual machine is running in nanoseconds
      */
-    private long processCpuTime;
+    private Long processCpuTime;
 
     /**
      * returns the CPU usage of the whole system
      */
-    private double systemCpuLoad;
+    private Double systemCpuLoad;
 
     /**
      * returns the CPU usage of the JVM
      */
-    private double processCpuLoad;
+    private Double processCpuLoad;
 
     /**
      * Returns the operating system name.
@@ -69,7 +69,7 @@ public class SystemInfo {
     /**
      * Returns the number of processors available to the Java virtual machine
      */
-    private int availableProcessors;
+    private Integer availableProcessors;
 
     /**
      * Returns the operating system architecture.
@@ -85,7 +85,7 @@ public class SystemInfo {
     /**
      * Returns the system load average for the last minute.
      */
-    private double systemLoadAverage;
+    private Double systemLoadAverage;
 
 
 }

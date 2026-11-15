@@ -9,13 +9,14 @@ import org.springframework.stereotype.Service;
 
 import javax.management.*;
 import javax.management.openmbean.CompositeData;
-import javax.management.openmbean.TabularDataSupport;
+import javax.management.openmbean.TabularData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * 管理当前监控目标的连接及 MBean 操作。
@@ -51,22 +52,24 @@ public class JmxService implements DisposableBean {
         if (pid == null || pid <= 0)
             throw new IllegalArgumentException("pid 必须为正整数");
 
-        VirtualMachine vm = VirtualMachine.attach(Integer.toString(pid));
-        String address;
+        replaceConnection(JmxTimeouts.connect(() -> {
+            VirtualMachine vm = VirtualMachine.attach(Integer.toString(pid));
+            String address;
 
-        try {
-            address = vm.getAgentProperties().getProperty(LOCAL_CONNECTOR_ADDRESS);
+            try {
+                address = vm.getAgentProperties().getProperty(LOCAL_CONNECTOR_ADDRESS);
 
-            if (address == null)
-                address = vm.startLocalManagementAgent();
+                if (address == null)
+                    address = vm.startLocalManagementAgent();
 
-            if (address == null || address.isEmpty())
-                throw new IOException("未获取到本地 JMX 连接地址");
-        } finally {
-            vm.detach();
-        }
+                if (address == null || address.isEmpty())
+                    throw new IOException("未获取到本地 JMX 连接地址");
+            } finally {
+                vm.detach();
+            }
 
-        replaceConnection(JMXConnectorFactory.connect(new JMXServiceURL(address)));
+            return JMXConnectorFactory.connect(new JMXServiceURL(address));
+        }));
     }
 
     public void attachRemoteJvm(String host, String port) throws IOException {
@@ -74,7 +77,7 @@ public class JmxService implements DisposableBean {
             throw new IllegalArgumentException("服务器地址和端口不能为空");
 
         String url = String.format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", host.trim(), port.trim());
-        replaceConnection(JMXConnectorFactory.connect(new JMXServiceURL(url)));
+        replaceConnection(JmxTimeouts.connect(url));
     }
 
     /**
@@ -97,6 +100,14 @@ public class JmxService implements DisposableBean {
 
         if (previous != next)
             closeConnector(previous);
+    }
+
+    /**
+     * 在同一连接生命周期内完成一组采集，期间不允许替换或关闭连接。
+     */
+    public synchronized <T> T withConnection(Supplier<T> action) {
+        requireConnection();
+        return action.get();
     }
 
     private MBeanServerConnection requireConnection() {
@@ -143,25 +154,34 @@ public class JmxService implements DisposableBean {
 
             for (MBeanAttributeInfo mBeanAttributeInfo : mBeanInfo.getAttributes()) {
                 Object attribute;
+                String readError = null;
 
                 if (mBeanAttributeInfo.isReadable()) {
                     try {
                         attribute = helper.getMsc().getAttribute(o, mBeanAttributeInfo.getName());
+                    } catch (IOException e) {
+                        throw new java.io.UncheckedIOException("读取 JMX 属性失败", e);
                     } catch (Exception e) {
+                        readError = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
                         attribute = "不可用";
                     }
-                } else
+                } else {
+                    readError = "属性不可读";
                     attribute = "不可读";
+                }
 
                 BeanAttributeInfo beanAttributeInfo = new BeanAttributeInfo();
                 beanAttributeInfo.setName(mBeanAttributeInfo.getName());
                 beanAttributeInfo.setAttributeInfo(mBeanAttributeInfo);
                 BeanAttributeValue beanAttributeValue = new BeanAttributeValue();
-                beanAttributeValue.setCompositeData(true);
+                beanAttributeValue.setError(readError);
 
-                if (mBeanAttributeInfo.getType().equals("javax.management.openmbean.CompositeData") && mBeanAttributeInfo.isReadable())
+                // 按实际读取到的值转换，读取失败的提示文本和 null 不参与复合类型转换。
+                if (attribute instanceof CompositeData) {
+                    beanAttributeValue.setCompositeData(true);
                     beanAttributeValue.setData(JmxHelper.analyzeCompositeData(attribute));
-                else if (mBeanAttributeInfo.getType().equals("[Ljavax.management.openmbean.CompositeData;") && mBeanAttributeInfo.isReadable()) {
+                } else if (attribute instanceof CompositeData[]) {
+                    beanAttributeValue.setCompositeData(true);
                     CompositeData[] compositeDataArray = (CompositeData[]) attribute;
                     List<SortedMap<String, Object>> mapList = new ArrayList<>(compositeDataArray.length);
 
@@ -169,18 +189,24 @@ public class JmxService implements DisposableBean {
                         mapList.add(JmxHelper.analyzeCompositeData(compositeData));
 
                     beanAttributeValue.setData(mapList);
-                } else if (mBeanAttributeInfo.getType().equals("javax.management.openmbean.TabularData")) {
+                } else if (attribute instanceof TabularData) {
+                    beanAttributeValue.setCompositeData(true);
                     List<SortedMap<String, Object>> mapList = new ArrayList<>();
-                    TabularDataSupport tabularDataSupport = (TabularDataSupport) attribute;
+                    TabularData tabularData = (TabularData) attribute;
 
-                    for (Map.Entry<Object, Object> entry : tabularDataSupport.entrySet()) {
-                        SortedMap<String, Object> map = JmxHelper.analyzeCompositeData(entry.getValue());
-                        assert map != null;
+                    for (Object row : tabularData.values()) {
+                        SortedMap<String, Object> map = JmxHelper.analyzeCompositeData(row);
 
-                        SortedMap<String, Object> normalMap = new TreeMap<>();
-                        normalMap.put("name", map.getOrDefault("key", ""));
-                        normalMap.put("value", map.getOrDefault("value", ""));
-                        mapList.add(normalMap);
+                        if (map == null)
+                            continue;
+
+                        if (o.equals(JmxHelper.objectNameFactory("java.lang:type=Runtime")) && "SystemProperties".equals(mBeanAttributeInfo.getName())) {
+                            SortedMap<String, Object> property = new TreeMap<>();
+                            property.put("name", map.get("key"));
+                            property.put("value", map.get("value"));
+                            mapList.add(property);
+                        } else
+                            mapList.add(map);
                     }
 
                     beanAttributeValue.setData(mapList);

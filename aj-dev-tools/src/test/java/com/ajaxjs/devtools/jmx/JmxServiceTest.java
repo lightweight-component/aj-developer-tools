@@ -8,11 +8,79 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.concurrent.*;
+import java.lang.management.ManagementFactory;
+import com.ajaxjs.devtools.jmx.model.BeanInfo;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class JmxServiceTest {
+    @Test
+    void overviewUsesOneLockedConnectionForAllQueries() throws Exception {
+        JmxService service = new JmxService() {
+            @Override
+            public BeanInfo getProperties(String fullName) {
+                assertTrue(Thread.holdsLock(this), "overview must hold the connection lock across queries");
+                return super.getProperties(fullName);
+            }
+        };
+        JMXConnector connector = mock(JMXConnector.class);
+        when(connector.getMBeanServerConnection()).thenReturn(ManagementFactory.getPlatformMBeanServer());
+        service.replaceConnection(connector);
+
+        try {
+            assertNotNull(new MonitorDashboardService(service).overview().getHeapMemoryUsage());
+        } finally {
+            service.destroy();
+        }
+    }
+
+    @Test
+    void replacementWaitsUntilSamplingCompletes() throws Exception {
+        JmxService service = new JmxService();
+        JMXConnector first = mock(JMXConnector.class), second = mock(JMXConnector.class);
+        when(first.getMBeanServerConnection()).thenReturn(mock(MBeanServerConnection.class));
+        when(second.getMBeanServerConnection()).thenReturn(mock(MBeanServerConnection.class));
+        service.replaceConnection(first);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch sampling = new CountDownLatch(1), release = new CountDownLatch(1), replacing = new CountDownLatch(1);
+
+        try {
+            Future<Integer> sample = executor.submit(() -> service.withConnection(() -> {
+                sampling.countDown();
+
+                try {
+                    if (!release.await(5, TimeUnit.SECONDS))
+                        throw new AssertionError("sampling timed out");
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError(e);
+                }
+
+                return 42;
+            }));
+            assertTrue(sampling.await(5, TimeUnit.SECONDS));
+            Future<?> replacement = executor.submit(() -> {
+                replacing.countDown();
+                service.replaceConnection(second);
+                return null;
+            });
+            assertTrue(replacing.await(5, TimeUnit.SECONDS));
+            assertThrows(TimeoutException.class, () -> replacement.get(100, TimeUnit.MILLISECONDS));
+            verify(first, never()).close();
+            release.countDown();
+            assertEquals(42, sample.get(5, TimeUnit.SECONDS));
+            replacement.get(5, TimeUnit.SECONDS);
+            verify(first).close();
+        } finally {
+            release.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+            service.destroy();
+        }
+    }
+
     @Test
     void createsBeansWithCircularReferencesDisabled() {
         try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {

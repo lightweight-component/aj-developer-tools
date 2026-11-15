@@ -2,19 +2,17 @@ package com.ajaxjs.devtools.jmx;
 
 import com.ajaxjs.devtools.jmx.model.Node;
 import com.ajaxjs.devtools.jmx.model.NodeType;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.StringUtils;
 
 import javax.management.*;
-import javax.management.openmbean.CompositeDataSupport;
+import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.BiConsumer;
 
@@ -30,36 +28,38 @@ public class JmxHelper {
     /**
      * 连接实例
      */
+    @Getter
+    @Setter
     private MBeanServerConnection msc;
 
     /**
      * 连接对象
      */
+    @Getter
+    @Setter
     private JMXConnector connector;
 
     public MBeanAttributeInfo[] getAttributes(ObjectName objName) {
-        try {
-            return msc.getMBeanInfo(objName).getAttributes();
-        } catch (InstanceNotFoundException | IntrospectionException | ReflectionException | IOException e) {
-            log.warn("Errors on getAttributes", e);
-            return null;
-        }
+        return getMBeanInfo(msc, objName).getAttributes();
     }
 
     public void everyAttribute(ObjectName objName, BiConsumer<String, Object> fn) {
-        MBeanAttributeInfo[] attributes = getAttributes(objName);
+        for (MBeanAttributeInfo attribute : getAttributes(objName)) {
+            if (!attribute.isReadable())
+                continue;
 
-        try {
-            for (MBeanAttributeInfo attribute : attributes) {
-                String key = attribute.getName();
-                Object value = msc.getAttribute(objName, key);
-//                System.out.println("private " + attribute.getType() + " " + key + ";");
+            Object value;
 
-                fn.accept(key, value);
+            try {
+                value = msc.getAttribute(objName, attribute.getName());
+            } catch (IOException e) {
+                throw new UncheckedIOException("读取 MBean 属性失败: " + objName, e);
+            } catch (MBeanException | AttributeNotFoundException | InstanceNotFoundException | ReflectionException e) {
+                log.warn("跳过不可用的 MBean 属性: {}.{}", objName, attribute.getName(), e);
+                continue;
             }
-        } catch (MBeanException | AttributeNotFoundException | InstanceNotFoundException | ReflectionException |
-                 IOException e) {
-            log.warn("Errors on everyAttribute", e);
+
+            fn.accept(attribute.getName(), value);
         }
     }
 
@@ -100,17 +100,15 @@ public class JmxHelper {
 
     public static JMXConnector connect(String jmxUrl) {
         try {
-            return JMXConnectorFactory.connect(new JMXServiceURL(jmxUrl));
+            return JmxTimeouts.connect(jmxUrl);
         } catch (IOException e) {
             log.warn("Errors when connect to a JMX Service: " + jmxUrl, e);
-            return null;
+            throw new UncheckedIOException("连接 JMX 服务失败: " + jmxUrl, e);
         }
     }
 
     public static JMXConnector connect(String host, String port) {
-        String jmxUrl = String.format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", host, port);
-
-        return connect(jmxUrl);
+        return connect(String.format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", host, port));
     }
 
     /**
@@ -127,62 +125,64 @@ public class JmxHelper {
      */
     public static List<Node> getObjectNamesByDomain(MBeanServerConnection msc, String domain) {
         List<Node> nodes = new ArrayList<>();
-        Map<String, ObjectName> types = new HashMap<>();
+        Map<String, List<ObjectName>> groups = new TreeMap<>();
+        List<ObjectName> names = new ArrayList<>(queryNames(msc, domain + ":*"));
+        names.sort(Comparator.comparing(ObjectName::getCanonicalName));
 
-        for (ObjectName objectName : Objects.requireNonNull(queryNames(msc, domain + ":*"))) {
-            String type = objectName.getKeyProperty("type");
-            types.put(type, objectName);
+        for (ObjectName name : names) {
+            String type = name.getKeyProperty("type");
+
+            if (type == null)
+                nodes.add(beanNode(name));
+            else
+                groups.computeIfAbsent(type, ignored -> new ArrayList<>()).add(name);
         }
 
-        for (Map.Entry<String, ObjectName> entry : types.entrySet()) {
-            Node node = new Node();
-            node.setTitle(StringUtils.hasText(entry.getKey()) ? entry.getKey() : entry.getValue().getCanonicalName());
-            node.setKey(entry.getValue().getCanonicalName());
-            node.setNodeType(NodeType.OBJECTNAME.getName());
-            node.setFullName(entry.getValue().getCanonicalName());
-            List<Node> subNodes = getObjectNamesByType(msc, domain, entry.getKey());
-
-            if (subNodes.size() > 1)
-                node.setChildren(subNodes);
-
-            nodes.add(node);
-        }
-
-        return nodes;
-    }
-
-    private static List<Node> getObjectNamesByType(MBeanServerConnection msc, String domain, String type) {
-        List<Node> nodes = new ArrayList<>();
-
-        for (ObjectName objectName : Objects.requireNonNull(queryNames(msc, domain + ":type=" + type + ",*"))) {
-            Node node = new Node();
-            String fullName = objectName.getCanonicalName(), name = objectName.getKeyProperty("name");
-
-            node.setTitle(StringUtils.hasText(name) ? name : objectName.getCanonicalName());
-            node.setFullName(fullName);
-            node.setKey(fullName);
-            node.setNodeType(NodeType.OBJECTNAME.getName());
-            nodes.add(node);
-        }
-
-        return nodes;
-    }
-
-    @SuppressWarnings("unchecked")
-    public static SortedMap<String, Object> analyzeCompositeData(Object compositeData) {
-        try {
-            if (compositeData instanceof CompositeDataSupport) {
-                CompositeDataSupport support = (CompositeDataSupport) compositeData;
-                Field field = support.getClass().getDeclaredField("contents");
-                field.setAccessible(true);
-
-                return (SortedMap<String, Object>) field.get(support);
+        for (Map.Entry<String, List<ObjectName>> group : groups.entrySet()) {
+            if (group.getValue().size() == 1) {
+                nodes.add(beanNode(group.getValue().get(0)));
+                continue;
             }
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            log.warn("analyzeCompositeData", e);
+
+            Node parent = new Node();
+            parent.setKey("group:" + domain.length() + ":" + domain + ":" + group.getKey());
+            parent.setTitle(group.getKey());
+            parent.setNodeType("group");
+            List<Node> children = new ArrayList<>();
+
+            for (ObjectName name : group.getValue())
+                children.add(beanNode(name));
+
+            parent.setChildren(children);
+            nodes.add(parent);
         }
 
-        return null;
+        return nodes;
+    }
+
+    private static Node beanNode(ObjectName name) {
+        Node node = new Node();
+        String fullName = name.getCanonicalName();
+        String title = name.getKeyProperty("name");
+        node.setTitle(title == null || title.isEmpty() ? fullName : title);
+        node.setFullName(fullName);
+        node.setKey(fullName);
+        node.setNodeType(NodeType.OBJECTNAME.getName());
+
+        return node;
+    }
+
+    public static SortedMap<String, Object> analyzeCompositeData(Object compositeData) {
+        if (!(compositeData instanceof CompositeData))
+            return null;
+
+        CompositeData data = (CompositeData) compositeData;
+        SortedMap<String, Object> values = new TreeMap<>();
+
+        for (String key : data.getCompositeType().keySet())
+            values.put(key, data.get(key));
+
+        return values;
     }
 
     /**
@@ -192,8 +192,7 @@ public class JmxHelper {
         try {
             return new ObjectName(name);
         } catch (MalformedObjectNameException e) {
-            log.warn("objectNameFactory", e);
-            return null;
+            throw new IllegalArgumentException("无效的 MBean 名称: " + name, e);
         }
     }
 
@@ -205,8 +204,7 @@ public class JmxHelper {
         try {
             return msc.queryNames(objectNameFactory(name), null);
         } catch (IOException e) {
-            log.warn("queryNames", e);
-            return null;
+            throw new UncheckedIOException("查询 MBeans 失败: " + name, e);
         }
     }
 
@@ -218,25 +216,8 @@ public class JmxHelper {
         try {
             return msc.getMBeanInfo(o);
         } catch (InstanceNotFoundException | IntrospectionException | ReflectionException | IOException e) {
-            log.warn("getMBeanInfo", e);
-            return null;
+            throw new IllegalStateException("读取 MBean 元数据失败: " + o, e);
         }
-    }
-
-    public void setMsc(MBeanServerConnection msc) {
-        this.msc = msc;
-    }
-
-    public MBeanServerConnection getMsc() {
-        return msc;
-    }
-
-    public void setConnector(JMXConnector connector) {
-        this.connector = connector;
-    }
-
-    public JMXConnector getConnector() {
-        return connector;
     }
 
     /**
@@ -256,7 +237,7 @@ public class JmxHelper {
             ManagementFactory.getPlatformMBeanServer().registerMBean(mBean, new ObjectName(name));
         } catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException |
                  MalformedObjectNameException e) {
-            e.printStackTrace();
+            log.error("registerMBean", e);
         }
     }
 

@@ -1,5 +1,24 @@
 # JMX 依赖与 JDK 版本
 
+## 采集容错与超时
+
+属性级读取失败时，属性响应保留展示文本，并通过 `value.error` 说明错误。overview 不将失败文本强转为数值或内存对象；缺失数值使用可空类型返回 `null`，避免将未知值当作 0。连接中断和超时属于传输错误，会结束本次采集并向上抛出，不会伪装成成功的监控结果。
+
+普通 `TabularData` 保留每行的全部列；仅 `java.lang:type=Runtime` 的 `SystemProperties` 转换为前端使用的 `name/value` 列表。
+
+本地 Attach/远程连接以及单次远程调用默认超时均为 10000 毫秒，可使用 JVM 系统属性配置：
+
+```text
+-Ddevtools.jmx.connectTimeoutMillis=10000
+-Ddevtools.jmx.requestTimeoutMillis=10000
+```
+
+请求超时后，连接被标记为失效，不再复用，并异步关闭；后续需重新连接。超时限制针对一次连接过程或一次远程方法调用，不代表整个 overview 的总时长。
+
+调用执行器最多使用 8 个线程、32 个排队任务；连接清理执行器最多使用 2 个线程、16 个排队任务，资源满时明确报错。中断和关闭不能保证强制终止所有第三方 JMX Provider 的底层网络调用，因此后台使用有界资源，避免超时后无限创建线程。对于不响应中断且关闭也无法完成的 Provider，可能需要等待底层网络恢复，不能把调用方超时等同于底层操作已经结束。
+
+Tomcat 简单信息采集分别支持 Tomcat 自有线程池、JDK `ThreadPoolExecutor` 和 `StandardThreadExecutor`；尚未初始化或不提供统计能力的 Executor 返回状态说明，不进行不安全的类型转换。
+
 ## JDK 17
 
 当前 `aj-dev-tools` 使用 Java 17 构建。`com.sun.tools.attach.VirtualMachine`、`VirtualMachineDescriptor` 等 Attach API 由 JDK 的 `jdk.attach` 模块提供，无需添加 `com.sun:tools` 或引用 JDK 8 的 `tools.jar`。
@@ -76,3 +95,20 @@ mvn install:install-file "-Dfile=jar/jmxtools-1.2.1.jar" -DgroupId=com.sun.jdmk 
 ```
 
 团队和 CI 使用时，可以按组织的制品及许可管理要求上传至私有 Maven 仓库，避免每台机器手动安装。安装到本地仓库并不代表公共 Maven 仓库能够下载该制品。
+
+## Tomcat 的 catalina-jmx-remote
+
+`org.apache.tomcat:tomcat-catalina-jmx-remote` 提供 Tomcat 服务端的 `org.apache.catalina.mbeans.JmxRemoteLifecycleListener`，不是通用 JMX 客户端库。当前 `TomcatJmx` 使用 JDK 标准的 `JMXConnector`、`MBeanServerConnection` 读取监控数据，没有使用这个 Listener，因此已从 `aj-dev-tools` 删除该依赖。
+
+典型使用场景是：被监控的 Tomcat 位于防火墙或 NAT 后，需要通过该 Listener 固定 RMI 注册表端口与 RMI 服务端口。例如在支持该 Listener 的 Tomcat 版本中，配置 `server.xml`：
+
+```xml
+<Listener
+    className="org.apache.catalina.mbeans.JmxRemoteLifecycleListener"
+    rmiRegistryPortPlatform="10001"
+    rmiServerPortPlatform="10002" />
+```
+
+只有选择这种服务端配置方式时，才需要在目标 Tomcat 的类路径（通常为其 `lib` 目录）提供对应 JAR；应核对目标 Tomcat 版本是否支持该 Listener，并使用匹配的组件版本，不应固定套用旧版 `8.5.75`。如果代码直接创建该 Listener，也需要相应的编译依赖。
+
+普通 JMX 客户端连接、同 JVM 查询 MBeans，以及通过 JDK 的 JMX 启动参数开启远程管理，都不要求该包。固定 RMI 端口也可通过 JDK 启动参数实现，并非必须使用这个 Listener。远程部署还需单独配置可达的主机地址、端口映射、认证和 TLS；以上片段仅说明 Listener 的用途。

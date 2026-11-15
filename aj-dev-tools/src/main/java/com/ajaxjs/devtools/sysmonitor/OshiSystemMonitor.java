@@ -1,5 +1,6 @@
 package com.ajaxjs.devtools.sysmonitor;
 
+import com.ajaxjs.devtools.simplesysinfo.LinuxInfo;
 import com.ajaxjs.devtools.sysmonitor.model.CpuInfo;
 import com.ajaxjs.devtools.sysmonitor.model.DiskInfo;
 import com.ajaxjs.devtools.sysmonitor.model.MemoryInfo;
@@ -8,7 +9,7 @@ import oshi.SystemInfo;
 import oshi.hardware.*;
 import oshi.software.os.*;
 import oshi.util.FormatUtil;
-
+import com.ajaxjs.devtools.simplesysinfo.BaseInfo;
 import java.util.*;
 
 /**
@@ -44,7 +45,7 @@ public class OshiSystemMonitor {
     public CpuInfo getCpuInfo() {
         CentralProcessor centralProcessor = getHardwareAbstractionLayer().getProcessor();
         long[] prevTicks = centralProcessor.getSystemCpuLoadTicks();
-        Utils.sleep(1);
+        LinuxInfo.sleep(1);
 
         long[] ticks = centralProcessor.getSystemCpuLoadTicks();
         long nice = ticks[CentralProcessor.TickType.NICE.getIndex()] - prevTicks[CentralProcessor.TickType.NICE.getIndex()];
@@ -143,7 +144,7 @@ public class OshiSystemMonitor {
             txPacketsBegin += net.getPacketsSent();
         }
 
-        Utils.sleep(3);  // 暂停3秒
+        LinuxInfo.sleep(3);  // 暂停3秒
 
         List<NetworkIF> listEnd = hal.getNetworkIFs();
         for (NetworkIF net : listEnd) {

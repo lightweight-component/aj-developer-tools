@@ -6,3 +6,5 @@ com.ajaxjs.devtools.jarconflict.JarConflictConfiguration
 com.ajaxjs.devtools.dependencyscanner.DependencyScannerConfiguration
 com.ajaxjs.devtools.apidashboard.ApiDashboardConfiguration
 com.ajaxjs.devtools.netcapture.NetCaptureConfiguration
+com.ajaxjs.devtools.simplesysinfo.SimpleSystemInfoConfiguration
+com.ajaxjs.devtools.jmx.JmxConfiguration

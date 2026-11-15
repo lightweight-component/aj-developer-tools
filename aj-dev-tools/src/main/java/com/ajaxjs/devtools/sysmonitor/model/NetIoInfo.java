@@ -26,6 +26,4 @@ public class NetIoInfo {
      * 每秒钟发送的KB数,txkB/s
      */
     private String txbyt;
-
-
 }

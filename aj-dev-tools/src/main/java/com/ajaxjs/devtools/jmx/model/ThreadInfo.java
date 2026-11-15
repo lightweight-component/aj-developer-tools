@@ -7,11 +7,11 @@ import lombok.Data;
  */
 @Data
 public class ThreadInfo {
-    private int liveThreadCount;
+    private Integer liveThreadCount;
 
-    private int livePeakThreadCount;
+    private Integer livePeakThreadCount;
 
-    private int daemonThreadCount;
+    private Integer daemonThreadCount;
 
-    private long totalStartedThreadCount;
+    private Long totalStartedThreadCount;
 }

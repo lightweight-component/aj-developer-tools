@@ -1,13 +1,15 @@
-package com.ajaxjs.framework.sysmonitor;
+package com.ajaxjs.devtools.simplesysinfo;
 
-import com.ajaxjs.framework.sysmonitor.model.DiskIOStats;
-import com.ajaxjs.framework.sysmonitor.model.LinuxMemInfo;
+import com.ajaxjs.devtools.simplesysinfo.model.DiskIOStats;
+import com.ajaxjs.devtools.simplesysinfo.model.LinuxMemInfo;
+import com.ajaxjs.devtools.simplesysinfo.model.NetworkStats;
 import com.ajaxjs.util.io.DataReader;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.StringTokenizer;
 
 /**
@@ -16,7 +18,7 @@ import java.util.StringTokenizer;
  * @author <a href="https://blog.csdn.net/hj7jay/article/details/51979939">...</a>
  */
 @Slf4j
-public class LinuxSystemTool {
+public class LinuxInfo {
     /**
      * 内存的信息，单位 kb
      */
@@ -57,55 +59,87 @@ public class LinuxSystemTool {
         return Files.newInputStream(new File(filePath).toPath());
     }
 
-    private static BufferedReader getReader() throws IOException {
-        return new BufferedReader(new InputStreamReader(getFileInputStream("/proc/stat")));
-    }
-
     /**
-     * Get CPU usage
-     *
-     * @return CPU 使用率
+     * 读取两次 /proc/stat 计算 CPU 使用率（0～1）。
+     * idle 和 iowait 计为空闲；guest/guest_nice 已包含在 user/nice 中，不重复累计。
+     * 读取失败、计数回退或采样无增量时明确报错，不返回伪造的 0%。
      */
     public static float getCpuUsage() {
-        StringTokenizer token;
-        int user1, nice1, sys1, idle1;
+        return getCpuUsage(Path.of("/proc/stat"), () -> sleep(1));
+    }
 
-        try (BufferedReader br = getReader()) {
-            token = new StringTokenizer(br.readLine());
-            token.nextToken();
-
-            user1 = Integer.parseInt(token.nextToken());
-            nice1 = Integer.parseInt(token.nextToken());
-            sys1 = Integer.parseInt(token.nextToken());
-            idle1 = Integer.parseInt(token.nextToken());
+    static float getCpuUsage(Path statFile, Runnable sampleInterval) {
+        try {
+            long[] before = readCpuTicks(statFile);
+            sampleInterval.run();
+            return calculateCpuUsage(before, readCpuTicks(statFile));
         } catch (IOException e) {
-            log.warn("Errors when getting CPU Usage.", e);
-            return 0;
+            log.warn("读取或计算 CPU 使用率失败", e);
+            throw new UncheckedIOException("CPU 使用率采集失败: " + e.getMessage(), e);
+        }
+    }
+
+    private static long[] readCpuTicks(Path statFile) throws IOException {
+        try (BufferedReader reader = Files.newBufferedReader(statFile, StandardCharsets.UTF_8)) {
+            return parseCpuTicks(reader.readLine());
+        }
+    }
+
+    static long[] parseCpuTicks(String line) throws IOException {
+        if (line == null)
+            throw new IOException("CPU 统计文件为空");
+
+        String[] fields = line.trim().split("\\s+");
+
+        if (fields.length < 5 || !"cpu".equals(fields[0]))
+            throw new IOException("CPU 汇总行缺失或字段不完整");
+
+        long[] ticks = new long[8];
+
+        try {
+            for (int i = 0; i < ticks.length && i + 1 < fields.length; i++) {
+                ticks[i] = Long.parseLong(fields[i + 1]);
+
+                if (ticks[i] < 0)
+                    throw new IOException("CPU 累计计数不能为负数");
+            }
+        } catch (NumberFormatException e) {
+            throw new IOException("CPU 累计计数不是有效的 long 整数", e);
         }
 
-        sleep(1);
+        return ticks;
+    }
 
-        try (BufferedReader br = getReader()) {
-            token = new StringTokenizer(br.readLine());
-            token.nextToken();
+    static float calculateCpuUsage(long[] before, long[] after) throws IOException {
+        long total = 0, idle = 0;
 
-            int user2 = Integer.parseInt(token.nextToken());
-            int nice2 = Integer.parseInt(token.nextToken());
-            int sys2 = Integer.parseInt(token.nextToken());
-            int idle2 = Integer.parseInt(token.nextToken());
+        try {
+            for (int i = 0; i < 8; i++) {
+                if (before[i] < 0 || after[i] < before[i])
+                    throw new IOException("CPU 计数发生回退，采样无效");
 
-            return (float) ((user2 + sys2 + nice2) - (user1 + sys1 + nice1)) / (float) ((user2 + nice2 + sys2 + idle2) - (user1 + nice1 + sys1 + idle1));
-        } catch (IOException e) {
-            log.warn("Errors when getting CPU Usage.", e);
-            return 0;
+                long delta = after[i] - before[i];
+                total = Math.addExact(total, delta);
+
+                if (i == 3 || i == 4)
+                    idle = Math.addExact(idle, delta);
+            }
+        } catch (ArithmeticException e) {
+            throw new IOException("CPU 采样增量超出 long 范围", e);
         }
+
+        if (total <= 0)
+            throw new IOException("CPU 采样没有产生有效增量");
+
+        return (float) (total - idle) / total;
     }
 
     public static void sleep(int seconds) {
         try {
             Thread.sleep(seconds * 1000L);
         } catch (InterruptedException e) {
-            log.warn("Errors when sleeping.", e);
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("CPU 采样等待已中断", e);
         }
     }
 

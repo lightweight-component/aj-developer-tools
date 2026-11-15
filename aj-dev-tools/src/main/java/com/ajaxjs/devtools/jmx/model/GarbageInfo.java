@@ -9,7 +9,7 @@ import lombok.Data;
 public class GarbageInfo {
     private String name;
 
-    private long collectionCount;
+    private Long collectionCount;
 
     private String[] memoryPoolNames;
 }

@@ -7,10 +7,10 @@ import lombok.Data;
  */
 @Data
 public class ClassLoadingInfo {
-    private long totalLoadedClassCount;
+    private Long totalLoadedClassCount;
 
-    private int loadedClassCount;
+    private Integer loadedClassCount;
 
-    private long unloadedClassCount;
+    private Long unloadedClassCount;
 
 }

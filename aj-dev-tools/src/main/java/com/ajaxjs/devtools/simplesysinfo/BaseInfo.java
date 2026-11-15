@@ -1,7 +1,7 @@
-package com.ajaxjs.devtools.sysmonitor;
+package com.ajaxjs.devtools.simplesysinfo;
 
-import com.ajaxjs.devtools.sysmonitor.model.JvmInfo;
-import com.ajaxjs.devtools.sysmonitor.model.SysInfo;
+import com.ajaxjs.devtools.simplesysinfo.model.JvmInfo;
+import com.ajaxjs.devtools.simplesysinfo.model.SysInfo;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;

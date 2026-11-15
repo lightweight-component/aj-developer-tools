@@ -1,7 +1,7 @@
 package com.ajaxjs.devtools.memviz;
 
 import com.ajaxjs.devtools.memviz.model.*;
-import com.ajaxjs.devtools.sysmonitor.Utils;
+import com.ajaxjs.devtools.simplesysinfo.LinuxInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.netbeans.lib.profiler.heap.*;
 import org.springframework.stereotype.Service;
@@ -72,7 +72,7 @@ public class HprofParseService {
         if (fileSize > availableMemory * 0.3) {// 如果文件太大，警告用户并尝试优化加载
             log.warn("检测到大型HPROF文件，启用内存优化加载模式");
             System.gc();  // 强制垃圾回收，释放更多内存
-            Utils.sleep(0.1f);
+            LinuxInfo.sleep(1);
             System.gc();
         }
 

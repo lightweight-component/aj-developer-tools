@@ -3,15 +3,15 @@ package com.ajaxjs.devtools.jmx.tomcat;
 import com.ajaxjs.devtools.jmx.JmxHelper;
 import com.ajaxjs.devtools.jmx.tomcat.model.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.CollectionUtils;
 
 import javax.management.*;
-import javax.management.openmbean.CompositeDataSupport;
+import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.management.MemoryUsage;
 import java.lang.reflect.Field;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -25,11 +25,10 @@ public class TomcatJmx extends JmxHelper {
         return getInfo(jmxURL, null);
     }
 
-    public TomcatInfo getInfo(String jmxURL, Integer port) {
+    public synchronized TomcatInfo getInfo(String jmxURL, Integer port) {
         TomcatInfo info = new TomcatInfo();
 
         try (JMXConnector connect = connect(jmxURL)) {
-            assert connect != null;
             MBeanServerConnection msc = connect.getMBeanServerConnection();
             setMsc(msc);
 
@@ -37,57 +36,102 @@ public class TomcatJmx extends JmxHelper {
             ThreadPool threadPool = new ThreadPool();
             info.jvmInfo = jvm();
             info.systemInfo = systemInfo;
-            info.session = getSession();
+            ObjectName pool = findThreadPool(msc, port);
+            info.session = getSession(pool.getDomain());
             info.threadPool = threadPool;
 
-            if (port == null) port = getTomcatPort(msc);
-
-            everyAttribute(objectNameFactory("Tomcat:name=\"http-nio-" + port + "\",type=ThreadPool"), (key, value) -> setBeanValue(threadPool, key, value));
+            everyAttribute(pool, (key, value) -> setBeanValue(threadPool, key, value));
             everyAttribute(objectNameFactory("java.lang:type=Runtime"), (key, value) -> {
-                if ("StartTime".equals(key)) {
-                    Date startTime = new Date((Long) value);
-                    // TODO
-//                    setBeanValue(systemInfo, key, Date.formatDateTime(startTime));
-                } else if ("Uptime".equals(key)) {
-                    Date startTime = new Date((Long) value);
-                    setBeanValue(systemInfo, key, formatTimeSpan((Long) value));
-                } else
+                if ("StartTime".equals(key))
+                    setBeanValue(systemInfo, key, Instant.ofEpochMilli(((Number) value).longValue()).toString());
+                else if ("Uptime".equals(key))
+                    setBeanValue(systemInfo, key, formatTimeSpan(((Number) value).longValue()));
+                else
                     setBeanValue(systemInfo, key, value);
             });
         } catch (IOException e) {
             log.warn("TomcatJmx.getInfo", e);
             throw new UncheckedIOException(e);
+        } finally {
+            setMsc(null);
         }
 
         return info;
     }
 
     /**
-     * 获取 tomcat 运行端口
+     * 使用实际 ObjectName 查找线程池，支持不同域及 NIO/NIO2/APR 等名称。
      */
-    private static int getTomcatPort(MBeanServerConnection msc) {
-        try {
-            Set<ObjectName> objectNames = queryNames(msc, "Tomcat:type=Connector,*");
+    private static ObjectName findThreadPool(MBeanServerConnection msc, Integer port) {
+        List<ObjectName> pools = new ArrayList<>(queryNames(msc, "*:type=ThreadPool,*"));
+        pools.sort(Comparator.comparing(ObjectName::getCanonicalName));
 
-            if (CollectionUtils.isEmpty(objectNames))
-                throw new IllegalStateException("没有发现JVM中关联的MBeanServer : " + msc.getDefaultDomain() + " 中的对象名称.");
+        if (pools.isEmpty())
+            throw new IllegalStateException("未发现 Tomcat 线程池 MBean");
 
-            for (ObjectName objectName : objectNames) {
-                String protocol = (String) msc.getAttribute(objectName, "protocol");
+        if (port == null) {
+            if (pools.size() == 1)
+                return pools.get(0);
 
-                if (protocol.equals("HTTP/1.1"))
-                    return (Integer) msc.getAttribute(objectName, "port");
-            }
-        } catch (MBeanException | AttributeNotFoundException | ReflectionException | InstanceNotFoundException |
-                 IOException e) {
-            log.warn("getTomcatPort", e);
+            throw new IllegalArgumentException("发现多个 Tomcat 线程池，请指定连接器端口");
         }
 
-        return 0;
+        List<ObjectName> matches = new ArrayList<>();
+
+        for (ObjectName pool : pools) {
+            String name = pool.getKeyProperty("name");
+
+            if (name != null && name.startsWith("\""))
+                name = ObjectName.unquote(name);
+
+            Object configuredPort = optionalAttribute(msc, pool, "port");
+
+            if ((name != null && name.endsWith("-" + port)) || port.toString().equals(String.valueOf(configuredPort)))
+                matches.add(pool);
+        }
+
+        // 自定义线程池名不包含端口时，通过同域 Connector 关联唯一线程池。
+        if (matches.isEmpty()) {
+            Set<ObjectName> connectors = queryNames(msc, "*:type=Connector,*");
+
+            for (ObjectName connector : connectors) {
+                Object value = optionalAttribute(msc, connector, "port");
+
+                if (value == null)
+                    value = connector.getKeyProperty("port");
+
+                if (!port.toString().equals(String.valueOf(value)))
+                    continue;
+
+                List<ObjectName> sameDomain = new ArrayList<>();
+
+                for (ObjectName pool : pools)
+                    if (pool.getDomain().equals(connector.getDomain()))
+                        sameDomain.add(pool);
+
+                if (sameDomain.size() == 1 && !matches.contains(sameDomain.get(0)))
+                    matches.add(sameDomain.get(0));
+            }
+        }
+
+        if (matches.size() != 1)
+            throw new IllegalArgumentException("端口 " + port + " 未对应唯一的 Tomcat 线程池");
+
+        return matches.get(0);
     }
 
-    private List<Session> getSession() {
-        Set<ObjectName> objectNames = queryNames("Tomcat:type=Manager,*");
+    private static Object optionalAttribute(MBeanServerConnection msc, ObjectName name, String attribute) {
+        try {
+            return msc.getAttribute(name, attribute);
+        } catch (IOException e) {
+            throw new UncheckedIOException("读取连接器属性失败", e);
+        } catch (MBeanException | AttributeNotFoundException | InstanceNotFoundException | ReflectionException e) {
+            return null;
+        }
+    }
+
+    private List<Session> getSession(String domain) {
+        Set<ObjectName> objectNames = queryNames(domain + ":type=Manager,*");
         List<Session> list = new ArrayList<>(objectNames.size());
 
         for (ObjectName obj : objectNames) {
@@ -107,22 +151,24 @@ public class TomcatJmx extends JmxHelper {
         try {
             // 堆使用率
             ObjectName heapObjName = objectNameFactory("java.lang:type=Memory");
-            MemoryUsage heapMemoryUsage = MemoryUsage.from((CompositeDataSupport) getMsc().getAttribute(heapObjName, "HeapMemoryUsage"));
+            MemoryUsage heapMemoryUsage = MemoryUsage.from((CompositeData) getMsc().getAttribute(heapObjName, "HeapMemoryUsage"));
 
             // 堆当前分配
             long commitMemory = heapMemoryUsage.getCommitted(), usedMemory = heapMemoryUsage.getUsed();
             JvmInfo jvmInfo = new JvmInfo();
             jvmInfo.setMaxMemory(heapMemoryUsage.getMax());
-            jvmInfo.setHeap(((Long) (usedMemory * 100 / commitMemory)).intValue());
+            jvmInfo.setCommitMemory(commitMemory);
+            jvmInfo.setUsedMemory(usedMemory);
+            jvmInfo.setHeap(percent(usedMemory, commitMemory));
 
-            MemoryUsage nonheapMemoryUsage = MemoryUsage.from((CompositeDataSupport) getMsc().getAttribute(heapObjName, "NonHeapMemoryUsage"));
-            long nonCommitMemory = nonheapMemoryUsage.getCommitted(), nonUsedMemory = heapMemoryUsage.getUsed();
+            MemoryUsage nonheapMemoryUsage = MemoryUsage.from((CompositeData) getMsc().getAttribute(heapObjName, "NonHeapMemoryUsage"));
+            long nonCommitMemory = nonheapMemoryUsage.getCommitted(), nonUsedMemory = nonheapMemoryUsage.getUsed();
             jvmInfo.setNonCommitMemory(nonCommitMemory);
             jvmInfo.setNonUsedMemory(nonUsedMemory);
-            jvmInfo.setNonHeap(((Long) (nonUsedMemory * 100 / nonCommitMemory)).intValue());
+            jvmInfo.setNonHeap(percent(nonUsedMemory, nonCommitMemory));
 
 //            ObjectName permObjName = new ObjectName("java.lang:type=MemoryPool,name=Perm Gen");
-//            MemoryUsage permGenUsage = MemoryUsage.from((CompositeDataSupport) getMsc().getAttribute(permObjName, "Usage"));
+//            MemoryUsage permGenUsage = MemoryUsage.from((CompositeData) getMsc().getAttribute(permObjName, "Usage"));
 //            long committed = permGenUsage.getCommitted();
 //            long used = heapMemoryUsage.getUsed();
 //
@@ -133,10 +179,15 @@ public class TomcatJmx extends JmxHelper {
             return jvmInfo;
         } catch (ReflectionException | AttributeNotFoundException | InstanceNotFoundException | MBeanException |
                  IOException e) {
-            log.warn("jvm", e);
+            throw new IllegalStateException("读取 JVM 内存失败", e);
         }
+    }
 
-        return null;
+    private static int percent(long used, long committed) {
+        if (committed <= 0)
+            return 0;
+
+        return (int) (used * 100.0 / committed);
     }
 
     private static String formatTimeSpan(long span) {
