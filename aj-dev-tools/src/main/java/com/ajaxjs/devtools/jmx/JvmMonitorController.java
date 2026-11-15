@@ -13,6 +13,13 @@ import java.util.Map;
 @RestController
 @RequestMapping("/jvm")
 public class JvmMonitorController {
+    @GetMapping(value = "/mbeans", produces = "text/plain;charset=UTF-8")
+    public String printMBeans(jakarta.servlet.http.HttpServletRequest request) throws Exception {
+        java.io.StringWriter output = new java.io.StringWriter();
+        JmxHelper.printMBean(request, output);
+        return output.toString();
+    }
+
     private final JmxService jmxService;
 
     private final MonitorDashboardService monitorDashboardService;

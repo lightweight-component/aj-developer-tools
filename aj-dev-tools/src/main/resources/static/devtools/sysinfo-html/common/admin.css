@@ -1,0 +1,25 @@
+body:has(> menu) { display: flex; min-height: 100vh; background: #f5f7fb; }
+body > menu { flex: 0 0 250px; width: 250px; margin: 0; padding: 24px 16px; background: #fff; border-right: 1px solid var(--border); }
+menu h3 { margin: 0 0 20px; }
+menu ul { list-style: none; margin: 0; padding: 0; }
+menu li { padding: 13px 10px; border-bottom: 1px solid #eef1f6; }
+menu span { color: var(--muted); }
+body > .container { flex: 1; min-width: 0; }
+.container > iframe { height: 100vh; background: white; }
+.holder { margin: 18px 0; }
+.holder.circle, .holder.list { display: flex; flex-wrap: wrap; gap: 28px; }
+.holder.circle > div, .holder.list > div { flex: 1 1 180px; padding: 20px; text-align: center; border: 1px solid var(--border); border-radius: 8px; }
+td.name { width: 18%; color: var(--muted); background: #f5f7fb; }
+td.value { width: 32%; overflow-wrap: anywhere; }
+.key-value td, #system table td { border: 1px solid var(--border); }
+.fieldset-box { min-height: 135px; margin: 0 8px 12px 0; padding: 18px; border: 1px solid var(--border); border-radius: 6px; }
+.fieldset-box legend { width: auto; padding: 0 8px; color: var(--primary); font-weight: 600; }
+.fieldset-box ul { margin: 0; padding: 0; list-style: none; }
+.fieldset-box li { padding: 6px 0; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+ body:has(> menu) { flex-direction: column; }
+ body > menu { flex: auto; width: 100%; border-right: 0; border-bottom: 1px solid var(--border); }
+ menu li { display: inline-block; }
+ .container > iframe { height: 80vh; }
+ td, th { padding: 8px; }
+}

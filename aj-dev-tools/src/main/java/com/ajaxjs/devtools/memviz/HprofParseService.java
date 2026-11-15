@@ -1,7 +1,7 @@
 package com.ajaxjs.devtools.memviz;
 
 import com.ajaxjs.devtools.memviz.model.*;
-import com.ajaxjs.devtools.simplesysinfo.LinuxInfo;
+import com.ajaxjs.devtools.sysmonitor.linux.LinuxInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.netbeans.lib.profiler.heap.*;
 import org.springframework.stereotype.Service;

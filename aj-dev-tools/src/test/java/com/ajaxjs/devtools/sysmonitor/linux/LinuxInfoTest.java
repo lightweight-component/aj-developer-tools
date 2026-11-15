@@ -1,5 +1,6 @@
-package com.ajaxjs.devtools.simplesysinfo;
+package com.ajaxjs.devtools.sysmonitor.linux;
 
+import com.ajaxjs.devtools.sysmonitor.linux.LinuxInfo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

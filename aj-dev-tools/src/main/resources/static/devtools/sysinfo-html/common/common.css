@@ -1,0 +1,15 @@
+:root { color-scheme: light; --border: #dfe5ee; --muted: #64748b; --primary: #2f518c; }
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { color: #263445; background: #fff; font: 14px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; }
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid #2d8cf0; outline-offset: 3px; }
+h2 { margin: 18px 0; font-size: 20px; font-weight: 600; }
+h3 { font-size: 17px; }
+table { width: 100%; border-collapse: collapse; }
+td, th { padding: 10px 14px; text-align: left; vertical-align: top; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+input, button, textarea { font: inherit; }
+iframe { display: block; width: 100%; border: 0; }
+[v-cloak] { display: none; }

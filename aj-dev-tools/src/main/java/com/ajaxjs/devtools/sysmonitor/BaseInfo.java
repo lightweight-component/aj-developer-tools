@@ -1,7 +1,7 @@
-package com.ajaxjs.devtools.simplesysinfo;
+package com.ajaxjs.devtools.sysmonitor;
 
-import com.ajaxjs.devtools.simplesysinfo.model.JvmInfo;
-import com.ajaxjs.devtools.simplesysinfo.model.SysInfo;
+import com.ajaxjs.devtools.sysmonitor.model.JvmInfo;
+import com.ajaxjs.devtools.sysmonitor.model.SysInfo;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -13,13 +13,13 @@ import java.text.DecimalFormat;
 import java.util.Properties;
 
 /**
- * 获取基础信息，比较简单的获取
+ * 获取基础信息，比较简单的获取，不依赖任何第三方组件
  */
 public class BaseInfo {
     /**
      * 获取系统信息
      */
-    public static SysInfo getSysInfo() {
+    public SysInfo getSysInfo() {
         SysInfo sysInfo = new SysInfo();
 
         try {
@@ -44,7 +44,7 @@ public class BaseInfo {
      *
      * @return {@link JvmInfo}
      */
-    public static JvmInfo getJvmInfo() {
+    public JvmInfo getJvmInfo() {
         Properties props = System.getProperties();
         Runtime runtime = Runtime.getRuntime();
         long jvmTotalMemoryByte = runtime.totalMemory(), freeMemoryByte = runtime.freeMemory();

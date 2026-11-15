@@ -1,0 +1,15 @@
+<!-- 对象数组表格：调用 renderTable(tbody, rows) 渲染接口结果。 -->
+<script>
+function renderTable(tbody, rows) {
+ tbody.replaceChildren();
+ for (const row of rows) {
+  const tr = document.createElement('tr');
+  for (const value of Object.values(row)) {
+   const td = document.createElement('td');
+   td.textContent = value == null ? '' : String(value);
+   tr.appendChild(td);
+  }
+  tbody.appendChild(tr);
+ }
+}
+</script>

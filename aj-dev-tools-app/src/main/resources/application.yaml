@@ -1,5 +1,5 @@
 devtools:
-  sysmonitor:
+  sysmonitor: # 系统监控信息
     enable: true
   memviz:
     enable: true

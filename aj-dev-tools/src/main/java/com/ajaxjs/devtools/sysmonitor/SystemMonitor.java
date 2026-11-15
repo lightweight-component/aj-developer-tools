@@ -1,21 +1,33 @@
 package com.ajaxjs.devtools.sysmonitor;
 
-import com.ajaxjs.devtools.simplesysinfo.LinuxInfo;
-import com.ajaxjs.devtools.sysmonitor.model.CpuInfo;
-import com.ajaxjs.devtools.sysmonitor.model.DiskInfo;
-import com.ajaxjs.devtools.sysmonitor.model.MemoryInfo;
-import com.ajaxjs.devtools.sysmonitor.model.NetIoInfo;
+import com.ajaxjs.devtools.sysmonitor.linux.LinuxInfo;
+import com.ajaxjs.devtools.sysmonitor.model.*;
+import com.ajaxjs.util.ObjectHelper;
+import org.springframework.stereotype.Service;
 import oshi.SystemInfo;
 import oshi.hardware.*;
 import oshi.software.os.*;
 import oshi.util.FormatUtil;
-import com.ajaxjs.devtools.simplesysinfo.BaseInfo;
+
 import java.util.*;
 
 /**
  * 基于 OShi 服务器信息收集监控
  */
-public class OshiSystemMonitor {
+@Service
+public class SystemMonitor extends BaseInfo implements SystemMonitorController {
+    // Declare these methods on the controller implementation so MVC discovers
+    // the interface mappings; BaseInfo itself does not implement that interface.
+    @Override
+    public SysInfo getSysInfo() {
+        return super.getSysInfo();
+    }
+
+    @Override
+    public JvmInfo getJvmInfo() {
+        return super.getJvmInfo();
+    }
+
     /**
      * oshi
      */
@@ -42,6 +54,7 @@ public class OshiSystemMonitor {
     /**
      * 获取 cpu 信息
      */
+    @Override
     public CpuInfo getCpuInfo() {
         CentralProcessor centralProcessor = getHardwareAbstractionLayer().getProcessor();
         long[] prevTicks = centralProcessor.getSystemCpuLoadTicks();
@@ -74,6 +87,7 @@ public class OshiSystemMonitor {
      *
      * @return {@link MemoryInfo}
      */
+    @Override
     public MemoryInfo getMemoryInfo() {
         GlobalMemory globalMemory = getHardwareAbstractionLayer().getMemory();
         long totalByte = globalMemory.getTotal();
@@ -127,11 +141,37 @@ public class OshiSystemMonitor {
         return diskInfoList;
     }
 
+    @Override
+    public DiskTotal disk() {
+        List<DiskInfo> diskInfoList = getDiskInfoList();
+
+        if (ObjectHelper.isEmpty(diskInfoList))
+            return null;
+
+        long usableSpace = 0, totalSpace = 0;
+
+        for (DiskInfo diskInfo : diskInfoList) {
+            usableSpace += diskInfo.getUsableSpace();
+            totalSpace += diskInfo.getTotalSpace();
+        }
+
+        double usedSize = totalSpace - usableSpace;
+
+        DiskTotal diskTotal = new DiskTotal();
+        diskTotal.setDiskInfoList(diskInfoList);
+        diskTotal.setUsableSpace(usableSpace);
+        diskTotal.setTotalSpace(totalSpace);
+        diskTotal.setUsedSize(usedSize);
+
+        return diskTotal;
+    }
+
     /**
      * 获取网络带宽信息
      *
      * @return {@link NetIoInfo}
      */
+    @Override
     public NetIoInfo getNetIoInfo() {
         long rxBytesBegin = 0, txBytesBegin = 0, rxPacketsBegin = 0, txPacketsBegin = 0, rxBytesEnd = 0, txBytesEnd = 0, rxPacketsEnd = 0, txPacketsEnd = 0;
         HardwareAbstractionLayer hal = getHardwareAbstractionLayer();
@@ -188,12 +228,13 @@ public class OshiSystemMonitor {
      * }
      * </pre>
      */
+    @Override
     public Map<String, Object> getComputerSystem() {
         ComputerSystem computerSystem = getHardwareAbstractionLayer().getComputerSystem();// 获取硬件抽象层信息
         Firmware firmware = computerSystem.getFirmware();
         Baseboard baseboard = computerSystem.getBaseboard();
 
-        return new HashMap<String, Object>() {
+        return new HashMap<>() {
             private static final long serialVersionUID = 1L;
 
             {
@@ -252,31 +293,37 @@ public class OshiSystemMonitor {
     }
 
     /**
-     * 系统前 10 个进程 **** 好慢而且返回为空 ****
+     * 按累计平均 CPU 使用率降序返回前 10 个进程的轻量快照。
+     * cpu 为比例值（0.01 表示 1%，多核进程可能超过 1），不是实时采样值。
+     * 排名前十仍需查询系统进程；这里只读取名称、PID 和 CPU，避免序列化 OSProcess 的其他属性。
      */
-    public List<OSProcess> getProcessList() {
+    @Override
+    public List<Map<String, Object>> getProcessList() {
         List<OSProcess> processList = getOperatingSystem().getProcesses(null, OperatingSystem.ProcessSorting.CPU_DESC, 10);
-        List<Map<String, Object>> processMapList = new ArrayList<>();
+        List<Map<String, Object>> processMapList = new ArrayList<>(processList.size());
 
         for (OSProcess process : processList) {
-            Map<String, Object> processMap = new HashMap<>(5);
+            Map<String, Object> processMap = new LinkedHashMap<>(4);
             processMap.put("name", process.getName());
             processMap.put("pid", process.getProcessID());
-            processMap.put("cpu", BaseInfo.formatDouble(process.getProcessCpuLoadCumulative()));
+            // 保留原始精度，避免低于 1% 的 CPU 使用率被提前舍入为零。
+            processMap.put("cpu", process.getProcessCpuLoadCumulative());
             processMapList.add(processMap);
         }
 
-        return processList;
+        return processMapList;
     }
 
+    /**
+     * 同一查询的文本形式；CPU 显示为百分数，主要用于诊断输出。
+     */
     public List<String> getProcessList2() {
-        // 系统前 10 个进程
-        List<OSProcess> processList = systemInfo.getOperatingSystem().getProcesses(null, OperatingSystem.ProcessSorting.CPU_DESC, 10);
-        List<String> strList = new ArrayList<>();
+        List<Map<String, Object>> processList = getProcessList();
+        List<String> strList = new ArrayList<>(processList.size());
 
-        for (OSProcess process : processList)
-            // 进程名，进程ID，进程CPU使用率
-            strList.add(String.format("name:%s PID: %d CPU:%.3f", process.getName(), process.getProcessID(), process.getProcessCpuLoadCumulative()));
+        for (Map<String, Object> process : processList)
+            strList.add(String.format(Locale.ROOT, "name:%s PID: %d CPU:%.3f%%",
+                    process.get("name"), process.get("pid"), ((Number) process.get("cpu")).doubleValue() * 100));
 
         return strList;
     }

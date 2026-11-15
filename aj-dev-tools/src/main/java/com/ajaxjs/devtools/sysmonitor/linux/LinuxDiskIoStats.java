@@ -1,4 +1,4 @@
-package com.ajaxjs.devtools.simplesysinfo.model;
+package com.ajaxjs.devtools.sysmonitor.linux;
 
 import lombok.Data;
 
@@ -10,7 +10,7 @@ import lombok.Data;
  * </p>
  */
 @Data
-public class DiskIOStats {
+public class LinuxDiskIoStats {
     /**
      * 读取的总字节数
      * <p>

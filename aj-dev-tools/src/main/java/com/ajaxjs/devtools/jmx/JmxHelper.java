@@ -2,6 +2,7 @@ package com.ajaxjs.devtools.jmx;
 
 import com.ajaxjs.devtools.jmx.model.Node;
 import com.ajaxjs.devtools.jmx.model.NodeType;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -275,34 +276,34 @@ public class JmxHelper {
      * %>
      * }</pre>
      */
-//    public static void printMBean(HttpServletRequest request, JspWriter out) throws Exception {
-//        String val = request.getParameter("name");
-//        String[] names = val != null ? val.trim().split(",") : new String[0];
-//
-//        if (names.length == 1 && names[0].isEmpty())
-//            names = new String[0];
-//
-//        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-//
-//        for (ObjectName objName : server.queryNames(null, null)) {
-//            MBeanInfo mbi = server.getMBeanInfo(objName);
-//
-//            boolean match = names.length < 1;
-//            String name = mbi.getClassName();
-//
-//            for (String s : names) {
-//                if (name.endsWith(s)) {
-//                    match = true;
-//                    break;
-//                }
-//            }
-//
-//            if (match) {
-//                JmxHelper.dumpMBean(server, objName, mbi, out);
-//                out.println("");
-//            }
-//        }
-//
-//        out.flush();
-//    }
+    public static void printMBean(HttpServletRequest request, Writer out) throws Exception {
+        String val = request.getParameter("name");
+        String[] names = val != null ? val.trim().split(",") : new String[0];
+
+        if (names.length == 1 && names[0].isEmpty())
+            names = new String[0];
+
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+
+        for (ObjectName objName : server.queryNames(null, null)) {
+            MBeanInfo mbi = server.getMBeanInfo(objName);
+
+            boolean match = names.length < 1;
+            String name = mbi.getClassName();
+
+            for (String s : names) {
+                if (name.endsWith(s)) {
+                    match = true;
+                    break;
+                }
+            }
+
+            if (match) {
+                JmxHelper.dumpMBean(server, objName, mbi, out);
+                out.write("");
+            }
+        }
+
+        out.flush();
+    }
 }

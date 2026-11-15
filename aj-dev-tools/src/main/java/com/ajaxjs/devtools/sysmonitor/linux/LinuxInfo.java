@@ -1,8 +1,5 @@
-package com.ajaxjs.devtools.simplesysinfo;
+package com.ajaxjs.devtools.sysmonitor.linux;
 
-import com.ajaxjs.devtools.simplesysinfo.model.DiskIOStats;
-import com.ajaxjs.devtools.simplesysinfo.model.LinuxMemInfo;
-import com.ajaxjs.devtools.simplesysinfo.model.NetworkStats;
 import com.ajaxjs.util.io.DataReader;
 import lombok.extern.slf4j.Slf4j;
 
@@ -146,7 +143,7 @@ public class LinuxInfo {
     /**
      * Linux 磁盘IO统计
      */
-    private static DiskIOStats getLinuxDiskIOStats() {
+    private static LinuxDiskIoStats getLinuxDiskIOStats() {
         String line;
         long readBytes = 0, writeBytes = 0, readOps = 0, writeOps = 0;
 
@@ -163,13 +160,13 @@ public class LinuxInfo {
                 }
             }
 
-            DiskIOStats diskIOStats = new DiskIOStats();
-            diskIOStats.setReadBytes(readBytes);
-            diskIOStats.setWriteBytes(writeBytes);
-            diskIOStats.setReadOps(readOps);
-            diskIOStats.setWriteOps(writeOps);
+            LinuxDiskIoStats linuxDiskIoStats = new LinuxDiskIoStats();
+            linuxDiskIoStats.setReadBytes(readBytes);
+            linuxDiskIoStats.setWriteBytes(writeBytes);
+            linuxDiskIoStats.setReadOps(readOps);
+            linuxDiskIoStats.setWriteOps(writeOps);
 
-            return diskIOStats;
+            return linuxDiskIoStats;
         } catch (Exception e) {
             log.warn("获取Linux磁盘IO统计失败", e);
             return null;
@@ -179,7 +176,7 @@ public class LinuxInfo {
     /**
      * Linux 网络统计
      */
-    private static NetworkStats getLinuxNetworkStats() {
+    private static LinuxNetworkStats geLinuxtLinuxNetworkStats() {
         String line;
         long rxBytes = 0, txBytes = 0, rxPackets = 0, txPackets = 0, rxErrors = 0, txErrors = 0;
 
@@ -204,15 +201,15 @@ public class LinuxInfo {
                 }
             }
 
-            NetworkStats networkStats = new NetworkStats();
-            networkStats.setRxBytes(rxBytes);
-            networkStats.setTxBytes(txBytes);
-            networkStats.setRxPackets(rxPackets);
-            networkStats.setTxPackets(txPackets);
-            networkStats.setRxErrors(rxErrors);
-            networkStats.setTxErrors(txErrors);
+            LinuxNetworkStats linuxNetworkStats = new LinuxNetworkStats();
+            linuxNetworkStats.setRxBytes(rxBytes);
+            linuxNetworkStats.setTxBytes(txBytes);
+            linuxNetworkStats.setRxPackets(rxPackets);
+            linuxNetworkStats.setTxPackets(txPackets);
+            linuxNetworkStats.setRxErrors(rxErrors);
+            linuxNetworkStats.setTxErrors(txErrors);
 
-            return networkStats;
+            return linuxNetworkStats;
         } catch (Exception e) {
             log.warn("获取Linux网络统计失败", e);
             return null;
