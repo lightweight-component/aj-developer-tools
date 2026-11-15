@@ -10,8 +10,8 @@ final class IpAddressMatcher {
     /**
      * 判断地址是否命中规则。
      *
-     * @param rule IP 匹配规则
-     * @param ip 待检查的地址
+     * @param rule              IP 匹配规则
+     * @param ip                待检查的地址
      * @param ignoreInvalidCidr 是否将 CIDR 解析异常视为不匹配
      * @return 是否命中
      */
@@ -65,7 +65,7 @@ final class IpAddressMatcher {
      * 组合响应时间等级与调用方格式化后的毫秒值。
      *
      * @param milliseconds 用于分级的原始毫秒值
-     * @param displayTime 用于展示的毫秒值
+     * @param displayTime  用于展示的毫秒值
      * @return 带时间数值的等级描述
      */
     static String describe(double milliseconds, String displayTime) {

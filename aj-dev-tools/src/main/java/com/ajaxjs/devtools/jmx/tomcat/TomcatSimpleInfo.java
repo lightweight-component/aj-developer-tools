@@ -1,4 +1,4 @@
-package com.ajaxjs.devtools.jmxmonitor;
+package com.ajaxjs.devtools.jmx.tomcat;
 
 import org.apache.catalina.startup.Tomcat;
 import org.apache.tomcat.util.threads.ThreadPoolExecutor;
@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * 简单获取 Tomcat 信息
  */
-public class TomcatInfo {
+public class TomcatSimpleInfo {
     /**
      * 通过 Tomcat 自身 API 获取的实时信息
      * 例子

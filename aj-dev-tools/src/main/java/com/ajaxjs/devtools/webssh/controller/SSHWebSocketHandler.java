@@ -45,7 +45,7 @@ public class SSHWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message)  {
+    protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         String payload = message.getPayload();
         try {
             JsonNode jsonNode = (JsonNode) JsonUtil.json2Node(payload);

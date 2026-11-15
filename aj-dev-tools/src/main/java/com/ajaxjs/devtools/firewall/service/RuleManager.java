@@ -1,19 +1,14 @@
 package com.ajaxjs.devtools.firewall.service;
 
+import com.ajaxjs.devtools.firewall.model.*;
 import com.ajaxjs.devtools.firewall.repository.FirewallRepositorySupport;
 import com.ajaxjs.sqlman.Action;
-import com.ajaxjs.devtools.firewall.model.FirewallBlacklist;
-import com.ajaxjs.devtools.firewall.model.FirewallBlacklistRow;
-import com.ajaxjs.devtools.firewall.model.FirewallRule;
-import com.ajaxjs.devtools.firewall.model.FirewallRuleRow;
-import com.ajaxjs.devtools.firewall.model.FirewallWhitelist;
-import com.ajaxjs.devtools.firewall.model.FirewallWhitelistRow;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;

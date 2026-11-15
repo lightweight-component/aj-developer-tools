@@ -1,7 +1,7 @@
 package com.ajaxjs.devtools.netcapture.service;
-import com.ajaxjs.devtools.netcapture.repository.NetCaptureRepository;
 
 import com.ajaxjs.devtools.netcapture.model.PacketInfo;
+import com.ajaxjs.devtools.netcapture.repository.NetCaptureRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -37,9 +37,9 @@ public class PacketAnalysisService {
     }
 
     private void enhancePacketInfo(PacketInfo packetInfo) {
-        if ("TCP".equals(packetInfo.getProtocol())) 
+        if ("TCP".equals(packetInfo.getProtocol()))
             protocolAnalyzer.analyzeTcpPacket(packetInfo);
-         else if ("UDP".equals(packetInfo.getProtocol())) 
+        else if ("UDP".equals(packetInfo.getProtocol()))
             protocolAnalyzer.analyzeUdpPacket(packetInfo);
     }
 }

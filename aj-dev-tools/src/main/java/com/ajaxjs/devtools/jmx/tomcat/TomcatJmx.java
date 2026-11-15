@@ -1,9 +1,7 @@
-package com.ajaxjs.devtools.jmxmonitor.tomcat_jmx;
+package com.ajaxjs.devtools.jmx.tomcat;
 
-import com.ajaxjs.devtools.jmxmonitor.JmxHelper;
-import com.ajaxjs.devtools.jmxmonitor.Utils;
-import com.ajaxjs.devtools.jmxmonitor.tomcat_jmx.model.*;
-import com.ajaxjs.util.DateHelper;
+import com.ajaxjs.devtools.jmx.JmxHelper;
+import com.ajaxjs.devtools.jmx.tomcat.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 
@@ -13,6 +11,7 @@ import javax.management.remote.JMXConnector;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.management.MemoryUsage;
+import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -43,16 +42,17 @@ public class TomcatJmx extends JmxHelper {
 
             if (port == null) port = getTomcatPort(msc);
 
-            everyAttribute(objectNameFactory("Tomcat:name=\"http-nio-" + port + "\",type=ThreadPool"), (key, value) -> Utils.setBeanValue(threadPool, key, value));
+            everyAttribute(objectNameFactory("Tomcat:name=\"http-nio-" + port + "\",type=ThreadPool"), (key, value) -> setBeanValue(threadPool, key, value));
             everyAttribute(objectNameFactory("java.lang:type=Runtime"), (key, value) -> {
                 if ("StartTime".equals(key)) {
                     Date startTime = new Date((Long) value);
-                    Utils.setBeanValue(systemInfo, key, DateHelper.formatDateTime(startTime));
+                    // TODO
+//                    setBeanValue(systemInfo, key, Date.formatDateTime(startTime));
                 } else if ("Uptime".equals(key)) {
                     Date startTime = new Date((Long) value);
-                    Utils.setBeanValue(systemInfo, key, formatTimeSpan((Long) value));
+                    setBeanValue(systemInfo, key, formatTimeSpan((Long) value));
                 } else
-                    Utils.setBeanValue(systemInfo, key, value);
+                    setBeanValue(systemInfo, key, value);
             });
         } catch (IOException e) {
             log.warn("TomcatJmx.getInfo", e);
@@ -78,7 +78,8 @@ public class TomcatJmx extends JmxHelper {
                 if (protocol.equals("HTTP/1.1"))
                     return (Integer) msc.getAttribute(objectName, "port");
             }
-        } catch (MBeanException | AttributeNotFoundException | ReflectionException | InstanceNotFoundException | IOException e) {
+        } catch (MBeanException | AttributeNotFoundException | ReflectionException | InstanceNotFoundException |
+                 IOException e) {
             log.warn("getTomcatPort", e);
         }
 
@@ -95,7 +96,7 @@ public class TomcatJmx extends JmxHelper {
 //                System.out.println("currentThreadCount:" + msc.getAttribute(threadObjName, "currentThreadCount"));// tomcat的线程数对应的属性值
 
             Session session = new Session();
-            everyAttribute(objectNameFactory(obj.getCanonicalName()), (key, value) -> Utils.setBeanValue(session, key, value));
+            everyAttribute(objectNameFactory(obj.getCanonicalName()), (key, value) -> setBeanValue(session, key, value));
             list.add(session);
         }
 
@@ -130,7 +131,8 @@ public class TomcatJmx extends JmxHelper {
 //            jvmInfo.setPermUse(((Long) (used * 100 / committed)).intValue());
 
             return jvmInfo;
-        } catch (ReflectionException | AttributeNotFoundException | InstanceNotFoundException | MBeanException | IOException e) {
+        } catch (ReflectionException | AttributeNotFoundException | InstanceNotFoundException | MBeanException |
+                 IOException e) {
             log.warn("jvm", e);
         }
 
@@ -154,6 +156,26 @@ public class TomcatJmx extends JmxHelper {
 
         try (Formatter formatter = new Formatter()) {
             return formatter.format("%1$d天 %2$02d:%3$02d:%4$02d.%5$03d", days, hours, min, seconds, minSeconds).toString();
+        }
+    }
+
+    /**
+     * 设置 Java Bean 的值
+     *
+     * @param bean      Bean 实体
+     * @param fieldName 字段名
+     * @param value     值
+     */
+    public static void setBeanValue(Object bean, String fieldName, Object value) {
+        try {
+            Field field = bean.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(bean, value);
+        } catch (IllegalAccessException e) {
+            // the exception here doesn't need to handle
+            log.warn("访问字段时候 {} 失败", fieldName);
+        } catch (NoSuchFieldException e) {
+            log.warn("No Such Field: {}", fieldName);
         }
     }
 }

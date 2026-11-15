@@ -1,4 +1,4 @@
-package com.ajaxjs.devtools.jmxmonitor.tomcat_jmx.model;
+package com.ajaxjs.devtools.jmx.tomcat.model;
 
 
 import java.util.List;

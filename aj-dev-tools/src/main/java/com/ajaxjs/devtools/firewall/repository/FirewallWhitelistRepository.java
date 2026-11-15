@@ -2,7 +2,6 @@ package com.ajaxjs.devtools.firewall.repository;
 
 import com.ajaxjs.devtools.firewall.model.FirewallWhitelistRow;
 import com.ajaxjs.sqlman.Action;
-import com.ajaxjs.sqlman.Action;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

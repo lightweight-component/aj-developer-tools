@@ -1,29 +1,36 @@
 package com.ajaxjs.devtools.netcapture;
 
-import com.ajaxjs.devtools.netcapture.model.*;
+import com.ajaxjs.devtools.netcapture.model.PacketInfo;
+import com.ajaxjs.devtools.netcapture.model.TrafficStatistics;
 import com.ajaxjs.devtools.netcapture.repository.NetCaptureRepository;
 import com.ajaxjs.devtools.netcapture.service.PacketQueryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.jdbc.datasource.embedded.*;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class NetCaptureRepositoryTest {
     private EmbeddedDatabase database;
     private NetCaptureRepository repository;
 
-    @BeforeEach void setup() {
+    @BeforeEach
+    void setup() {
         database = new EmbeddedDatabaseBuilder().generateUniqueName(true).setType(EmbeddedDatabaseType.H2)
                 .addScript("netcapture/schema.sql").build();
         repository = new NetCaptureRepository(database);
     }
 
-    @org.junit.jupiter.api.AfterEach void close() { database.shutdown(); }
+    @org.junit.jupiter.api.AfterEach
+    void close() {
+        database.shutdown();
+    }
 
     private PacketInfo packet(String ip, String protocol, LocalDateTime time) {
         PacketInfo packet = new PacketInfo();
@@ -39,7 +46,8 @@ class NetCaptureRepositoryTest {
         return packet;
     }
 
-    @Test void insertDetailFiltersAndDtoPagination() {
+    @Test
+    void insertDetailFiltersAndDtoPagination() {
         LocalDateTime now = LocalDateTime.now().withNano(0);
         PacketInfo first = packet("10.0.0.1", "TCP", now);
         packet("10.0.0.3", "UDP", now.minusMinutes(1));
@@ -56,7 +64,8 @@ class NetCaptureRepositoryTest {
         assertThrows(IllegalArgumentException.class, () -> repository.getRecentPackets(-1));
     }
 
-    @Test void aggregatesStatisticsAndRetention() {
+    @Test
+    void aggregatesStatisticsAndRetention() {
         LocalDateTime now = LocalDateTime.now().withNano(0);
         packet("10.0.0.1", "TCP", now);
         packet("10.0.0.1", "TCP", now);
@@ -78,7 +87,8 @@ class NetCaptureRepositoryTest {
         assertEquals(2, repository.getRecentPackets(10).size());
     }
 
-    @Test void joinsSpringTransactionWithoutCommittingIt() {
+    @Test
+    void joinsSpringTransactionWithoutCommittingIt() {
         TransactionTemplate transaction = new TransactionTemplate(new DataSourceTransactionManager(database));
         transaction.execute(status -> {
             packet("rollback", "TCP", LocalDateTime.now());

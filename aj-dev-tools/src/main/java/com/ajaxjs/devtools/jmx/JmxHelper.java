@@ -271,7 +271,8 @@ public class JmxHelper {
             try {
                 Object attr = server.getAttribute(objName, mf.getName());
 
-                if (attr != null) props.put(mf.getName(), attr.toString());
+                if (attr != null)
+                    props.put(mf.getName(), attr.toString());
             } catch (Exception ex) {
                 // sun.management.RuntimeImpl: java.lang.UnsupportedOperationException(Boot class path mechanism is not supported)
                 props.put("error_" + idx, ex.getClass().getName() + " " + ex.getMessage());

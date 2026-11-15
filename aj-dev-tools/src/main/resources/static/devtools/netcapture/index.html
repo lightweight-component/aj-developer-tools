@@ -10,8 +10,10 @@
     <script defer src="app.js"></script>
 </head>
 <body data-page="index">
-    <div id="app" v-cloak></div>
-    <noscript>请启用 JavaScript 以使用网络抓包分析页面。</noscript>
-    <script>window.addEventListener('load', function () { if (!window.Vue) { var app = document.getElementById('app'); app.removeAttribute('v-cloak'); app.textContent = 'Vue CDN 加载失败，请检查网络后刷新页面。'; } });</script>
+<div id="app" v-cloak></div>
+<noscript>请启用 JavaScript 以使用网络抓包分析页面。</noscript>
+<script>
+    window.addEventListener('load', function () { if (!window.Vue) { var app = document.getElementById('app'); app.removeAttribute('v-cloak'); app.textContent = 'Vue CDN 加载失败，请检查网络后刷新页面。'; } });
+</script>
 </body>
 </html>

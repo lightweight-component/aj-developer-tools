@@ -1,6 +1,7 @@
 package com.ajaxjs.devtools.springmonitor;
 
 import com.ajaxjs.devtools.springmonitor.model.UserInfo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
@@ -11,13 +12,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @Controller
+@RequiredArgsConstructor
 public class UiController {
-    private UserInfo userInfo;
-
-
-    public UiController(UserInfo userInfo) {
-        this.userInfo = userInfo;
-    }
+    private final UserInfo userInfo;
 
     @GetMapping(path = "/monitor", produces = MediaType.TEXT_HTML_VALUE)
     public String index(@CookieValue(name = "moni_id", required = false) String monitorId) {

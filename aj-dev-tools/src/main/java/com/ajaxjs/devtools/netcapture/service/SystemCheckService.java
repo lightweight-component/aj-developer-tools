@@ -40,9 +40,9 @@ public class SystemCheckService {
     private void checkNetworkInterfaces() {
         List<PcapNetworkInterface> interfaces = packetCaptureService.getAvailableNetworkInterfaces();
 
-        if (interfaces.isEmpty()) 
+        if (interfaces.isEmpty())
             log.warn("⚠️ 没有找到可用的网络接口");
-         else {
+        else {
             log.info("✅ 找到 {} 个网络接口", interfaces.size());
             interfaces.forEach(iface -> log.debug("网络接口: {} - {}", iface.getName(), iface.getDescription()));
         }

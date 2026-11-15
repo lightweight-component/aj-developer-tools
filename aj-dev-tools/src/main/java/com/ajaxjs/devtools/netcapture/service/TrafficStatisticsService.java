@@ -1,8 +1,8 @@
 package com.ajaxjs.devtools.netcapture.service;
-import com.ajaxjs.devtools.netcapture.repository.NetCaptureRepository;
 
 import com.ajaxjs.devtools.netcapture.model.PacketInfo;
 import com.ajaxjs.devtools.netcapture.model.TrafficStatistics;
+import com.ajaxjs.devtools.netcapture.repository.NetCaptureRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

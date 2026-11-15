@@ -109,7 +109,7 @@ public class FileTransferService {
                     SftpATTRS attrs = entry.getAttrs();
 
                     files.add(new FileInfo(filename, attrs.isDir(),
-                            attrs.getSize(),                            attrs.getMTime() * 1000L, // Convert to milliseconds
+                            attrs.getSize(), attrs.getMTime() * 1000L, // Convert to milliseconds
                             getPermissionString(attrs.getPermissions())
                     ));
                 }
@@ -130,7 +130,7 @@ public class FileTransferService {
     /**
      * 创建远程目录
      */
-    public void createRemoteDirectory(ServerConfig server, String remotePath)  {
+    public void createRemoteDirectory(ServerConfig server, String remotePath) {
         Session session = null;
         ChannelSftp sftpChannel = null;
 
@@ -151,7 +151,7 @@ public class FileTransferService {
     /**
      * 删除远程文件或目录
      */
-    public void deleteRemoteFile(ServerConfig server, String remotePath, boolean isDirectory)  {
+    public void deleteRemoteFile(ServerConfig server, String remotePath, boolean isDirectory) {
         Session session = null;
         ChannelSftp sftpChannel = null;
 

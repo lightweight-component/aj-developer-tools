@@ -1,10 +1,10 @@
 package com.ajaxjs.devtools.firewall.service;
 
+import com.ajaxjs.devtools.firewall.model.FirewallAccessLog;
+import com.ajaxjs.devtools.firewall.model.FirewallStatistics;
 import com.ajaxjs.devtools.firewall.repository.FirewallRepositorySupport;
 import com.ajaxjs.sqlman.Action;
 import com.ajaxjs.sqlman.JdbcConnection;
-import com.ajaxjs.devtools.firewall.model.FirewallAccessLog;
-import com.ajaxjs.devtools.firewall.model.FirewallStatistics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;

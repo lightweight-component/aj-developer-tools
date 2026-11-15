@@ -2,6 +2,7 @@ package com.ajaxjs.devtools.springmonitor;
 
 import com.ajaxjs.devtools.springmonitor.event.*;
 import com.ajaxjs.devtools.springmonitor.model.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.endpoint.ExposableEndpoint;
 import org.springframework.boot.actuate.endpoint.web.ExposableWebEndpoint;
 import org.springframework.boot.actuate.endpoint.web.Link;
@@ -17,22 +18,14 @@ import java.time.Instant;
 import java.util.*;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/monitor")
 public class ApplicationController {
-    private Collection<? extends ExposableEndpoint<?>> endpoints;
+    private final Collection<? extends ExposableEndpoint<?>> endpoints;
 
-    private Application application;
-
-    private UserInfo userInfo;
-
-    private InstanceEventLog instanceEventLog;
-
-    public ApplicationController(Collection<? extends ExposableEndpoint<?>> endpoints, Application application, InstanceEventLog instanceEventLog, UserInfo userInfo) {
-        this.endpoints = endpoints;
-        this.application = application;
-        this.instanceEventLog = instanceEventLog;
-        this.userInfo = userInfo;
-    }
+    private final Application application;
+    private final InstanceEventLog instanceEventLog;
+    private final UserInfo userInfo;
 
     @ResponseBody
     @GetMapping(path = "/applications", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -46,13 +39,12 @@ public class ApplicationController {
         }
 
         initApplicationInfo(request);
-        return Arrays.asList(application);
+
+        return Collections.singletonList(application);
     }
 
     /**
-     * 组装application信息
-     *
-     * @param request
+     * 组装 application 信息
      */
     public void initApplicationInfo(HttpServletRequest request) {
         String normalizedUrl = normalizeRequestUrl(request);
@@ -68,7 +60,7 @@ public class ApplicationController {
         Endpoints endpoints = new Endpoints(links);
         Registration registration = new Registration(application.getName(), normalizedUrl, normalizedUrl + "/health", hostUrl(request), "http-api");
         Instance instance = new Instance(application.getName(), registration, endpoints);
-        application.setInstances(Arrays.asList(instance));
+        application.setInstances(Collections.singletonList(instance));
 
         if (!instanceEventLog.isHasInit()) {
             InstanceRegisteredEvent instanceRegisteredEvent = new InstanceRegisteredEvent(application.getName(), 0, Instant.now(), registration);
@@ -86,7 +78,7 @@ public class ApplicationController {
     public List<Application> applicationsStream(HttpServletRequest request, HttpServletResponse response) {
         initApplicationInfo(request);
 
-        return Arrays.asList(application);
+        return Collections.singletonList(application);
     }
 
     @ResponseBody
@@ -122,8 +114,7 @@ public class ApplicationController {
     }
 
     private String hostUrl(HttpServletRequest request) {
-        String uri = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort()
-                + request.getContextPath();
+        String uri = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
 
         if (!uri.endsWith("/"))
             uri = uri + "/";

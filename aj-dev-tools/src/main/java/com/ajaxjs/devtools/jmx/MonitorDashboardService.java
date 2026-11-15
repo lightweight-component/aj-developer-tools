@@ -1,7 +1,7 @@
 package com.ajaxjs.devtools.jmx;
 
 import com.ajaxjs.devtools.jmx.model.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.management.ObjectName;
@@ -22,9 +22,9 @@ import java.util.*;
  * @author fengzheng
  */
 @Service
+@RequiredArgsConstructor
 public class MonitorDashboardService {
-    @Autowired
-    private JvmMonitorController jmMonitorController;
+    private final JmxService jmxService;
 
     public Overview overview() {
         Overview overview = new Overview();
@@ -109,7 +109,7 @@ public class MonitorDashboardService {
      * MetaSpace 元空间信息
      */
     private MemoryUsage buildMetaspace() {
-        for (BeanAttributeInfo beanInfo : jmMonitorController.getPropertyList("java.lang:name=Metaspace,type=MemoryPool").getBeanAttributeInfos()) {
+        for (BeanAttributeInfo beanInfo : jmxService.getProperties("java.lang:name=Metaspace,type=MemoryPool").getBeanAttributeInfos()) {
             if (beanInfo.getName().equals("Usage"))
                 return buildMemoryUsage(beanInfo);
         }
@@ -166,13 +166,12 @@ public class MonitorDashboardService {
      */
     private List<GarbageInfo> buildGarbageCollectorInfo() {
         List<GarbageInfo> garbageInfoList = new ArrayList<>();
-        Set<ObjectName> objectNames = JmxHelper.queryNames(jmMonitorController.INSTANCE.getMsc(), "java.lang:name=*,type=GarbageCollector");
-        assert objectNames != null;
+        Set<ObjectName> objectNames = jmxService.getGarbageCollectorObjectNames();
 
         for (ObjectName objectName : objectNames) {
             GarbageInfo info = new GarbageInfo();
 
-            for (BeanAttributeInfo beanInfo : jmMonitorController.getPropertyList(objectName.getCanonicalName()).getBeanAttributeInfos()) {
+            for (BeanAttributeInfo beanInfo : jmxService.getProperties(objectName.getCanonicalName()).getBeanAttributeInfos()) {
                 switch (beanInfo.getName()) {
                     case "Name":
                         info.setName(getData(beanInfo, String.class));
@@ -193,7 +192,7 @@ public class MonitorDashboardService {
     }
 
     private List<BeanAttributeInfo> getBeanAttributeInfoList(PlatformManagedObject obj) {
-        BeanInfo beanInfo = jmMonitorController.getPropertyList(obj.getObjectName().getCanonicalName());
+        BeanInfo beanInfo = jmxService.getProperties(obj.getObjectName().getCanonicalName());
 
         return beanInfo.getBeanAttributeInfos();
     }
