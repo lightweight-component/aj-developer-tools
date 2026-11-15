@@ -19,22 +19,15 @@ public class SystemCheckService {
     public void performSystemCheck() {
         log.info("开始系统环境检查...");
 
-        checkNativeLibrary();
-        checkNetworkInterfaces();
+        try {
+            // Use Pcap4J's actual library lookup rather than a Windows-only System.loadLibrary check.
+            checkNetworkInterfaces();
+        } catch (LinkageError | RuntimeException e) {
+            log.warn("抓包环境检查失败，应用继续启动，抓包功能暂不可用: {}", e.toString());
+            log.debug("抓包环境检查失败详情", e);
+        }
 
         log.info("系统环境检查完成");
-    }
-
-    private void checkNativeLibrary() {
-        try {
-            // 尝试加载本地库
-            System.loadLibrary("wpcap");
-            log.info("✅ WinPcap/Npcap 本地库加载成功");
-        } catch (UnsatisfiedLinkError e) {
-            log.warn("⚠️ WinPcap/Npcap 本地库未找到");
-            log.warn("请安装 Npcap: https://npcap.com/");
-            log.warn("或者使用管理员权限运行应用程序");
-        }
     }
 
     private void checkNetworkInterfaces() {

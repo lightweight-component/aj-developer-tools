@@ -47,9 +47,10 @@ public class PacketCaptureService {
     public List<PcapNetworkInterface> getAvailableNetworkInterfaces() {
         try {
             return Pcaps.findAllDevs();
-        } catch (Exception e) {
-            log.error("获取网络接口失败，可能是缺少 WinPcap/Npcap 库: {}", e.getMessage());
-            throw new NullPointerException("请确保已安装 Npcap: https://npcap.com/");
+        } catch (LinkageError e) {
+            throw new IllegalStateException("无法加载抓包本地库；Windows 请安装 Npcap 并检查 DLL 搜索路径，Linux/macOS 请检查 libpcap", e);
+        } catch (PcapNativeException e) {
+            throw new IllegalStateException("获取抓包网络接口失败，请检查抓包驱动和访问权限", e);
         }
     }
 
