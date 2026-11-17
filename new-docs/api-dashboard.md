@@ -206,30 +206,6 @@ DELETE /api/metrics/stale?maxAgeMs=3600000
 
 ## 8. 依赖与配置
 
-### 8.1 原始方案依赖
-
-在已配置 Spring Boot 3.2.1 版本管理的 Maven 项目中，原文章使用：
-
-```xml
-<dependencies>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-aop</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.projectlombok</groupId>
-        <artifactId>lombok</artifactId>
-        <optional>true</optional>
-    </dependency>
-</dependencies>
-```
-
-这是文章版本的依赖示例；接入其他 Spring Boot 版本时应以宿主项目的依赖管理为准。
-
 ### 8.2 原始配置示例
 
 ```yaml

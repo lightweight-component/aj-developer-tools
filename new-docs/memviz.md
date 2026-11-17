@@ -4,31 +4,22 @@ https://juejin.cn/post/7538050437904449582
 
 ![image.png](https://p6-xtjj-sign.byteimg.com/tos-cn-i-73owjymdk6/0be7c9ba71f6423dac9db19a84d33101~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAg6ZmI56u55LiD:q75.awebp?rk3s=f64ab15b&x-expires=1793847828&x-signature=Z%2FzLWiQOx%2FJ4E8BSz3tMK9r8%2Bwg%3D)
 
-## 0\. 你将获得什么
 
-一个可嵌入任何 Spring Boot 应用的**内存对象拓扑服务**：访问 `/memviz.html` 就能在浏览器看见对象图。
+一个可嵌入任何 Spring Boot 应用的**内存对象拓扑服务**：访问 `/memviz.html` 就能在浏览器看见对象图。支持**按类/包名过滤**、**按对象大小高亮**、**点击节点看详情**。**线上可用**：默认只在你点击“生成快照”时才工作；日常零开销。
 
-支持**按类/包名过滤**、**按对象大小高亮**、**点击节点看详情**。
 
-**线上可用**：默认只在你点击“生成快照”时才工作；日常零开销。
+## 传统工具的痛点
 
-___
-
-## 1\. 传统工具的痛点
-
-`jmap` + MAT 做离线分析：强大但**流程割裂**、**不实时**，且**换机/拷文件**麻烦，我需要一种相对**轻量的方式** ，适合“随手开网页看一眼”，能够完成一些初步判断。
-
-VisualVM：**不便嵌入业务**，临时接管和权限也会有顾虑。
-
-线上需要：**在服务本机直接打开网页**，**快速看到对象图**，**看对象引用链**。
+- `jmap` + MAT 做离线分析：强大但**流程割裂**、**不实时**，且**换机/拷文件**麻烦，我需要一种相对**轻量的方式** ，适合“随手开网页看一眼”，能够完成一些初步判断。
+- VisualVM：**不便嵌入业务**，临时接管和权限也会有顾虑。
+- 线上需要：**在服务本机直接打开网页**，**快速看到对象图**，**看对象引用链**。
 
 所以我实验性做了这个**内嵌式的内存对象拓扑图**：**点按钮 → dump → 解析 → 可视化显示**，一切在应用自己的 Web 界面里完成。
 
-___
 
-## 2\. 架构设计：为什么选“HPROF 快照 + 在线解析”
+## 架构设计：为什么选“HPROF 快照 + 在线解析”
 
-**目标**
+目标
 
 **1\. 全量对象、真实引用链**
 
@@ -45,8 +36,6 @@ ___
 前端用 **纯 HTML + JS（D3 力导向图）** 渲染，支持搜索、过滤、点击查看详情。
 
 解析库：示例使用 `org.gridkit.jvmtool:hprof-heap`，能直接读 HPROF 并遍历对象与引用，落地简单。
-
-___
 
 ## 3\. 可运行代码
 
@@ -1081,85 +1070,7 @@ public class HprofParseService {
 
 注：`hprof-heap` 的 API 能遍历对象实例、浅表大小、以及字段引用。对超大堆你一定要**限制 N**，并提供**过滤条件**，否则前端渲染会顶不住。
 
-___
 
-#### 3.6 控制器 `MemvizController.java`
-
-```
-package com.example.memviz.controller;
-
-import com.example.memviz.model.GraphModel;
-import com.example.memviz.service.HeapDumpService;
-import com.example.memviz.service.HprofParseService;
-import org.springframework.http.MediaType;
-import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
-
-import java.io.File;
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.function.Predicate;
-
-@RestController
-@RequestMapping("/memviz")
-public class MemvizController {
-
-  private final HeapDumpService dumpService;
-  private final HprofParseService parseService;
-
-  public MemvizController(HeapDumpService dumpService, HprofParseService parseService) {
-    this.dumpService = dumpService;
-    this.parseService = parseService;
-  }
-
-  /** 触发一次快照，返回文件名（安全：默认 live=false） */
-  @PostMapping("/snapshot")
-  public Map<String, String> snapshot(@RequestParam(defaultValue = "false") boolean live,
-                                      @RequestParam(defaultValue = "/tmp/memviz") String dir) throws Exception {
-    File f = dumpService.dump(live, new File(dir));
-    return Map.of("file", f.getAbsolutePath());
-  }
-
-  /** 解析指定快照 → 图模型（支持过滤&折叠） */
-  @GetMapping(value = "/graph", produces = MediaType.APPLICATION_JSON_VALUE)
-  public GraphModel graph(@RequestParam String file,
-                          @RequestParam(required = false) String include, // 例如: com.myapp.,java.util.HashMap
-                          @RequestParam(defaultValue = "true") boolean collapseCollections) throws Exception {
-
-    Predicate<String> filter = null;
-    if (StringUtils.hasText(include)) {
-      String[] prefixes = include.split(",");
-      filter = fqcn -> {
-        for (String p : prefixes) if (fqcn.startsWith(p.trim())) return true;
-        return false;
-      };
-    }
-    return parseService.parseToGraph(new File(file), filter, collapseCollections);
-  }
-}
-```
-
-___
-
-#### 3.7 防御工具 `SafeExecs.java`
-
-```
-package com.example.memviz.util;
-
-import java.io.IOException;
-import java.nio.file.*;
-
-public class SafeExecs {
-  public static void assertDiskHasSpace(Path dir, long minFreeBytes) throws IOException {
-    FileStore store = Files.getFileStore(dir);
-    if (store.getUsableSpace() < minFreeBytes) {
-      throw new IllegalStateException("Low disk space for heap dump: need " + minFreeBytes + " bytes free");
-    }
-  }
-}
-```
-
-___
 
 ## 4\. 使用指南（线上可用的“安全姿势”）
 

@@ -13,7 +13,7 @@ https://juejin.cn/post/7541741121400045578
 
 ![image.png](https://p3-xtjj-sign.byteimg.com/tos-cn-i-73owjymdk6/7a5602ad99d5424bad9f4d4c757b24a1~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAg6ZmI56u55LiD:q75.awebp?rk3s=f64ab15b&x-expires=1793577100&x-signature=2PPfJtNrPwTbEVaJGxXYC5laMPY%3D)
 
-## 1\. 需求痛点
+## 需求痛点
 
 **1\. 依赖数量庞大**：一个典型的 Spring Boot 应用常常包含 100+ 依赖，人工排查几乎不可能。
 
@@ -156,7 +156,7 @@ public ResponseEntity<Map<String, Object>> scanDependencies() {
 
 ___
 
-## 7\. 实战应用场景
+## 实战应用场景
 
 **1\. 本地开发自查**  
 开发者在调试时即可运行扫描，第一时间发现依赖风险。
