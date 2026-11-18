@@ -1,4 +1,16 @@
-# Spring Boot 网络流量抓包分析系统：完整指南
+---
+title: 网络流量抓包分析
+subTitle: 多协议抓包、实时监控与流量统计
+description: 介绍基于 Spring Boot 和 Pcap4j 的网络抓包分析系统，涵盖环境安装、BPF 过滤、WebSocket 实时推送、统计接口与数据存储。
+tags:
+  - 网络抓包
+  - Pcap4j
+  - 流量分析
+  - WebSocket
+layout: layouts/docs-cn.njk
+---
+
+# 网络流量抓包分析
 
 本文整合本目录下的三份原始文档，合并重复内容，保留功能、安装、使用、API、架构、实现示例与数据库结构。原文档保持不变。
 
@@ -32,7 +44,7 @@
 - **HTML5 + 原生 JavaScript**: 前端实现
 - **Bootstrap 5**: 前端UI框架
 
-```
+```text
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Web 前端      │◄──►│  Spring Boot     │◄──►│   Pcap4j       │
 │  (Bootstrap)    │    │   应用服务       │    │  抓包引擎       │
@@ -54,7 +66,7 @@
 
 ### 项目结构
 
-```
+```text
 src/main/java/com/example/netcapture/
 ├── config/          # 配置类
 ├── controller/      # Web控制器  
@@ -285,7 +297,7 @@ spring:
 
 ### 异步处理线程池
 
-```
+```java
 @Configuration
 public class WebSocketConfig implements WebSocketConfigurer {
     
@@ -307,7 +319,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
 #### 网卡选择与权限管理
 
-```
+```java
 @Service
 public class PacketCaptureService {
     
@@ -343,7 +355,7 @@ public class PacketCaptureService {
 
 系统支持多种网络协议的智能解析，自动识别 HTTP、TCP、UDP 等协议类型：
 
-```
+```java
 @Service
 public class ProtocolAnalyzer {
     
@@ -371,7 +383,7 @@ public class ProtocolAnalyzer {
 
 使用原子操作和并发集合实现高性能的实时统计：
 
-```
+```java
 @Service
 public class TrafficStatisticsService {
     
@@ -406,7 +418,7 @@ public class TrafficStatisticsService {
 
 实现 WebSocket 服务，支持实时数据推送和客户端过滤：
 
-```
+```java
 @Service
 public class PacketWebSocketHandler extends TextWebSocketHandler {
     
@@ -444,7 +456,7 @@ WebSocket 端点为 `/ws/packets`。客户端发送 `filter:` 前缀消息设置
 
 使用 WebSocket 实现实时数据展示，支持动态过滤和实时统计：
 
-```
+```javascript
 function connectWebSocket() {
     const wsUrl = `ws://${window.location.host}/ws/packets`;
     websocket = new WebSocket(wsUrl);
@@ -471,7 +483,7 @@ function applyFilter() {
 
 以下为原文 H2 表结构及索引示例。默认数据源是内存数据库 `jdbc:h2:mem:netcapture`，写入数据库不代表重启进程后数据仍保留；长期保存需要调整实际数据源配置。
 
-```
+```sql
 -- 数据包信息表
 CREATE TABLE IF NOT EXISTS packet_info (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -537,7 +549,7 @@ CREATE INDEX IF NOT EXISTS idx_time_window ON traffic_statistics(time_window);
 2.  解析 HTTP 请求/响应，提取 URL、状态码、响应时间
 3.  生成 API 调用报告和性能分析图表
 
-```
+```java
 // API 监控控制器
 @GetMapping("/api/monitor/apis")
 public ResponseEntity<List<ApiCallStats>> getApiCallStatistics(
@@ -578,7 +590,7 @@ public ResponseEntity<List<ApiCallStats>> getApiCallStatistics(
 
 **实现策略**：
 
-```
+```java
 @Component
 public class SecurityAuditService {
     

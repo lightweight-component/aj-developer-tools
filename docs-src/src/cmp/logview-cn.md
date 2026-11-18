@@ -1,6 +1,17 @@
-https://juejin.cn/post/7538646907213987890
+---
+title: 日志查看器
+subTitle: 在线搜索、筛选、分页浏览与下载日志
+description: 使用 Spring Boot 构建轻量级日志查看器，支持按关键字、时间范围和日志级别筛选，并介绍文件下载、大文件读取与扩展方案。
+tags:
+  - 日志查看
+  - 日志查询
+  - 运维排障
+layout: layouts/docs-cn.njk
+---
 
-# 开发者必备工具：用 SpringBoot 构建轻量级日志查看器，省时又省力 
+# 日志查看器
+
+<!-- https://juejin.cn/post/7538646907213987890 -->
 
 生产环境出问题时，你还在用 `tail -f` 查日志吗？还在为了下载几个G的日志文件而苦恼吗？本文将手把手教你实现一个轻量级的日志管理系统，让日志查询变得简单而高效。
 
@@ -37,21 +48,17 @@ https://juejin.cn/post/7538646907213987890
 
 #### 核心功能模块
 
-**1\. 日志文件管理**：扫描、列举日志文件
-
-**2\. 内容解析**：按行读取、正则匹配、分页处理
-
-**3\. 条件筛选**：时间范围、关键字、日志级别
-
-**4\. 在线预览**：实时显示、语法高亮
-
-**5\. 文件下载**：支持原文件和筛选结果下载
+- **日志文件管理**：扫描、列举日志文件
+- **内容解析**：按行读取、正则匹配、分页处理
+- **条件筛选**：时间范围、关键字、日志级别
+- **在线预览**：实时显示、语法高亮
+- **文件下载**：支持原文件和筛选结果下载
 
 ## 后端实现
 
 #### 1\. 项目结构
 
-```
+```text
 src/main/java/com/example/logviewer/
 ├── LogViewerApplication.java
 ├── config/
@@ -93,7 +100,7 @@ src/main/java/com/example/logviewer/
 
 #### 1\. 大文件处理
 
-```
+```java
 // 使用 RandomAccessFile 实现大文件分页读取
 public List<String> readFileByPage(File file, int page, int pageSize) {
     List<String> lines = new ArrayList<>();
@@ -118,7 +125,7 @@ public List<String> readFileByPage(File file, int page, int pageSize) {
 
 #### 2\. 异步处理
 
-```
+```java
 @Async
 public CompletableFuture<LogQueryResponse> queryLogsAsync(LogQueryRequest request) {
     return CompletableFuture.supplyAsync(() -> {
@@ -131,16 +138,9 @@ public CompletableFuture<LogQueryResponse> queryLogsAsync(LogQueryRequest reques
 
 本文实现了一个功能完整的日志查询系统，具有以下特点：
 
-**1\. 轻量级**：无需复杂的部署，Spring Boot + 静态页面即可运行
+- **轻量级**：无需复杂的部署，Spring Boot + 静态页面即可运行
+- **功能完整**：支持搜索、过滤、分页、下载等核心功能
+- **安全可靠**：包含安全检查和错误处理
+- **易于扩展**：模块化设计，便于添加新功能
 
-**2\. 功能完整**：支持搜索、过滤、分页、下载等核心功能
-
-**3\. 用户友好**：现代化的UI设计，响应式布局
-
-**4\. 安全可靠**：包含安全检查和错误处理
-
-**5\. 易于扩展**：模块化设计，便于添加新功能
-
-这个系统特别适合中小型项目的日志管理需求，可以显著提升问题排查效率。
-
-你可以根据实际需求进行定制和扩展，比如添加实时监控、统计分析等功能。
+这个系统特别适合中小型项目的日志管理需求，可以显著提升问题排查效率。你可以根据实际需求进行定制和扩展，比如添加实时监控、统计分析等功能。

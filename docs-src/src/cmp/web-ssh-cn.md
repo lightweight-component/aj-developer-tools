@@ -1,5 +1,18 @@
-# SSH 客户端：在浏览器中执行远程命令
-https://juejin.cn/post/7536118823206125618
+---
+title: Web SSH 客户端
+subTitle: 在浏览器终端中连接服务器并执行远程命令
+description: 使用 Spring Boot、JSch、WebSocket 和 Xterm.js 构建浏览器 SSH 客户端，介绍连接管理、终端交互、配置与运维使用场景。
+tags:
+  - SSH
+  - WebSocket
+  - Xterm.js
+  - 远程终端
+layout: layouts/docs-cn.njk
+---
+
+# Web SSH 客户端
+
+<!-- https://juejin.cn/post/7536118823206125618 -->
 
 在日常运维工作中，我们经常需要通过SSH连接多台服务器进行操作。传统的SSH客户端虽然功能完善，但在某些场景下存在一些限制。
 
@@ -11,29 +24,21 @@ https://juejin.cn/post/7536118823206125618
 
 相比传统SSH客户端，Web SSH在以下场景中具有实际价值：
 
-#### 传统SSH客户端的局限性
+### 传统SSH客户端的局限性
 
-**客户端依赖**：需要在每台设备上安装SSH客户端软件
+- **客户端依赖**：需要在每台设备上安装SSH客户端软件
+- **统一管理困难**：难以统一管理服务器连接配置和用户权限
+- **操作审计不便**：缺乏统一的操作日志记录和管理
+- **移动设备支持有限**：在手机、平板上操作体验较差
+- **防火墙限制**：某些网络环境下SSH端口可能被阻止
 
-**统一管理困难**：难以统一管理服务器连接配置和用户权限
+### Web SSH的实际优势
 
-**操作审计不便**：缺乏统一的操作日志记录和管理
-
-**移动设备支持有限**：在手机、平板上操作体验较差
-
-**防火墙限制**：某些网络环境下SSH端口可能被阻止
-
-#### Web SSH的实际优势
-
-**无需安装客户端**：通过浏览器即可使用，降低部署成本
-
-**统一权限管理**：可以集中管理用户的服务器访问权限
-
-**操作记录可追溯**：所有SSH操作都可以记录和审计
-
-**移动设备友好**：在移动设备上也能提供相对较好的使用体验
-
-**绕过端口限制**：通过HTTP/HTTPS端口提供服务
+- **无需安装客户端**：通过浏览器即可使用，降低部署成本
+- **统一权限管理**：可以集中管理用户的服务器访问权限
+- **操作记录可追溯**：所有SSH操作都可以记录和审计
+- **移动设备友好**：在移动设备上也能提供相对较好的使用体验
+- **绕过端口限制**：通过HTTP/HTTPS端口提供服务
 
 这些特点使得Web SSH在企业内部运维平台、云服务管理后台、教学环境等场景中有实际的应用价值。
 
@@ -41,27 +46,12 @@ https://juejin.cn/post/7536118823206125618
 
 本文将基于以下技术栈实现Web SSH客户端：
 
-#### 后端技术选型
+- **JSch库**：Java实现的SSH2客户端，用于建立SSH连接
+- **Xterm.js**：在浏览器中模拟终端界面
 
-**Spring Boot 3.x**：提供Web框架和自动配置能力
+### 系统架构
 
-**JSch库**：Java实现的SSH2客户端，用于建立SSH连接
-
-**WebSocket**：实现浏览器与服务器间的双向实时通信
-
-**SqlMan**：轻量级数据库操作，存储服务器配置和操作记录
-
-#### 前端技术选型
-
-**HTML + JavaScript**：构建Web界面，无需复杂框架
-
-**Xterm.js**：在浏览器中模拟终端界面
-
-**WebSocket API**：与后端建立实时通信连接
-
-#### 系统架构
-
-```
+```text
 浏览器终端 ←→ WebSocket ←→ Spring Boot应用 ←→ SSH连接 ←→ 目标服务器
      ↓                         ↓
   用户界面                   数据存储
@@ -73,11 +63,11 @@ https://juejin.cn/post/7536118823206125618
 核心流程：用户在浏览器中输入SSH连接信息，Spring Boot后端使用JSch库建立SSH连接，通过WebSocket将终端数据实时传输到前端Xterm.js组件进行显示。
 
 
-#### 9\. 数据库初始化
+### 数据库初始化
 
 创建必要的数据库表结构：
 
-```
+```sql
 -- 服务器配置表
 CREATE TABLE IF NOT EXISTS servers (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -103,7 +93,7 @@ INSERT INTO servers (name, host, port, username, password) VALUES
 
 应用配置文件：
 
-```
+```yaml
 # 生产环境配置
 spring:
   datasource:
@@ -155,13 +145,12 @@ webssh:
 
 ## 性能优化与最佳实践
 
-#### 1\. 缓存优化
+###  缓存优化
 
-```
+```java
 @Service
 @EnableCaching
 public class CachedServerService {
-    
     @Cacheable(value = "servers", key = "#username")
     public List<Server> getUserServers(String username) {
         return serverRepository.findByCreatedBy(username);
@@ -174,12 +163,11 @@ public class CachedServerService {
 }
 ```
 
-#### 2\. 安全增强
+### 安全增强
 
-```
+```java
 @Component
 public class SecurityEnhancements {
-    
     /**
      * 密码加密存储
      */
@@ -211,9 +199,7 @@ public class SecurityEnhancements {
 
 ## 总结
 
-通过JSch库处理SSH连接，WebSocket实现实时通信，我们构建了一个功能完整的Web SSH解决方案。
-
-在实际生产环境中使用时，还需要考虑以下几个方面：
+通过JSch库处理SSH连接，WebSocket实现实时通信，我们构建了一个功能完整的Web SSH解决方案。在实际生产环境中使用时，还需要考虑以下几个方面：
 
 #### 安全注意事项
 

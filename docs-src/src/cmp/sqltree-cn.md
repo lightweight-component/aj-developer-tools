@@ -1,6 +1,18 @@
-# 自研运行时 SQL 调用树，3 分钟定位慢 SQL！
+---
+title: SQL 调用树
+subTitle: 可视化查看 SQL 执行关系，定位慢查询
+description: 使用 Spring Boot 和 MyBatis 拦截器采集 SQL 执行信息，通过调用树展示执行顺序、层次与耗时，并提供慢 SQL 标记和统计分析。
+tags:
+  - MyBatis
+  - SQL 调用树
+  - 慢 SQL
+  - 性能分析
+layout: layouts/docs-cn.njk
+---
 
-https://juejin.cn/post/7539448404612694026
+# SQL 调用树
+
+<!-- https://juejin.cn/post/7539448404612694026 -->
 
 在复杂的业务系统中，一个接口往往会执行多条SQL，如何直观地看到这些SQL的调用关系和执行情况？本文将使用SpringBoot + MyBatis拦截器构建一个SQL调用树可视化系统。
 
@@ -43,22 +55,18 @@ https://juejin.cn/post/7539448404612694026
 
 **后端技术栈**
 
--   **Spring Boot 3.4.5**：应用框架
 -   **MyBatis 3.0.3**：数据访问层和拦截器
 -   **H2 Database**：内存数据库（演示用）
--   **Lombok**：简化代码编写
--   **Jackson**：JSON序列化
 
 **前端技术栈**
 
 -   **HTML5 + Tailwind CSS**：页面结构和样式
 -   **D3.js v7**：数据可视化
 -   **Font Awesome**：图标库
--   **原生JavaScript**：前端交互逻辑
 
 ### 项目目录结构
 
-```
+```text
 springboot-sql-tree/
 ├── src/main/java/com/example/sqltree/
 │   ├── SqlTreeApplication.java          # 启动类
@@ -82,11 +90,11 @@ springboot-sql-tree/
 
 ## 核心实现详解
 
-### 1\. MyBatis拦截器：零侵入的核心
+### MyBatis拦截器：零侵入的核心
 
 这是整个系统的**核心组件**，通过MyBatis的插件机制实现SQL执行的无感知拦截：
 
-```
+```java
 @Component
 @Intercepts({
     @Signature(type = Executor.class, method = "query", args = {
@@ -199,7 +207,7 @@ public class SqlInterceptor implements Interceptor {
 
 `SqlCallTreeContext`负责管理SQL调用树的构建和存储，采用线程安全的设计：
 
-```
+```java
 @Component
 public class SqlCallTreeContext {
     
@@ -383,7 +391,7 @@ public class SqlCallTreeContext {
 
 ### 3\. 数据模型：完整的SQL节点信息
 
-```
+```java
 @Data
 public class SqlNode {
     private String nodeId;              // 节点唯一标识
@@ -442,7 +450,7 @@ public class SqlNode {
 -   **可视化界面**：[http://localhost:8080/index.html](https://link.juejin.cn/?target=http%3A%2F%2Flocalhost%3A8080%2Findex.html "http://localhost:8080/index.html")
 -   **H2数据库控制台**：[http://localhost:8080/h2-console](https://link.juejin.cn/?target=http%3A%2F%2Flocalhost%3A8080%2Fh2-console "http://localhost:8080/h2-console")
 
--   -   JDBC URL: `jdbc:h2:mem:testdb`
+-   JDBC URL: `jdbc:h2:mem:testdb`
 -   用户名: `sa`
 -   密码: （空）
 
@@ -450,7 +458,7 @@ public class SqlNode {
 
 **核心依赖（pom.xml）**
 
-```
+```xml
 <dependencies>
     <!-- Spring Boot 3.4.5 -->
     <dependency>
@@ -484,7 +492,7 @@ public class SqlNode {
 
 **应用配置（application.yml）**
 
-```
+```yaml
 server:
   port: 8080
 
@@ -521,7 +529,7 @@ mybatis:
 
 当调用 `/api/demo/user/1/detail` 接口时，系统会自动捕获以下SQL调用链：
 
-```
+```text
 UserService.getUserDetailWithOrders()
 ├── SELECT * FROM users WHERE id = ? (2ms)
 └── SELECT * FROM orders WHERE user_id = ? (15ms)
@@ -538,7 +546,7 @@ UserService.getUserDetailWithOrders()
 
 系统自动标识执行时间超过阈值（默认1000ms）的SQL：
 
-```
+```json
 {
   "nodeId": "uuid-123",
   "sql": "SELECT * FROM orders o JOIN users u ON o.user_id = u.id WHERE o.status = ?",
@@ -553,7 +561,7 @@ UserService.getUserDetailWithOrders()
 
 **统计信息示例**
 
-```
+```json
 {
   "totalSqlCount": 1247,
   "slowSqlCount": 23,
@@ -568,7 +576,7 @@ UserService.getUserDetailWithOrders()
 
 系统提供按执行时间排序的慢SQL列表：
 
-```
+```json
 [  {    "sql": "SELECT COUNT(*) FROM orders WHERE created_at BETWEEN ? AND ?",    "executionTime": 2150,    "serviceName": "ReportService",    "methodName": "generateDailyReport",    "affectedRows": 1  },  {    "sql": "UPDATE users SET last_login = ? WHERE id IN (...)",    "executionTime": 1890,    "serviceName": "UserService",    "methodName": "batchUpdateLastLogin",    "affectedRows": 156  }]
 ```
 
@@ -592,8 +600,3 @@ UserService.getUserDetailWithOrders()
 -   支持手动清理和自动过期机制
 -   轻量级数据结构，内存占用小
 
-## 总结
-
-这个项目展示了如何结合Spring Boot生态和前端技术，构建一个实用的SQL监控工具，为日常开发和性能优化提供有力支持。
-
-[github.com/yuboon/java…](https://link.juejin.cn/?target=https%3A%2F%2Fgithub.com%2Fyuboon%2Fjava-examples%2Ftree%2Fmaster%2Fspringboot-sql-tree "https://github.com/yuboon/java-examples/tree/master/springboot-sql-tree")

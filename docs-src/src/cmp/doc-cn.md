@@ -1,3 +1,15 @@
+---
+title: 监控系统设计
+subTitle: 从主机健康检查到 MySQL 性能指标采集
+description: 介绍监控系统的信息采集、分析、存储与处理，梳理主机和 MySQL 的健康及性能指标，并比较常见开源监控工具。
+tags:
+  - 监控系统
+  - MySQL
+  - 主机监控
+  - 性能指标
+layout: layouts/docs-cn.njk
+---
+
 一个经过高可用可扩展设计的系统，如果没有一个足够精细足够强大的监控系统，同样可能会让之前在高可用设计方面所做的努力功亏一篑。一个系统，无论如何设计如何维护，都无法完全避免出现异常的可能，监控系统就是根据系统的各项状态的分析，让我们能够尽可能多的提前预知系统可能会出现的异常状况。即使没有及时发现将要发生的异常，也要在异常出现后的第一时间知道系统已经出现异常，否则之前的设计工作很可能就白费了。
 
 
@@ -69,7 +81,7 @@ ps -ef | grep "mysqld" | grep -v "mysqld_safe"| grep -v "grep"
 - Error log：Error log 的监控目的主要是即时检测 MySQL Server 运行过程中发生的各种错误，如连接异常，系统bug等。 Error log 的监控和系统软硬件状态的监控一样，都是通过对文本文件内容的监控来实现的。同样使用文本监控软件，通过配置各种错误信息的匹配规则来捕获日志文件中的错误信息。
 - 复制状态：如果我们的 MySQL 数据库环境使用了 MySQL Replication，就必须增加对 Slave 复制状态的监控。对 Slave 的复制状态的监控包括对 IO 线程和 SQL 线程二者的运行状态的监控。当然，如果希望能够监控 Replication 更多的信息，如两个线程各自运行的进度等，同样可以在 Slave 节点上执行相应命令轻松得到，如下：
 
-```
+```text
 sky@localhost : (none) 04:30:38> show slave status\G
 *************************** 1. row ***************************
                Slave_IO_State: Connecting to master
@@ -125,9 +137,11 @@ Master_SSL_Verify_Server_Cert: No
 - 系统 load 值：系统 load 所包含的最关键含义是 CPU 运行等待的数量，也就是侧面反应了 CPU 的繁忙程度。只不过 load 值并不直接等于等待队列中的进程数量。
 load 值的监控也非常简单，通过运行 uptime 命令即可获得当前时间之前1秒、5秒和15秒的 load 平均值。
 
-    sky@sky:~$ uptime
-    
-    17:27:44 up  4:12,  3 users,  load average: 0.87, 0.66, 0.61
+```text
+sky@sky:~$ uptime
+
+17:27:44 up  4:12,  3 users,  load average: 0.87, 0.66, 0.61
+```
 
 如上面输出内容中的`load average: 0.87, 0.66, 0.61`中的三个数字，分别代表了1秒、5秒和15秒的 load 平均值。一般来说，load 值在不超过系统物理 cpu 数目（或者 cpu 总核数）之前，系统不会有太大问题。
 
@@ -147,121 +161,146 @@ swap 使用量的总体情况可以通过 free 命令获得，但 free 命令只
 MySQL 数据库的性能状态监控点非常之多，其中很多量都是我们不能忽视的必须监控的量，且 90% 以上的内容可以在连接上 MySQL Server 后执行“SHOW /*!50000 GLOBAL */ STATUS” 以及 “SHOW /*!50000 GLOBAL */ VARIABLES” 的输出值获得。需要注意的是上述命令所获得状态值实际上是累计值，所以如果要计算(单位/某个)时间段内的变化量还需要稍加处理，可以在附录中找到两个命令输出值的详细说明。下面看看几项需要重点关注的性能状态：
 
 QPS（每秒Query 量）：这里的 QPS 实际上是指 MySQL Server 每秒执行的 Query 总量，在 MySQL 5.1.30 及以下版本可以通过 Questions 状态值每秒内的变化量来近似表示，而从 MySQL 5.1.31 开始，则可以通过 Queries 来表示。Queries 是在 MySQL 5.1.31 才新增的状态变量。主要解决的问题就是 Questions 状态变量并没有记录存储过程中所执行的 Query（当然，在无存储过程的老版本 MySQL 中则不存在这个区别），而 Queries 状态变量则会记录。二者获取方式：
-    QPS = Questions(or Queries) / Seconds
+
+```text
+QPS = Questions(or Queries) / Seconds
+```
 
 获取所需状态变量值：
 
-    SHOW /*!50000 GLOBAL */ STATUS LIKE 'Questions'
-    SHOW /*!50000 GLOBAL */ STATUS LIKE 'Queries'
+```sql
+SHOW /*!50000 GLOBAL */ STATUS LIKE 'Questions'
+SHOW /*!50000 GLOBAL */ STATUS LIKE 'Queries'
+```
 
 这里的 Seconds 是指累计出上述两个状态变量值的时间长度，后面用到的地方也代表同样的意思。
 
 TPS（每秒事务量）： 在 MySQL Server 中并没有直接事务计数器，我们只能通过回滚和提交计数器来计算出系统的事务量。所以，我们需要通过以下方式来得到客户端应用程序所请求的 TPS 值：
 
-    TPS = (Com_commit + Com_rollback) / Seconds
+```text
+TPS = (Com_commit + Com_rollback) / Seconds
+```
 
 如果我们还使用了分布式事务，那么还需要将 Com_xa_commit 和 Com_xa_rollback 两个状态变量的值加上。
 
 Key Buffer 命中率：Key Buffer 命中率代表了 MyISAM 类型表的索引的 Cache 命中率。该命中率的大小将直接影响 MyISAM 类型表的读写性能。Key Buffer 命中率实际上包括读命中率和写命中率两种，MySQL 中并没有直接给出这两个命中率的值，但是可以通过如下方式计算出来：
 
-    key_buffer_read_hits = (1 - Key_reads / Key_read_requests) * 100%
-    key_buffer_write_hits= (1 - Key_writes / Key_write_requests) * 100%
+```text
+key_buffer_read_hits = (1 - Key_reads / Key_read_requests) * 100%
+key_buffer_write_hits= (1 - Key_writes / Key_write_requests) * 100%
+```
 
 获取所需状态变量值：
 
-    sky@localhost : (none) 07:44:10> SHOW /*!50000 GLOBAL */ STATUS
-        -> LIKE 'Key%';
-    
-    +------------------------+-------+
-    | Variable_name          | Value |
-    +------------------------+-------+
-        ... ...
-    | Key_read_requests      | 10    |
-    | Key_reads              | 4     |
-    | Key_write_requests     | 0     |
-    | Key_writes             | 0     |
-    +------------------------+-------+
+```text
+sky@localhost : (none) 07:44:10> SHOW /*!50000 GLOBAL */ STATUS
+    -> LIKE 'Key%';
+
++------------------------+-------+
+| Variable_name          | Value |
++------------------------+-------+
+    ... ...
+| Key_read_requests      | 10    |
+| Key_reads              | 4     |
+| Key_write_requests     | 0     |
+| Key_writes             | 0     |
++------------------------+-------+
+```
 
 通过这两个计算公式，我们很容易就可以得出系统当前 Key Buffer 的使用情况
 
 Innodb Buffer 命中率：这里 Innodb Buffer 所指的是innodb_buffer_pool，也就是用来缓存 Innodb类型表的数据和索引的内存空间。类似 Key buffer，我们同样可以根据 MySQL Server 提供的相应状态值计算出其命中率：
 
-    innodb_buffer_read_hits=(1-Innodb_buffer_pool_reads/Innodb_buffer_pool_read_requests) * 100%
+```text
+innodb_buffer_read_hits=(1-Innodb_buffer_pool_reads/Innodb_buffer_pool_read_requests) * 100%
+```
 
 获取所需状态变量值：
 
-    sky@localhost : (none) 08:25:14> SHOW /*!50000 GLOBAL*/ STATUS
+```text
+sky@localhost : (none) 08:25:14> SHOW /*!50000 GLOBAL*/ STATUS
 
-    -> LIKE 'Innodb_buffer_pool_read%';
-    +-----------------------------------+-------+
-    | Variable_name                     | Value |
-    +-----------------------------------+-------+
-        ... ...
-    | Innodb_buffer_pool_read_requests  | 5367  |
-    | Innodb_buffer_pool_reads          | 507   |
-    +-----------------------------------+-------+
+-> LIKE 'Innodb_buffer_pool_read%';
++-----------------------------------+-------+
+| Variable_name                     | Value |
++-----------------------------------+-------+
+    ... ...
+| Innodb_buffer_pool_read_requests  | 5367  |
+| Innodb_buffer_pool_reads          | 507   |
++-----------------------------------+-------+
+```
 
 Query Cache 命中率：如果我们使用了 Query Cache，那么对 Query Cache 命中率进行监控也是有必要的，因为他可能告诉我们是否在正确的使用Query Cache。Query Cache 命中率的计算方式如下：
 
-    Query_cache_hits= (Qcache_hits / (Qcache_hits + Qcache_inserts)) * 100%
+```text
+Query_cache_hits= (Qcache_hits / (Qcache_hits + Qcache_inserts)) * 100%
+```
 
 获取所需状态变量值：
 
-    sky@localhost : (none) 08:32:01> SHOW /*!50000 GLOBAL*/ STATUS
+```text
+sky@localhost : (none) 08:32:01> SHOW /*!50000 GLOBAL*/ STATUS
 
-    -> LIKE 'Qcache%';
-    +-------------------------+-------+
-    | Variable_name           | Value |
-    +-------------------------+-------+
-        ... ...
-    | Qcache_hits             | 0     |
-    | Qcache_inserts          | 0     |
-        ... ...
-    +-------------------------+-------+
+-> LIKE 'Qcache%';
++-------------------------+-------+
+| Variable_name           | Value |
++-------------------------+-------+
+    ... ...
+| Qcache_hits             | 0     |
+| Qcache_inserts          | 0     |
+    ... ...
++-------------------------+-------+
+```
 
 
 Table Cache 状态量：Table Cache 的当前状态量可以帮助我们判断系统参数 table_open_cache 的设置是否合理。如果状态变量 Open_tables 与 Opened_tables 之间的比率过低，则代表 Table Cache 设置过小，个人认为该值处于 80% 左右比较合适。注意，这个值并不是准确的 Table Cache 命中率。
 
 获取所需状态变量值：
 
-    sky@localhost : (none) 08:52:00> SHOW /*!50000 GLOBAL*/ STATUS
-    -> LIKE 'Open%';
-    +--------------------------+-------+
-    | Variable_name            | Value |
-    +--------------------------+-------+
-        ... ...
-    | Open_tables              | 51    |
-        ... ...
-    | Opened_tables            | 61    |
-    +--------------------------+-------+
+```text
+sky@localhost : (none) 08:52:00> SHOW /*!50000 GLOBAL*/ STATUS
+-> LIKE 'Open%';
++--------------------------+-------+
+| Variable_name            | Value |
++--------------------------+-------+
+    ... ...
+| Open_tables              | 51    |
+    ... ...
+| Opened_tables            | 61    |
++--------------------------+-------+
+```
 
 
 Thread Cache 命中率：Thread Cache 命中率能够直接反应出我们的系统参数 thread_cache_size 设置的是否合理。一个合理的 thread_cache_size 参数能够节约大量创建新连接时所需要消耗的资源。Thread Cache 命中率计算方式如下：
 
-    Thread_cache_hits = (1 - Threads_created / Connections) * 100%
+```text
+Thread_cache_hits = (1 - Threads_created / Connections) * 100%
+```
  
 
 获取所需状态变量值：
 
-    sky@localhost : (none) 08:57:16> SHOW /*!50000 GLOBAL*/ STATUS
-    -> LIKE 'Thread%';
-    +-------------------+-------+
-    | Variable_name     | Value |
-    +-------------------+-------+
-        ... ...
-    | Threads_created   | 3     |
-        ... ...
-    +-------------------+-------+
+```text
+sky@localhost : (none) 08:57:16> SHOW /*!50000 GLOBAL*/ STATUS
+-> LIKE 'Thread%';
++-------------------+-------+
+| Variable_name     | Value |
++-------------------+-------+
+    ... ...
+| Threads_created   | 3     |
+    ... ...
++-------------------+-------+
 
 4 rows in set (0.01 sec)
 
-    sky@localhost : (none) 09:01:33> SHOW /*!50000 GLOBAL*/ STATUS
-    -> LIKE 'Connections';
-    +---------------+-------+
-    | Variable_name | Value |
-    +---------------+-------+
-    | Connections   | 11    |
-    +---------------+-------+
+sky@localhost : (none) 09:01:33> SHOW /*!50000 GLOBAL*/ STATUS
+-> LIKE 'Connections';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| Connections   | 11    |
++---------------+-------+
+```
 
 
 
@@ -269,22 +308,24 @@ Thread Cache 命中率：Thread Cache 命中率能够直接反应出我们的系
 
 锁定状态：锁定状态包括表锁和行锁两种，我们可以通过系统状态变量获得锁定总次数，锁定造成其他线程等待的次数，以及锁定等待时间信息。
 
-    sky@localhost : (none) 09:01:44> SHOW /*!50000 GLOBAL*/ STATUS
-        -> LIKE '%lock%';
-    +-------------------------------+-------+
-    | Variable_name                 | Value |
-    +-------------------------------+-------+
-    
+```text
+sky@localhost : (none) 09:01:44> SHOW /*!50000 GLOBAL*/ STATUS
+    -> LIKE '%lock%';
++-------------------------------+-------+
+| Variable_name                 | Value |
++-------------------------------+-------+
+
+... ...
+| Innodb_row_lock_current_waits | 0     |
+| Innodb_row_lock_time          | 0     |
+| Innodb_row_lock_time_avg      | 0     |
+| Innodb_row_lock_time_max      | 0     |
+| Innodb_row_lock_waits         | 0     |
     ... ...
-    | Innodb_row_lock_current_waits | 0     |
-    | Innodb_row_lock_time          | 0     |
-    | Innodb_row_lock_time_avg      | 0     |
-    | Innodb_row_lock_time_max      | 0     |
-    | Innodb_row_lock_waits         | 0     |
-        ... ...
-    | Table_locks_immediate         | 44    |
-    | Table_locks_waited            | 0     |
-    +-------------------------------+-------+
+| Table_locks_immediate         | 44    |
+| Table_locks_waited            | 0     |
++-------------------------------+-------+
+```
 
 通过上述系统变量，我们可以得出表锁总次数，其中造成其他现线程等待的次数。同时还可以得到非常详细的行锁信息，如行锁总次数，行锁总时间，每次行锁等待时间，行锁造成最大等待时间以及当前等待行锁的线程数。通过对这些量的监控，我们可以清晰的了解到系统整体的锁定是否严重。如当 Table_locks_waited 与 Table_locks_immediate 的比值较大，则说明我们的表锁造成的阻塞比较严重，可能需要调整 Query语句，或者更改存储引擎，亦或者需要调整业务逻辑。当然，具体改善方式必须根据实际场景来判断。而 Innodb_row_lock_waits 较大，则说明 Innodb 的行锁也比较严重，且影响了其他线程的正常处理。同样需要查找出原因并解决。造成 Innodb 行锁严重的原因可能是 Query 语句所利用的索引不够合理（Innodb 行锁是基于索引来锁定的），造成间隙锁过大。也可能是系统本身处理能力有限，则需要从其他方面（如硬件设备）来考虑解决。
 
@@ -292,42 +333,48 @@ Thread Cache 命中率：Thread Cache 命中率能够直接反应出我们的系
 
 Tmp table 状况：Tmp Table 的状况主要是用于监控 MySQL 使用临时表的量是否过多，是否有临时表过大而不得不从内存中换出到磁盘文件上。临时表使用状态信息可以通过如下方式获得：
 
-    sky@localhost : (none) 09:27:28> SHOW /*!50000 GLOBAL*/ STATUS
-    -> LIKE 'Created_tmp%';
-    +-------------------------+-------+
-    | Variable_name           | Value |
-    +-------------------------+-------+
-    | Created_tmp_disk_tables | 1     |
-        ... ...
-    | Created_tmp_tables      | 46    |
-    +-------------------------+-------+
+```text
+sky@localhost : (none) 09:27:28> SHOW /*!50000 GLOBAL*/ STATUS
+-> LIKE 'Created_tmp%';
++-------------------------+-------+
+| Variable_name           | Value |
++-------------------------+-------+
+| Created_tmp_disk_tables | 1     |
+    ... ...
+| Created_tmp_tables      | 46    |
++-------------------------+-------+
+```
 
 从上面的状态信息可以了解到系统使用了46次临时表，其中有1次临时表比较大，无法在内存中完成，而不得不使用到磁盘文件。如果 Created_tmp_tables 非常大，则可能是系统中排序操作过多，或者是表连接方式不是很优化。而如果是  Created_tmp_disk_tables 与 Created_tmp_tables 的比率过高，如超过 10%，则我们需要考虑是否 tmp_table_size 这个系统参数所设置的足够大。当然，如果系统内存有限，也就没有太多好的解决办法了。
 
 
 Binlog Cache 使用状况：Binlog Cache 用于存放还未写入磁盘的 Binlog 信息。相关状态变量如下：
 
-    sky@localhost : (none) 09:40:38> SHOW /*!50000 GLOBAL*/ STATUS
-        -> LIKE 'Binlog_cache%';
-    +-----------------------+-------+
-    | Variable_name         | Value |
-    +-----------------------+-------+
-    | Binlog_cache_disk_use | 0     |
-    | Binlog_cache_use      | 0     |
-    +-----------------------+-------+
+```text
+sky@localhost : (none) 09:40:38> SHOW /*!50000 GLOBAL*/ STATUS
+    -> LIKE 'Binlog_cache%';
++-----------------------+-------+
+| Variable_name         | Value |
++-----------------------+-------+
+| Binlog_cache_disk_use | 0     |
+| Binlog_cache_use      | 0     |
++-----------------------+-------+
+```
 
 
 如果 Binlog_cache_disk_use 值不为0，则说明 Binlog Cache 大小可能不够，建议增加 binlog_cache_size 系统参数大小。
 
 Innodb_log_waits 量：Innodb_log_waits 状态变量直接反应出 Innodb Log Buffer 空间不足造成等待的次数。
 
-    sky@localhost : (none) 09:43:53> SHOW /*!50000 GLOBAL*/ STATUS
-    -> LIKE 'Innodb_log_waits';
-    +------------------+-------+
-    | Variable_name    | Value |
-    +------------------+-------+
-    | Innodb_log_waits | 0     |
-    +--------------------------+
+```text
+sky@localhost : (none) 09:43:53> SHOW /*!50000 GLOBAL*/ STATUS
+-> LIKE 'Innodb_log_waits';
++------------------+-------+
+| Variable_name    | Value |
++------------------+-------+
+| Innodb_log_waits | 0     |
++--------------------------+
+```
 
 该变量值发生的频率将直接影响系统的写入性能，所以当该值达到每秒1次时就该增加 系统参数innodb_log_buffer_size的值，毕竟这是一个系统共用的缓存，适当增加并不会造成内存不足的问题。
 

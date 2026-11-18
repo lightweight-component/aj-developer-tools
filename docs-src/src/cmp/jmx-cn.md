@@ -1,4 +1,17 @@
-# JMX 依赖与 JDK 版本
+---
+title: JMX 监控与依赖配置
+subTitle: 采集容错、连接超时与 JDK 版本差异
+description: 说明 JMX 采集容错和超时机制、JDK 17 与 JDK 8 的 Attach API 依赖差异，以及 jmxtools 和 Tomcat 远程管理组件的用途。
+tags:
+  - JMX
+  - JVM 监控
+  - JDK
+  - Attach API
+  - Tomcat
+layout: layouts/docs-cn.njk
+---
+
+# JMX 监控与依赖配置
 
 ## 采集容错与超时
 

@@ -1,4 +1,15 @@
-# Spring Boot API 监控面板与方法级耗时监控：完整指南
+---
+title: API 监控面板
+subTitle: 方法级耗时统计与分级时间桶分析
+description: 介绍 Spring Boot API 监控面板的采集、分级时间桶聚合、耗时与成功率统计，以及查询接口、配置和使用边界。
+tags:
+  - API 监控
+  - 方法耗时
+  - 性能分析
+layout: layouts/docs-cn.njk
+---
+
+# API 监控面板
 
 本文整合本目录的 [README.md](api-dashboard/README.md) 与掘金文章 [《SpringBoot 方法级耗时监控器》](https://juejin.cn/post/7548645458047877135)，合并重复说明，覆盖设计原理、采集与聚合、配置、界面、API 和使用场景。
 
