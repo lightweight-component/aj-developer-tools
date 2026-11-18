@@ -1,9 +1,11 @@
 ---
 title: 依赖包漏洞扫描
 subTitle: 一键发现潜在安全漏洞
-description: 基本概念
+description: 在 Spring Boot 应用中扫描第三方依赖，匹配已知漏洞，展示 CVE 编号、风险等级与修复建议。
 tags:
-  - 基本概念
+  - 依赖安全
+  - 漏洞扫描
+  - CVE
 layout: layouts/docs-cn.njk
 ---
 

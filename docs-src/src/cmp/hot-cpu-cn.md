@@ -1,9 +1,11 @@
 ---
 title: CPU 热点
-subTitle: CPU 飙升排查：方法级采样火焰图 
-description: 基本概念
+subTitle: CPU 飙升排查：方法级采样火焰图
+description: 基于 ThreadMXBean 定时采样线程调用栈，在 Spring Boot 应用中生成方法级火焰图，辅助定位 CPU 热点与性能瓶颈。
 tags:
-  - 基本概念
+  - CPU 热点
+  - 火焰图
+  - 性能分析
 layout: layouts/docs-cn.njk
 ---
 

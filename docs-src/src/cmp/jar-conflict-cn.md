@@ -1,9 +1,11 @@
 ---
 title: Jar 包冲突检测
-subTitle:  
-description: 基本概念
+subTitle: 运行时扫描依赖冲突，提供配置化修复建议
+description: 扫描 Spring Boot 运行时 classpath，检测重复类、版本冲突与重复 Jar 包，通过规则引擎生成修复建议并可视化展示。
 tags:
-  - 基本概念
+  - Jar 包冲突
+  - 依赖分析
+  - ClassLoader
 layout: layouts/docs-cn.njk
 ---
 
@@ -28,7 +30,7 @@ layout: layouts/docs-cn.njk
 
 ### 核心架构
 
-```
+```text
 运行时扫描 → 冲突检测 → 配置化建议 → Web 可视化
      ↓           ↓           ↓            
 ClassLoader   规则引擎   模板系统    
@@ -163,7 +165,7 @@ public class ConflictAdvisor {
 
 ## 规则定义语法
 
-```
+```yaml
 conflict:
   advisor:
     rules:
@@ -202,7 +204,7 @@ conflict:
 
 支持多维度匹配条件：
 
-```
+```yaml
 severity-rules:
   # 关键组件 - 严重
   - patterns: [".*logger.*", ".*driver.*", ".*datasource.*"]
@@ -276,7 +278,7 @@ severity-rules:
 
 ### 开发阶段集成
 
-```
+```java
 @Component
 public class ConflictDetectionStartupRunner implements CommandLineRunner {
     @Override
